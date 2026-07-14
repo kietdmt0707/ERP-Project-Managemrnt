@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ricefwService, RicefwObject } from '../services/api';
-import { FileText, Folder, CheckCircle, Clock, AlertTriangle, Plus, ExternalLink } from 'lucide-react';
+import { FileText, Folder, Plus, ExternalLink } from 'lucide-react';
 
 interface RicefwTrackerProps {
   projectId: number;
