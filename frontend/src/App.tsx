@@ -3,7 +3,7 @@ import { authService, AuthResponse, UserRole } from './services/api';
 import { GanttChart } from './components/GanttChart';
 import { RicefwTracker } from './components/RicefwTracker';
 import { ApprovalList } from './components/ApprovalList';
-import { Calendar, FileText, CheckSquare, ShieldCheck, DollarSign, LogOut, ArrowRight, Server, ShieldAlert } from 'lucide-react';
+import { Calendar, FileText, CheckSquare, DollarSign, LogOut, ArrowRight, Server, ShieldAlert } from 'lucide-react';
 
 function App() {
   const [currentUser, setCurrentUser] = useState<AuthResponse | null>(null);
@@ -56,7 +56,7 @@ function App() {
 
   const selectProject = (projId: number) => {
     if (!currentUser) return;
-    const found = currentUser.projectRoles.find(r => r.ProjectId === projId);
+    const found = currentUser.projectRoles.find(r => r.projectId === projId);
     if (found) {
       setActiveProject(found);
     }
@@ -146,12 +146,12 @@ function App() {
             <div className="flex items-center gap-2">
               <span className="text-xs text-dark-400 font-medium">Dự án hoạt động:</span>
               <select 
-                value={activeProject.ProjectId}
+                value={activeProject.projectId}
                 onChange={(e) => selectProject(Number(e.target.value))}
                 className="bg-dark-800 border border-dark-700 text-xs px-3 py-1.5 rounded-lg text-white font-semibold focus:outline-none focus:border-brand-500"
               >
                 {currentUser.projectRoles.map(r => (
-                  <option key={r.ProjectId} value={r.ProjectId}>{r.ProjectCode} - {r.ProjectName}</option>
+                  <option key={r.projectId} value={r.projectId}>{r.projectCode} - {r.projectName}</option>
                 ))}
               </select>
             </div>
@@ -161,7 +161,7 @@ function App() {
           <div className="flex items-center gap-3 pl-4 border-l border-dark-800">
             <div className="text-right">
               <p className="text-xs font-semibold text-white">{currentUser.fullName}</p>
-              <p className="text-[10px] text-brand-400 font-medium capitalize">Role: {activeProject?.RoleName || 'Consultant'}</p>
+              <p className="text-[10px] text-brand-400 font-medium capitalize">Role: {activeProject?.roleName || 'Consultant'}</p>
             </div>
             <button 
               onClick={handleLogout}
@@ -231,11 +231,11 @@ function App() {
           <div className="animate-fade-in">
             {activeProject ? (
               <>
-                {activeTab === 'gantt' && <GanttChart projectId={activeProject.ProjectId} userRole={activeProject.RoleCode} />}
+                {activeTab === 'gantt' && <GanttChart projectId={activeProject.projectId} userRole={activeProject.roleCode} />}
                 
-                {activeTab === 'ricefw' && <RicefwTracker projectId={activeProject.ProjectId} userRole={activeProject.RoleCode} />}
+                {activeTab === 'ricefw' && <RicefwTracker projectId={activeProject.projectId} userRole={activeProject.roleCode} />}
                 
-                {activeTab === 'approvals' && <ApprovalList projectId={activeProject.ProjectId} userRole={activeProject.RoleCode} />}
+                {activeTab === 'approvals' && <ApprovalList projectId={activeProject.projectId} userRole={activeProject.roleCode} />}
                 
                 {activeTab === 'environments' && (
                   <div className="space-y-6">
@@ -283,7 +283,7 @@ function App() {
                     </div>
 
                     {/* Role costing block */}
-                    {activeProject.RoleCode === 'PM' || activeProject.RoleCode === 'DIRECTOR' || currentUser.globalRole === 'SYSTEM_ADMIN' ? (
+                    {activeProject.roleCode === 'PM' || activeProject.roleCode === 'DIRECTOR' || currentUser.globalRole === 'SYSTEM_ADMIN' ? (
                       <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                           <div className="bg-dark-900/60 p-5 rounded-xl border border-dark-800 text-xs">
