@@ -34,7 +34,7 @@ namespace AronErpPm.Api.Models
         public bool IsActive { get; set; } = true;
         
         public string? ProjectScope { get; set; }
-        public int ImplementationWeeks { get; set; } = 24;
+        public int? ImplementationWeeks { get; set; } = 24;
         public DateTime? KickOffDate { get; set; }
         public DateTime? TargetGoLiveDate { get; set; }
         
