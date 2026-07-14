@@ -119,7 +119,8 @@ using (var scope = app.Services.CreateScope())
         ("ALTER TABLE system_settings ALTER COLUMN logo_url TYPE TEXT;", "Alter logo_url in system_settings"),
         ("ALTER TABLE system_settings ALTER COLUMN banner_url TYPE TEXT;", "Alter banner_url in system_settings"),
         ("ALTER TABLE projects ALTER COLUMN logopath TYPE TEXT;", "Alter logopath in projects"),
-        ("ALTER TABLE users ALTER COLUMN avatarpath TYPE TEXT;", "Alter avatarpath in users")
+        ("ALTER TABLE users ALTER COLUMN avatarpath TYPE TEXT;", "Alter avatarpath in users"),
+        ("UPDATE projects SET implementationweeks = 24 WHERE implementationweeks IS NULL;", "Update NULL implementationweeks to 24")
     };
 
     foreach (var migration in migrations)
