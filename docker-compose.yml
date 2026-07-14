@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  database:
+    image: postgres:15-alpine
+    container_name: aron_pm_postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=YourStrongPassword!
+      - POSTGRES_DB=AronErpPm
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: AronErpPm.Api/Dockerfile
+    container_name: aron_pm_backend
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=database;Database=AronErpPm;Username=postgres;Password=YourStrongPassword!;
+      - JwtSettings__Secret=SuperSecretKeyLongerThan32BytesForAronErpPmSystemSecurityEncryption
+      - ApiSettings__BaseUrl=http://localhost:5000
+      - ApiSettings__WebPortalUrl=http://localhost:3000
+    ports:
+      - "5000:80"
+    depends_on:
+      - database
+
+volumes:
+  postgres_data:
