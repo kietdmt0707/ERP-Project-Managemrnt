@@ -163,7 +163,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUserGloba
                   </div>
                   {isAdmin && (
                     <button
-                      onClick={() => handleDeleteProject(project.projectId)}
+                      onClick={() => handleDeleteProject(project.projectId!)}
                       className="text-rose-500 hover:text-rose-400 p-2 hover:bg-rose-500/10 rounded-lg transition-colors shrink-0"
                       title="Xóa dự án"
                     >
@@ -189,9 +189,9 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUserGloba
                   <span className="font-mono">ID: {project.projectId}</span>
                 </div>
 
-                {isAdmin && (
+                 {isAdmin && (
                   <button
-                    onClick={() => { setSelectedProjectId(project.projectId); setShowAssignPmModal(true); }}
+                    onClick={() => { setSelectedProjectId(project.projectId!); setShowAssignPmModal(true); }}
                     className="w-full bg-dark-800 hover:bg-dark-750 text-white font-bold text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 border border-dark-700 transition-colors"
                   >
                     <UserPlus size={14} /> Bổ nhiệm & Phân công PM
@@ -293,9 +293,10 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUserGloba
 
               <button 
                 type="submit"
-                className="w-full bg-brand-600 hover:bg-brand-500 text-white p-3 rounded-xl text-xs font-bold transition-all"
+                disabled={submitting}
+                className="w-full bg-brand-600 hover:bg-brand-500 text-white p-3 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
               >
-                Tạo Dự Án & Thiết Lập Mặc Định
+                {submitting ? 'Đang tạo...' : 'Tạo Dự Án & Thiết Lập Mặc Định'}
               </button>
             </form>
           </div>
