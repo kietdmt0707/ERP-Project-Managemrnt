@@ -100,11 +100,33 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AronDbContext>();
-    // db.Database.EnsureCreated(); // Auto scaffold locally if running on a real Postgres instance
+    db.Database.EnsureCreated(); // Tự động tạo bảng nếu chưa tồn tại trên Postgres
     
-    // Tự động seed tài khoản sysadmin nếu chưa có
+    // Tự động seed tài khoản sysadmin và các vai trò mặc định nếu chưa có
     try
     {
+        // 1. Seed Roles
+        var existingRoles = db.Roles.ToList();
+        var defaultRoles = new List<AronErpPm.Api.Models.Role>
+        {
+            new AronErpPm.Api.Models.Role { RoleCode = "SYSTEM_ADMIN", RoleName = "System Admin", HierarchyLevel = 1 },
+            new AronErpPm.Api.Models.Role { RoleCode = "DIRECTOR", RoleName = "Project Director", HierarchyLevel = 2 },
+            new AronErpPm.Api.Models.Role { RoleCode = "PM", RoleName = "Project Manager (PM)", HierarchyLevel = 3 },
+            new AronErpPm.Api.Models.Role { RoleCode = "PC", RoleName = "Project Coordinator", HierarchyLevel = 4 },
+            new AronErpPm.Api.Models.Role { RoleCode = "LEADER", RoleName = "Module Lead", HierarchyLevel = 5 },
+            new AronErpPm.Api.Models.Role { RoleCode = "MEMBER", RoleName = "Consultant / Member", HierarchyLevel = 6 }
+        };
+
+        foreach (var defRole in defaultRoles)
+        {
+            if (!existingRoles.Any(r => r.RoleCode.ToUpper() == defRole.RoleCode.ToUpper()))
+            {
+                db.Roles.Add(defRole);
+            }
+        }
+        db.SaveChanges();
+
+        // 2. Seed sysadmin
         var sysadminExists = db.Users.Any(u => u.Username.ToLower() == "sysadmin");
         if (!sysadminExists)
         {
@@ -130,7 +152,7 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Error seeding sysadmin: {ex.Message}");
+        Console.WriteLine($"Error seeding roles/sysadmin: {ex.Message}");
     }
 }
 

@@ -7,6 +7,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { ProjectManager } from './components/ProjectManager';
 import { TeamConfigurator } from './components/TeamConfigurator';
 import { BusinessTripTracker } from './components/BusinessTripTracker';
+import { UserManager } from './components/UserManager';
 import { Calendar, FileText, CheckSquare, DollarSign, LogOut, ArrowRight, Server, ShieldAlert, Users, Sliders, Briefcase, Plane } from 'lucide-react';
 
 function App() {
@@ -28,7 +29,7 @@ function App() {
   const [loginLoading, setLoginLoading] = useState(false);
 
   // Tab selections
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'gantt' | 'ricefw' | 'approvals' | 'costs' | 'environments' | 'team' | 'trips' | 'projects' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'gantt' | 'ricefw' | 'approvals' | 'costs' | 'environments' | 'team' | 'trips' | 'projects' | 'settings' | 'users'>('dashboard');
 
   useEffect(() => {
     loadSystemSettings();
@@ -304,6 +305,17 @@ function App() {
               <Briefcase size={16} /> Khởi Tạo & Quản Lý Dự Án
             </button>
 
+            {(currentUser.globalRole === 'SYSTEM_ADMIN' || currentUser.projectRoles?.some(r => r.roleCode === 'PM')) && (
+              <button 
+                onClick={() => setActiveTab('users')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                  activeTab === 'users' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                }`}
+              >
+                <Users size={16} /> Quản Lý Người Dùng
+              </button>
+            )}
+
             {currentUser.globalRole === 'SYSTEM_ADMIN' && (
               <button 
                 onClick={() => setActiveTab('settings')}
@@ -459,7 +471,9 @@ function App() {
             
             {activeTab === 'settings' && <SettingsPanel onSettingsUpdate={(s) => setSystemSettings(s)} />}
 
-            {activeTab !== 'dashboard' && activeTab !== 'projects' && activeTab !== 'settings' && (
+            {activeTab === 'users' && <UserManager currentUserGlobalRole={currentUser?.globalRole} />}
+
+            {activeTab !== 'dashboard' && activeTab !== 'projects' && activeTab !== 'settings' && activeTab !== 'users' && (
               activeProject ? (
                 <>
                   {activeTab === 'gantt' && <GanttChart projectId={activeProject.projectId} userRole={activeProject.roleCode} />}

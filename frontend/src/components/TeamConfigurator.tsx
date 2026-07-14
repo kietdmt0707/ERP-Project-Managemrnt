@@ -124,6 +124,7 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
   };
 
   const isCostVisible = userRole === 'PM' || userRole === 'DIRECTOR';
+  const canManageTeam = userRole === 'PM' || userRole === 'DIRECTOR' || userRole === 'PC';
 
   return (
     <div className="space-y-6">
@@ -136,20 +137,22 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
             Khai báo đội ARON, Khách hàng, Partner, đội chức năng (FIN, Tech...) và gán vai trò nhân sự
           </p>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={() => setShowTeamModal(true)}
-            className="bg-dark-800 hover:bg-dark-700 border border-dark-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center gap-1.5 transition-all"
-          >
-            <Plus size={14} /> Khai Báo Đội/Team
-          </button>
-          <button
-            onClick={() => setShowMemberModal(true)}
-            className="bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center gap-1.5 transition-all shadow-lg shadow-brand-600/10"
-          >
-            <UserPlus size={14} /> Đăng Ký Nhân Sự
-          </button>
-        </div>
+        {canManageTeam && (
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowTeamModal(true)}
+              className="bg-dark-800 hover:bg-dark-700 border border-dark-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center gap-1.5 transition-all"
+            >
+              <Plus size={14} /> Khai Báo Đội/Team
+            </button>
+            <button
+              onClick={() => setShowMemberModal(true)}
+              className="bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center gap-1.5 transition-all shadow-lg shadow-brand-600/10"
+            >
+              <UserPlus size={14} /> Đăng Ký Nhân Sự
+            </button>
+          </div>
+        )}
       </div>
 
       {error && (

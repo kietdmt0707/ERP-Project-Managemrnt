@@ -131,7 +131,7 @@ export const RicefwTracker: React.FC<RicefwTrackerProps> = ({ projectId, userRol
           <p className="text-xs text-dark-400 mt-1">Đăng ký và giám sát 5 đợt bàn giao đặc thù thiết kế, code, SIT & UAT của Oracle ERP</p>
         </div>
         
-        {(userRole === 'PM' || userRole === 'LEADER' || userRole === 'SYSTEM_ADMIN') && (
+        {(userRole === 'PM' || userRole === 'LEADER' || userRole === 'SYSTEM_ADMIN' || userRole === 'PC') && (
           <button 
             onClick={() => setShowModal(true)}
             className="bg-brand-600 hover:bg-brand-500 text-white text-xs px-3 py-2 rounded-lg font-semibold flex items-center gap-1 transition-all"

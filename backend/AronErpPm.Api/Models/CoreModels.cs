@@ -27,7 +27,6 @@ namespace AronErpPm.Api.Models
         [MaxLength(500)]
         public string? ContactInfo { get; set; }
 
-        [MaxLength(500)]
         public string? LogoPath { get; set; }
 
         public bool IsActive { get; set; } = true;
@@ -158,10 +157,11 @@ namespace AronErpPm.Api.Models
         [MaxLength(50)]
         public string? Phone { get; set; }
 
-        [MaxLength(500)]
         public string? AvatarPath { get; set; }
 
         public bool IsActive { get; set; } = true;
+
+        public DateTime? ExpiryDate { get; set; }
 
         [MaxLength(255)]
         public string? ResetToken { get; set; }

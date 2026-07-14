@@ -35,6 +35,20 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onSettingsUpdate }
       setLoading(false);
     }
   };
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, targetKey: 'logoUrl' | 'bannerUrl') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      setSettings(prev => ({
+        ...prev,
+        [targetKey]: base64String
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,34 +109,46 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onSettingsUpdate }
             />
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs text-dark-300 font-semibold">Đường dẫn Logo (Logo URL):</label>
+          <div className="space-y-2">
+            <label className="text-xs text-dark-300 font-semibold block">Logo ứng dụng (Tải từ máy tính):</label>
             <input 
-              type="text"
-              value={settings.logoUrl || ''}
-              onChange={e => setSettings({ ...settings, logoUrl: e.target.value })}
-              placeholder="https://..."
-              className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-white placeholder-dark-600 focus:outline-none focus:border-brand-500"
+              type="file"
+              accept="image/*"
+              onChange={e => handleImageUpload(e, 'logoUrl')}
+              className="text-xs text-dark-400 file:bg-dark-800 file:border-0 file:text-white file:font-semibold file:px-3 file:py-1.5 file:rounded-lg file:mr-3 file:cursor-pointer"
             />
             {settings.logoUrl && (
-              <div className="mt-2 p-2 bg-dark-950 rounded-lg flex justify-center border border-dark-800">
+              <div className="mt-2 p-2 bg-dark-950 rounded-lg flex justify-center border border-dark-800 relative group">
                 <img src={settings.logoUrl} alt="Preview Logo" className="max-h-12 object-contain" />
+                <button
+                  type="button"
+                  onClick={() => setSettings({ ...settings, logoUrl: '' })}
+                  className="absolute top-1 right-1 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-1 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  Xóa
+                </button>
               </div>
             )}
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs text-dark-300 font-semibold">Đường dẫn Banner (Banner URL):</label>
+          <div className="space-y-2">
+            <label className="text-xs text-dark-300 font-semibold block">Banner nền (Tải từ máy tính):</label>
             <input 
-              type="text"
-              value={settings.bannerUrl || ''}
-              onChange={e => setSettings({ ...settings, bannerUrl: e.target.value })}
-              placeholder="https://..."
-              className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-white placeholder-dark-600 focus:outline-none focus:border-brand-500"
+              type="file"
+              accept="image/*"
+              onChange={e => handleImageUpload(e, 'bannerUrl')}
+              className="text-xs text-dark-400 file:bg-dark-800 file:border-0 file:text-white file:font-semibold file:px-3 file:py-1.5 file:rounded-lg file:mr-3 file:cursor-pointer"
             />
             {settings.bannerUrl && (
-              <div className="mt-2 rounded-lg overflow-hidden border border-dark-800">
+              <div className="mt-2 rounded-lg overflow-hidden border border-dark-800 relative group">
                 <img src={settings.bannerUrl} alt="Preview Banner" className="h-20 w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setSettings({ ...settings, bannerUrl: '' })}
+                  className="absolute top-1 right-1 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-1 text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  Xóa
+                </button>
               </div>
             )}
           </div>

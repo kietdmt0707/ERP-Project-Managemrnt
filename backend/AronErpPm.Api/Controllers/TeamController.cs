@@ -81,6 +81,19 @@ namespace AronErpPm.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateTeam([FromBody] Team request)
         {
+            var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role || c.Type == "role")?.Value;
+            var projectRoleClaim = User.Claims.FirstOrDefault(c => c.Type == $"ProjectRole_{request.ProjectId}")?.Value;
+
+            var hasAccess = globalRoleClaim == "SYSTEM_ADMIN" || 
+                            projectRoleClaim == "PM" || 
+                            projectRoleClaim == "PC" || 
+                            projectRoleClaim == "LEADER";
+
+            if (!hasAccess)
+            {
+                return Forbid("Chỉ PM, Project Coordinator, Leader hoặc Admin mới được phép tạo nhóm dự án.");
+            }
+
             var team = new Team
             {
                 ProjectId = request.ProjectId,
@@ -96,6 +109,22 @@ namespace AronErpPm.Api.Controllers
         [HttpPost("functional")]
         public async Task<IActionResult> CreateFunctionalTeam([FromBody] FunctionalTeam request)
         {
+            var parentTeam = await _context.Teams.FindAsync(request.TeamId);
+            if (parentTeam == null) return NotFound("Không tìm thấy nhóm dự án cha.");
+
+            var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role || c.Type == "role")?.Value;
+            var projectRoleClaim = User.Claims.FirstOrDefault(c => c.Type == $"ProjectRole_{parentTeam.ProjectId}")?.Value;
+
+            var hasAccess = globalRoleClaim == "SYSTEM_ADMIN" || 
+                            projectRoleClaim == "PM" || 
+                            projectRoleClaim == "PC" || 
+                            projectRoleClaim == "LEADER";
+
+            if (!hasAccess)
+            {
+                return Forbid("Chỉ PM, Project Coordinator, Leader hoặc Admin mới được phép tạo nhóm chức năng.");
+            }
+
             var functionalTeam = new FunctionalTeam
             {
                 TeamId = request.TeamId,
@@ -110,11 +139,18 @@ namespace AronErpPm.Api.Controllers
         [HttpPost("member")]
         public async Task<IActionResult> CreateOrAssignMember([FromBody] MemberAssignRequest request)
         {
-            // Verify authority (PM, Leader, or System Admin)
-            var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == "GlobalRole")?.Value;
-            if (globalRoleClaim != "SYSTEM_ADMIN" && globalRoleClaim != "PM" && globalRoleClaim != "LEADER")
+            // Verify authority (PM, PC, Leader, or System Admin)
+            var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role || c.Type == "role")?.Value;
+            var projectRoleClaim = User.Claims.FirstOrDefault(c => c.Type == $"ProjectRole_{request.ProjectId}")?.Value;
+
+            var hasAccess = globalRoleClaim == "SYSTEM_ADMIN" || 
+                            projectRoleClaim == "PM" || 
+                            projectRoleClaim == "PC" || 
+                            projectRoleClaim == "LEADER";
+
+            if (!hasAccess)
             {
-                return Forbid("Chỉ PM, Leader hoặc Admin mới được phép thêm thành viên dự án.");
+                return Forbid("Chỉ PM, Project Coordinator, Leader hoặc Admin mới được phép gán thành viên dự án.");
             }
 
             // Find or create User

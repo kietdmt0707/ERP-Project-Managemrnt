@@ -387,3 +387,59 @@ export const businessTripService = {
     return response.json();
   }
 };
+
+export interface UserDto {
+  userId?: number;
+  username: string;
+  password?: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  isActive: boolean;
+  expiryDate?: string;
+}
+
+export const userService = {
+  async getUsers(): Promise<UserDto[]> {
+    const response = await fetch(`${API_BASE_URL}/user`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải danh sách người dùng.');
+    return response.json();
+  },
+  async createUser(user: UserDto): Promise<UserDto> {
+    const response = await fetch(`${API_BASE_URL}/user`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(user)
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Tạo người dùng thất bại.');
+    }
+    return response.json();
+  },
+  async updateUser(userId: number, user: UserDto): Promise<UserDto> {
+    const response = await fetch(`${API_BASE_URL}/user/${userId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(user)
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Cập nhật người dùng thất bại.');
+    }
+    return response.json();
+  },
+  async deleteUser(userId: number): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/user/${userId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Xóa người dùng thất bại.');
+    }
+    return response.json();
+  }
+};
