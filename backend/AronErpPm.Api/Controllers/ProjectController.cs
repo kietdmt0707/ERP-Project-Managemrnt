@@ -25,12 +25,24 @@ namespace AronErpPm.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetProjects()
         {
-            var projects = await _context.Projects
-                .Include(p => p.ProjectSites)
-                .OrderByDescending(p => p.CreatedDate)
-                .ToListAsync();
+            try
+            {
+                var projects = await _context.Projects
+                    .Include(p => p.ProjectSites)
+                    .OrderByDescending(p => p.CreatedDate)
+                    .ToListAsync();
 
-            return Ok(projects);
+                return Ok(projects);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { 
+                    message = "Lỗi truy vấn Database", 
+                    detail = ex.Message, 
+                    inner = ex.InnerException?.Message,
+                    stackTrace = ex.StackTrace 
+                });
+            }
         }
 
         // POST: api/project
@@ -64,19 +76,31 @@ namespace AronErpPm.Api.Controllers
                 CreatedDate = DateTime.UtcNow
             };
 
-            _context.Projects.Add(project);
-            await _context.SaveChangesAsync();
-
-            // Auto-create a default Team under the project named "Ban Dự Án"
-            var defaultTeam = new Team
+            try
             {
-                ProjectId = project.ProjectId,
-                TeamName = "Ban Dự Án"
-            };
-            _context.Teams.Add(defaultTeam);
-            await _context.SaveChangesAsync();
+                _context.Projects.Add(project);
+                await _context.SaveChangesAsync();
 
-            return Ok(project);
+                // Auto-create a default Team under the project named "Ban Dự Án"
+                var defaultTeam = new Team
+                {
+                    ProjectId = project.ProjectId,
+                    TeamName = "Ban Dự Án"
+                };
+                _context.Teams.Add(defaultTeam);
+                await _context.SaveChangesAsync();
+
+                return Ok(project);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { 
+                    message = "Lỗi khi lưu dự án vào Database", 
+                    detail = ex.Message, 
+                    inner = ex.InnerException?.Message,
+                    stackTrace = ex.StackTrace 
+                });
+            }
         }
 
         // PUT: api/project/{id}
