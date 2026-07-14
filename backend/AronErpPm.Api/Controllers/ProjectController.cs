@@ -98,6 +98,12 @@ namespace AronErpPm.Api.Controllers
                 ContactInfo = request.ContactInfo,
                 LogoPath = request.LogoPath ?? "https://raw.githubusercontent.com/vitejs/vite/main/packages/vite/src/node/logo.png",
                 SharepointFolderLink = request.SharepointFolderLink,
+                ProjectScope = request.ProjectScope,
+                ImplementationWeeks = request.ImplementationWeeks,
+                KickOffDate = request.KickOffDate,
+                TargetGoLiveDate = request.TargetGoLiveDate,
+                CurrentPhase = request.CurrentPhase ?? "Analyze",
+                ModulesScope = request.ModulesScope,
                 IsActive = true,
                 CreatedDate = DateTime.UtcNow
             };
@@ -105,6 +111,33 @@ namespace AronErpPm.Api.Controllers
             try
             {
                 _context.Projects.Add(project);
+                await _context.SaveChangesAsync();
+
+                // Tạo các chi nhánh/site dự án tự động
+                if (request.ProjectSites != null && request.ProjectSites.Count > 0)
+                {
+                    foreach (var site in request.ProjectSites)
+                    {
+                        site.ProjectId = project.ProjectId;
+                        site.SiteId = 0;
+                        site.Project = null;
+                        _context.ProjectSites.Add(site);
+                    }
+                }
+                else
+                {
+                    for (int i = 1; i <= project.SitesCount; i++)
+                    {
+                        var site = new ProjectSite
+                        {
+                            ProjectId = project.ProjectId,
+                            SiteName = i == 1 ? "Trụ sở chính" : $"Site chi nhánh {i}",
+                            Address = i == 1 ? project.Address : string.Empty,
+                            CreatedDate = DateTime.UtcNow
+                        };
+                        _context.ProjectSites.Add(site);
+                    }
+                }
                 await _context.SaveChangesAsync();
 
                 // Auto-create a default Team under the project named "Ban Dự Án"
@@ -154,7 +187,28 @@ namespace AronErpPm.Api.Controllers
                 project.LogoPath = request.LogoPath;
             }
             project.SharepointFolderLink = request.SharepointFolderLink;
+            project.ProjectScope = request.ProjectScope;
+            project.ImplementationWeeks = request.ImplementationWeeks;
+            project.KickOffDate = request.KickOffDate;
+            project.TargetGoLiveDate = request.TargetGoLiveDate;
+            project.CurrentPhase = request.CurrentPhase ?? project.CurrentPhase;
+            project.ModulesScope = request.ModulesScope;
             project.UpdatedDate = DateTime.UtcNow;
+
+            // Cập nhật danh sách Site
+            if (request.ProjectSites != null)
+            {
+                var existingSites = _context.ProjectSites.Where(s => s.ProjectId == id);
+                _context.ProjectSites.RemoveRange(existingSites);
+                
+                foreach (var site in request.ProjectSites)
+                {
+                    site.ProjectId = id;
+                    site.SiteId = 0; // Tự tăng khóa chính mới
+                    site.Project = null; // Tránh lỗi tuần hoàn EF Core
+                    _context.ProjectSites.Add(site);
+                }
+            }
 
             await _context.SaveChangesAsync();
             return Ok(project);
