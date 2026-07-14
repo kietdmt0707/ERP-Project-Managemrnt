@@ -103,18 +103,26 @@ using (var scope = app.Services.CreateScope())
     db.Database.EnsureCreated(); // Tự động tạo bảng nếu chưa tồn tại trên Postgres
     
     // Tự động nâng cấp cấu trúc bảng nếu đã tồn tại trước đó
-    try
+    var migrations = new List<(string sql, string description)>
     {
-        db.Database.ExecuteSqlRaw("ALTER TABLE users ADD COLUMN IF NOT EXISTS expirydate TIMESTAMP WITH TIME ZONE;");
-        db.Database.ExecuteSqlRaw("ALTER TABLE projects ADD COLUMN IF NOT EXISTS sharepointfolderlink TEXT;");
-        db.Database.ExecuteSqlRaw("ALTER TABLE system_settings ALTER COLUMN logo_url TYPE TEXT;");
-        db.Database.ExecuteSqlRaw("ALTER TABLE system_settings ALTER COLUMN banner_url TYPE TEXT;");
-        db.Database.ExecuteSqlRaw("ALTER TABLE projects ALTER COLUMN logo_path TYPE TEXT;");
-        db.Database.ExecuteSqlRaw("ALTER TABLE users ALTER COLUMN avatar_path TYPE TEXT;");
-    }
-    catch (Exception ex)
+        ("ALTER TABLE users ADD COLUMN IF NOT EXISTS expirydate TIMESTAMP WITH TIME ZONE;", "Add expirydate to users"),
+        ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS sharepointfolderlink TEXT;", "Add sharepointfolderlink to projects"),
+        ("ALTER TABLE system_settings ALTER COLUMN logo_url TYPE TEXT;", "Alter logo_url in system_settings"),
+        ("ALTER TABLE system_settings ALTER COLUMN banner_url TYPE TEXT;", "Alter banner_url in system_settings"),
+        ("ALTER TABLE projects ALTER COLUMN logopath TYPE TEXT;", "Alter logopath in projects"),
+        ("ALTER TABLE users ALTER COLUMN avatarpath TYPE TEXT;", "Alter avatarpath in users")
+    };
+
+    foreach (var migration in migrations)
     {
-        Console.WriteLine($"Error running database alterations: {ex.Message}");
+        try
+        {
+            db.Database.ExecuteSqlRaw(migration.sql);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error running migration '{migration.description}': {ex.Message}");
+        }
     }
     
     // Tự động seed tài khoản sysadmin và các vai trò mặc định nếu chưa có
