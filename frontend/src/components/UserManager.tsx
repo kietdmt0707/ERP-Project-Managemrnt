@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { userService, UserDto } from '../services/api';
-import { Users, Plus, Edit2, Trash2, Shield, UserPlus } from 'lucide-react';
+import { Users, Edit2, Trash2, Shield, UserPlus } from 'lucide-react';
 
 interface UserManagerProps {
   currentUserGlobalRole?: string;
