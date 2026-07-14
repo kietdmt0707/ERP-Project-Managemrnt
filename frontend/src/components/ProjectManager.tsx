@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { projectService, ProjectDto } from '../services/api';
-import { Briefcase, Plus, Folder, MapPin, Building, Phone, UserPlus, Trash2, Edit3, Calendar, Clock, Layers, ShieldCheck, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Briefcase, Plus, Folder, MapPin, Building, Phone, UserPlus, Trash2, Edit3, Calendar, Clock } from 'lucide-react';
 
 interface ProjectManagerProps {
   currentUserGlobalRole?: string;
