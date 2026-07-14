@@ -1,5 +1,13 @@
+using System;
+using System.Net;
+using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using AronErpPm.Api.Data;
 
 namespace AronErpPm.Api.Services
 {
@@ -12,11 +20,13 @@ namespace AronErpPm.Api.Services
     {
         private readonly IConfiguration _configuration;
         private readonly ILogger<EmailService> _logger;
+        private readonly AronDbContext _context;
 
-        public EmailService(IConfiguration configuration, ILogger<EmailService> logger)
+        public EmailService(IConfiguration configuration, ILogger<EmailService> logger, AronDbContext context)
         {
             _configuration = configuration;
             _logger = logger;
+            _context = context;
         }
 
         public async Task SendApprovalEmailAsync(
@@ -30,66 +40,103 @@ namespace AronErpPm.Api.Services
             int stepId, 
             string secureToken)
         {
-            var apiBaseUrl = _configuration["ApiSettings:BaseUrl"] ?? "https://api.aron.vn";
-            var webPortalUrl = _configuration["ApiSettings:WebPortalUrl"] ?? "https://pm.aron.vn";
+            // Retrieve system settings
+            var settings = await _context.SystemSettings.FirstOrDefaultAsync();
+            var appName = settings?.AppName ?? "ARON Project Management";
+            var logoUrl = settings?.LogoUrl ?? "https://raw.githubusercontent.com/vitejs/vite/main/packages/vite/src/node/logo.png";
+
+            var apiBaseUrl = _configuration["ApiSettings:BaseUrl"] ?? "https://erp-project-management.onrender.com";
+            var webPortalUrl = _configuration["ApiSettings:WebPortalUrl"] ?? "https://erp-project-managemrnt-sage.vercel.app";
 
             // Build Quick One-click Approval Links
-            var approveUrl = $"{apiBaseUrl}/api/approvals/quick-action?token={secureToken}&action=APPROVE";
-            var rejectUrl = $"{apiBaseUrl}/api/approvals/quick-action?token={secureToken}&action=REJECT";
+            var approveUrl = $"{apiBaseUrl}/api/approval/quick-action?token={secureToken}&action=APPROVE";
+            var rejectUrl = $"{apiBaseUrl}/api/approval/quick-action?token={secureToken}&action=REJECT";
             
             // Build Deep Link to the full Web Portal (Requires login/SSO)
-            var detailUrl = $"{webPortalUrl}/approvals/detail/{stepId}";
+            var detailUrl = $"{webPortalUrl}/approvals";
 
             // Draft the HTML body
             var htmlBody = $@"
-                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;'>
-                    <h2 style='color: #0d6efd; border-bottom: 2px solid #0d6efd; padding-bottom: 10px;'>YÊU CẦU PHÊ DUYỆT DỰ ÁN</h2>
-                    <p>Chào <strong>{approverName}</strong>,</p>
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff; color: #333333;'>
+                    <div style='text-align: center; padding-bottom: 20px; border-bottom: 2px solid #00d2ff;'>
+                        <img src='{logoUrl}' alt='Logo' style='max-height: 50px; margin-bottom: 10px;' />
+                        <h2 style='color: #0d6efd; margin: 0;'>{appName.ToUpper()}</h2>
+                    </div>
+                    
+                    <p style='font-size: 15px;'>Chào <strong>{approverName}</strong>,</p>
                     <p>Có một yêu cầu phê duyệt mới cần xử lý trong dự án <strong>{projectName}</strong>:</p>
                     
                     <table style='width: 100%; border-collapse: collapse; margin: 20px 0;'>
                         <tr>
-                            <td style='padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;'>Người yêu cầu:</td>
-                            <td style='padding: 8px; border-bottom: 1px solid #eee;'>{requesterName}</td>
+                            <td style='padding: 10px; border-bottom: 1px solid #eeeeee; font-weight: bold; width: 35%;'>Người yêu cầu:</td>
+                            <td style='padding: 10px; border-bottom: 1px solid #eeeeee;'>{requesterName}</td>
                         </tr>
                         <tr>
-                            <td style='padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;'>Hạng mục:</td>
-                            <td style='padding: 8px; border-bottom: 1px solid #eee;'>{targetType}</td>
+                            <td style='padding: 10px; border-bottom: 1px solid #eeeeee; font-weight: bold;'>Hạng mục:</td>
+                            <td style='padding: 10px; border-bottom: 1px solid #eeeeee;'>{targetType}</td>
                         </tr>
                         <tr>
-                            <td style='padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;'>Chi tiết:</td>
-                            <td style='padding: 8px; border-bottom: 1px solid #eee;'>{description}</td>
+                            <td style='padding: 10px; border-bottom: 1px solid #eeeeee; font-weight: bold;'>Chi tiết:</td>
+                            <td style='padding: 10px; border-bottom: 1px solid #eeeeee;'>{description}</td>
                         </tr>
                         {(amount > 0 ? $@"
                         <tr>
-                            <td style='padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;'>Số tiền đề xuất:</td>
-                            <td style='padding: 8px; border-bottom: 1px solid #eee; color: #dc3545; font-weight: bold;'>{amount:N0} VNĐ</td>
+                            <td style='padding: 10px; border-bottom: 1px solid #eeeeee; font-weight: bold;'>Số tiền đề xuất:</td>
+                            <td style='padding: 10px; border-bottom: 1px solid #eeeeee; color: #dc3545; font-weight: bold; font-size: 16px;'>{amount:N0} VNĐ</td>
                         </tr>" : "")}
                     </table>
 
-                    <div style='text-align: center; margin: 30px 0;'>
-                        <p style='color: #666; font-size: 13px; margin-bottom: 15px;'><strong>TÙY CHỌN 1: DUYỆT NHANH (Không cần đăng nhập)</strong></p>
-                        <a href='{approveUrl}' style='background-color: #198754; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 15px; display: inline-block;'>PHÊ DUYỆT NHANH</a>
-                        <a href='{rejectUrl}' style='background-color: #dc3545; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;'>TỪ CHỐI NHANH</a>
+                    <div style='text-align: center; margin: 30px 0; background-color: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #e9ecef;'>
+                        <p style='color: #666666; font-size: 13px; margin: 0 0 15px 0;'><strong>TÙY CHỌN 1: DUYỆT NHANH (Không cần đăng nhập)</strong></p>
+                        <a href='{approveUrl}' style='background-color: #198754; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 15px; display: inline-block; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>PHÊ DUYỆT NHANH</a>
+                        <a href='{rejectUrl}' style='background-color: #dc3545; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>TỪ CHỐI NHANH</a>
                     </div>
 
-                    <div style='text-align: center; background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;'>
-                        <p style='color: #666; font-size: 13px; margin: 0 0 10px 0;'><strong>TÙY CHỌN 2: XEM CHI TIẾT & BÀN GIAO TÀI LIỆU SHAREPOINT (Yêu cầu đăng nhập)</strong></p>
-                        <a href='{detailUrl}' style='color: #0d6efd; font-weight: bold; text-decoration: underline;'>Mở Cổng Portal Quản lý Dự án ARON</a>
+                    <div style='text-align: center; background-color: #ebf5ff; padding: 15px; border-radius: 8px;'>
+                        <p style='color: #333333; font-size: 13px; margin: 0 0 10px 0;'><strong>TÙY CHỌN 2: XEM TÀI LIỆU CHI TIẾT TRÊN PORTAL</strong></p>
+                        <a href='{detailUrl}' style='color: #0d6efd; font-weight: bold; text-decoration: underline; font-size: 14px;'>Mở Cổng Portal {appName}</a>
                     </div>
 
-                    <hr style='border: 0; border-top: 1px solid #eee; margin-top: 30px;' />
-                    <p style='font-size: 11px; color: #999; text-align: center;'>Email này được tự động gửi từ hệ thống ARON ERP-PM. Link phê duyệt nhanh có hiệu lực trong vòng 24 giờ kể từ khi gửi.</p>
+                    <hr style='border: 0; border-top: 1px solid #eeeeee; margin-top: 30px;' />
+                    <p style='font-size: 11px; color: #999999; text-align: center;'>Email này được tự động gửi từ hệ thống {appName}. Link phê duyệt nhanh có hiệu lực trong vòng 24 giờ kể từ khi gửi.</p>
                 </div>";
 
-            // In real life, use SmtpClient or SendGrid to send
-            // Here, we simulate the email output to logs (mock sending)
-            _logger.LogInformation($"[MOCK EMAIL SENT] To: {toEmail}\nSubject: [ARON ERP-PM] Approval Request for {targetType} - Step Id: {stepId}\nBody:\n{htmlBody}\n");
+            // Try sending a real email if SMTP is configured
+            var hasSmtp = settings != null && !string.IsNullOrEmpty(settings.SmtpHost) && !string.IsNullOrEmpty(settings.SmtpUsername);
 
+            if (hasSmtp)
+            {
+                try
+                {
+                    using (var mail = new MailMessage())
+                    {
+                        mail.From = new MailAddress(settings!.SmtpUsername!, appName);
+                        mail.To.Add(toEmail);
+                        mail.Subject = $"[{appName}] Yêu cầu phê duyệt {targetType} - {projectName}";
+                        mail.Body = htmlBody;
+                        mail.IsBodyHtml = true;
+
+                        using (var smtp = new SmtpClient(settings.SmtpHost, settings.SmtpPort))
+                        {
+                            smtp.Credentials = new NetworkCredential(settings.SmtpUsername, settings.SmtpPassword);
+                            smtp.EnableSsl = settings.SmtpEnableSsl;
+                            await smtp.SendMailAsync(mail);
+                        }
+                    }
+                    _logger.LogInformation($"[REAL EMAIL SENT] To: {toEmail} via SMTP {settings.SmtpHost}");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Failed to send real email via SMTP {settings.SmtpHost}. Falling back to mock logging.");
+                }
+            }
+
+            // Mock log output fallback
+            _logger.LogInformation($"[MOCK EMAIL SENT] To: {toEmail}\nSubject: [{appName}] Approval Request for {targetType}\nBody:\n{htmlBody}\n");
             await Task.CompletedTask;
         }
 
-        // Helper to generate cryptographically secure token
         public static string GenerateSecureToken()
         {
             var bytes = new byte[32];
