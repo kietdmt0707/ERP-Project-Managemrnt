@@ -102,6 +102,21 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AronDbContext>();
     db.Database.EnsureCreated(); // Tự động tạo bảng nếu chưa tồn tại trên Postgres
     
+    // Tự động nâng cấp cấu trúc bảng nếu đã tồn tại trước đó
+    try
+    {
+        db.Database.ExecuteSqlRaw("ALTER TABLE users ADD COLUMN IF NOT EXISTS expirydate TIMESTAMP WITH TIME ZONE;");
+        db.Database.ExecuteSqlRaw("ALTER TABLE projects ADD COLUMN IF NOT EXISTS sharepointfolderlink TEXT;");
+        db.Database.ExecuteSqlRaw("ALTER TABLE system_settings ALTER COLUMN logo_url TYPE TEXT;");
+        db.Database.ExecuteSqlRaw("ALTER TABLE system_settings ALTER COLUMN banner_url TYPE TEXT;");
+        db.Database.ExecuteSqlRaw("ALTER TABLE projects ALTER COLUMN logo_path TYPE TEXT;");
+        db.Database.ExecuteSqlRaw("ALTER TABLE users ALTER COLUMN avatar_path TYPE TEXT;");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error running database alterations: {ex.Message}");
+    }
+    
     // Tự động seed tài khoản sysadmin và các vai trò mặc định nếu chưa có
     try
     {
