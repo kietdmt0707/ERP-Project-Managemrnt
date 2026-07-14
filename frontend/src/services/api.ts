@@ -48,6 +48,23 @@ export const authService = {
     localStorage.setItem('aron_pm_user', JSON.stringify(data));
     return data;
   },
+  async loginMicrosoftSSO(email: string): Promise<AuthResponse> {
+    const response = await fetch(`${API_BASE_URL}/auth/sso`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || 'Đăng nhập SSO Microsoft thất bại.');
+    }
+
+    const data: AuthResponse = await response.json();
+    localStorage.setItem('aron_pm_token', data.token);
+    localStorage.setItem('aron_pm_user', JSON.stringify(data));
+    return data;
+  },
 
   logout() {
     localStorage.removeItem('aron_pm_token');
@@ -200,6 +217,7 @@ export interface ProjectDto {
   sitesCount: number;
   contactInfo?: string;
   logoPath?: string;
+  sharepointFolderLink?: string;
   isActive?: boolean;
 }
 
@@ -287,6 +305,18 @@ export const projectService = {
     if (!response.ok) {
       const errText = await response.text();
       throw new Error(errText || 'Tạo dự án thất bại.');
+    }
+    return response.json();
+  },
+  async updateProject(projectId: number, project: ProjectDto): Promise<ProjectDto> {
+    const response = await fetch(`${API_BASE_URL}/project/${projectId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(project)
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Cập nhật cấu hình dự án thất bại.');
     }
     return response.json();
   },

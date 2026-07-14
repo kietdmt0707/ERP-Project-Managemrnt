@@ -59,6 +59,7 @@ namespace AronErpPm.Api.Controllers
                 SitesCount = request.SitesCount,
                 ContactInfo = request.ContactInfo,
                 LogoPath = request.LogoPath ?? "https://raw.githubusercontent.com/vitejs/vite/main/packages/vite/src/node/logo.png",
+                SharepointFolderLink = request.SharepointFolderLink,
                 IsActive = true,
                 CreatedDate = DateTime.UtcNow
             };
@@ -75,6 +76,37 @@ namespace AronErpPm.Api.Controllers
             _context.Teams.Add(defaultTeam);
             await _context.SaveChangesAsync();
 
+            return Ok(project);
+        }
+
+        // PUT: api/project/{id}
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateProject(int id, [FromBody] Project request)
+        {
+            var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == "GlobalRole")?.Value;
+            var projectRoleClaim = User.Claims.FirstOrDefault(c => c.Type == $"ProjectRole_{id}")?.Value;
+
+            var hasAccess = globalRoleClaim == "SYSTEM_ADMIN" || projectRoleClaim == "PM" || projectRoleClaim == "PC";
+            if (!hasAccess)
+            {
+                return Forbid("Chỉ có Admin hệ thống, PM hoặc Project Coordinator của dự án mới có quyền cập nhật.");
+            }
+
+            var project = await _context.Projects.FindAsync(id);
+            if (project == null) return NotFound("Không tìm thấy dự án.");
+
+            project.ProjectName = request.ProjectName;
+            project.Address = request.Address;
+            project.SitesCount = request.SitesCount;
+            project.ContactInfo = request.ContactInfo;
+            if (!string.IsNullOrEmpty(request.LogoPath))
+            {
+                project.LogoPath = request.LogoPath;
+            }
+            project.SharepointFolderLink = request.SharepointFolderLink;
+            project.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
             return Ok(project);
         }
 

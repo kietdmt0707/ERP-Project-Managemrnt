@@ -8,7 +8,8 @@ import { ProjectManager } from './components/ProjectManager';
 import { TeamConfigurator } from './components/TeamConfigurator';
 import { BusinessTripTracker } from './components/BusinessTripTracker';
 import { UserManager } from './components/UserManager';
-import { Calendar, FileText, CheckSquare, DollarSign, LogOut, ArrowRight, Server, ShieldAlert, Users, Sliders, Briefcase, Plane } from 'lucide-react';
+import { ProjectDocuments } from './components/ProjectDocuments';
+import { Calendar, FileText, CheckSquare, DollarSign, LogOut, ArrowRight, Server, ShieldAlert, Users, Sliders, Briefcase, Plane, Folder } from 'lucide-react';
 
 function App() {
   const [currentUser, setCurrentUser] = useState<AuthResponse | null>(null);
@@ -60,6 +61,29 @@ function App() {
       setActiveTab('dashboard');
     } catch (err: any) {
       setLoginError(err.message || 'Sai tên đăng nhập hoặc mật khẩu.');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleMicrosoftSSO = async () => {
+    const email = prompt("Đăng nhập Microsoft Office 365. Hãy nhập email Outlook của bạn:");
+    if (!email) return;
+
+    if (!email.includes("@")) {
+      alert("Vui lòng nhập đúng định dạng Email.");
+      return;
+    }
+
+    setLoginLoading(true);
+    setLoginError(null);
+    try {
+      const res = await authService.loginMicrosoftSSO(email);
+      setCurrentUser(res);
+      setActiveProject(null);
+      setActiveTab('dashboard');
+    } catch (err: any) {
+      setLoginError(err.message || 'SSO Microsoft thất bại. Vui lòng thử lại.');
     } finally {
       setLoginLoading(false);
     }
@@ -140,6 +164,26 @@ function App() {
               className="w-full bg-brand-600 hover:bg-brand-500 text-white p-3 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1 shadow-lg shadow-brand-600/20 disabled:opacity-50"
             >
               {loginLoading ? 'Đang xác thực...' : 'Đăng Nhập'} <ArrowRight size={14} />
+            </button>
+
+            <div className="flex items-center my-3">
+              <div className="flex-1 border-t border-dark-850"></div>
+              <span className="px-3 text-[9px] text-dark-500 uppercase tracking-wider font-semibold">Hoặc đăng nhập bằng</span>
+              <div className="flex-1 border-t border-dark-850"></div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleMicrosoftSSO}
+              className="w-full bg-dark-900 hover:bg-dark-850 border border-dark-800 text-dark-100 p-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2"
+            >
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 0H10.8286V10.8286H0V0Z" fill="#F25022"/>
+                <path d="M12.1714 0H23V10.8286H12.1714V0Z" fill="#7FBA00"/>
+                <path d="M0 12.1714H10.8286V23H0V12.1714Z" fill="#00A4EF"/>
+                <path d="M12.1714 12.1714H23V23H12.1714V12.1714Z" fill="#FFB900"/>
+              </svg>
+              Tài Khoản Microsoft Office 365
             </button>
           </form>
         </div>
@@ -276,6 +320,15 @@ function App() {
                 }`}
               >
                 <Server size={16} /> Môi trường Oracle Instance
+              </button>
+
+              <button 
+                onClick={() => setActiveTab('documents')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                  activeTab === 'documents' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                }`}
+              >
+                <Folder size={16} /> Tài Liệu OneDrive/SharePoint
               </button>
 
               <div className="pt-2 border-t border-dark-850">
@@ -473,7 +526,7 @@ function App() {
 
             {activeTab === 'users' && <UserManager currentUserGlobalRole={currentUser?.globalRole} />}
 
-            {activeTab !== 'dashboard' && activeTab !== 'projects' && activeTab !== 'settings' && activeTab !== 'users' && (
+            {activeTab !== 'dashboard' && activeTab !== 'projects' && activeTab !== 'settings' && activeTab !== 'users' && activeTab !== 'documents' && (
               activeProject ? (
                 <>
                   {activeTab === 'gantt' && <GanttChart projectId={activeProject.projectId} userRole={activeProject.roleCode} />}
@@ -483,6 +536,8 @@ function App() {
                   {activeTab === 'team' && <TeamConfigurator projectId={activeProject.projectId} userRole={activeProject.roleCode} />}
 
                   {activeTab === 'trips' && <BusinessTripTracker projectId={activeProject.projectId} userRole={activeProject.roleCode} />}
+
+                  {activeTab === 'documents' && <ProjectDocuments projectId={activeProject.projectId} userRole={activeProject.roleCode} />}
 
                   {activeTab === 'approvals' && <ApprovalList projectId={activeProject.projectId} userRole={activeProject.roleCode} />}
                   

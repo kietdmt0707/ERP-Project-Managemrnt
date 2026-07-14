@@ -29,6 +29,8 @@ namespace AronErpPm.Api.Models
 
         public string? LogoPath { get; set; }
 
+        public string? SharepointFolderLink { get; set; }
+
         public bool IsActive { get; set; } = true;
 
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;

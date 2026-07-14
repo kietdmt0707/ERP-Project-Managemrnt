@@ -34,7 +34,6 @@ namespace AronErpPm.Api.Controllers
             }
 
             // Simple Password verification (in production, use password hashing like BCrypt)
-            // Example: BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash)
             if (request.Password != "password123" && request.Password != user.PasswordHash) 
             {
                 return Unauthorized(new { message = "Tài khoản hoặc mật khẩu không hợp lệ." });
@@ -44,6 +43,31 @@ namespace AronErpPm.Api.Controllers
             var isSystemAdmin = request.Username.ToLower() == "admin" || request.Username.ToLower() == "sysadmin";
             var globalRole = isSystemAdmin ? "SYSTEM_ADMIN" : "USER";
 
+            return await GenerateAuthResponse(user, globalRole);
+        }
+
+        [HttpPost("sso")]
+        public async Task<ActionResult<AuthResponse>> MicrosoftSso([FromBody] SsoRequest request)
+        {
+            if (string.IsNullOrEmpty(request.Email))
+            {
+                return BadRequest(new { message = "Email Microsoft không được bỏ trống." });
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower());
+            if (user == null || !user.IsActive)
+            {
+                return BadRequest(new { message = "Email này chưa được cấp tài khoản hoặc đã bị khóa trong hệ thống. Vui lòng liên hệ Admin để đăng ký trước." });
+            }
+
+            var isSystemAdmin = user.Username.ToLower() == "admin" || user.Username.ToLower() == "sysadmin";
+            var globalRole = isSystemAdmin ? "SYSTEM_ADMIN" : "USER";
+
+            return await GenerateAuthResponse(user, globalRole);
+        }
+
+        private async Task<ActionResult<AuthResponse>> GenerateAuthResponse(User user, string globalRole)
+        {
             // Query user's roles inside projects (Matrix Organization)
             var projectMemberships = await _context.ProjectMembers
                 .Include(pm => pm.Project)
@@ -78,7 +102,7 @@ namespace AronErpPm.Api.Controllers
                 new Claim("GlobalRole", globalRole)
             };
 
-            // Add project roles as custom claims to token for RLS interceptor decoding if needed
+            // Add project roles as custom claims to token
             foreach (var pr in projectRoles)
             {
                 claims.Add(new Claim($"ProjectRole_{pr.ProjectId}", pr.RoleCode));
@@ -104,5 +128,10 @@ namespace AronErpPm.Api.Controllers
                 ProjectRoles = projectRoles
             });
         }
+    }
+
+    public class SsoRequest
+    {
+        public string Email { get; set; } = string.Empty;
     }
 }
