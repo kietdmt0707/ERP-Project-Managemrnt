@@ -29,6 +29,7 @@ namespace AronErpPm.Api.Data
         public DbSet<RicefwRegistry> RicefwRegistries { get; set; } = null!;
         public DbSet<OracleInstance> OracleInstances { get; set; } = null!;
         public DbSet<SharepointMapping> SharepointMappings { get; set; } = null!;
+        public DbSet<SystemSetting> SystemSettings { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
