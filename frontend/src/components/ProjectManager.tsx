@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { projectService, ProjectDto } from '../services/api';
-import { Briefcase, Plus, Folder, MapPin, Building, Phone, Mail } from 'lucide-react';
+import { Briefcase, Plus, Folder, MapPin, Building, Phone } from 'lucide-react';
 
 interface ProjectManagerProps {
   onProjectCreated?: () => void;
