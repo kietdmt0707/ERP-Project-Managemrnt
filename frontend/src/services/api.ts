@@ -289,6 +289,29 @@ export const projectService = {
       throw new Error(errText || 'Tạo dự án thất bại.');
     }
     return response.json();
+  },
+  async assignPm(req: { projectId: number, username: string, fullName: string, email: string }): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/project/assign-pm`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(req)
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Phân công PM thất bại.');
+    }
+    return response.json();
+  },
+  async deleteProject(projectId: number): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/project/${projectId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Xóa dự án thất bại.');
+    }
+    return response.json();
   }
 };
 

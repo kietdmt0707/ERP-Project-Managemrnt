@@ -77,5 +77,101 @@ namespace AronErpPm.Api.Controllers
 
             return Ok(project);
         }
+
+        // POST: api/project/assign-pm
+        [HttpPost("assign-pm")]
+        public async Task<IActionResult> AssignPm([FromBody] AssignPmRequest request)
+        {
+            var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == "GlobalRole")?.Value;
+            if (globalRoleClaim != "SYSTEM_ADMIN")
+            {
+                return Forbid("Chỉ có Admin hệ thống mới có quyền phân công PM dự án.");
+            }
+
+            var project = await _context.Projects.FindAsync(request.ProjectId);
+            if (project == null) return NotFound("Không tìm thấy dự án.");
+
+            // Tìm hoặc tạo User
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == request.Username.ToLower());
+            if (user == null)
+            {
+                user = new User
+                {
+                    Username = request.Username,
+                    PasswordHash = HashPassword("password123"), // Mật khẩu mặc định
+                    FullName = request.FullName,
+                    Email = request.Email,
+                    IsActive = true,
+                    CreatedDate = DateTime.UtcNow
+                };
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+            }
+
+            // Tìm Role PM
+            var pmRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleCode == "PM");
+            if (pmRole == null) return BadRequest("Không tìm thấy vai trò PM trong hệ thống.");
+
+            // Kiểm tra phân công đã tồn tại chưa
+            var existingAssignment = await _context.ProjectMembers
+                .FirstOrDefaultAsync(pm => pm.ProjectId == request.ProjectId && pm.UserId == user.UserId);
+
+            if (existingAssignment != null)
+            {
+                existingAssignment.RoleId = pmRole.RoleId;
+                existingAssignment.IsActive = true;
+            }
+            else
+            {
+                var projectMember = new ProjectMember
+                {
+                    ProjectId = request.ProjectId,
+                    UserId = user.UserId,
+                    RoleId = pmRole.RoleId,
+                    IsActive = true,
+                    CreatedDate = DateTime.UtcNow
+                };
+                _context.ProjectMembers.Add(projectMember);
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { Message = "Đã phân công PM thành công!" });
+        }
+
+        // DELETE: api/project/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProject(int id)
+        {
+            var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == "GlobalRole")?.Value;
+            if (globalRoleClaim != "SYSTEM_ADMIN")
+            {
+                return Forbid("Chỉ có Admin hệ thống mới có quyền xóa dự án.");
+            }
+
+            var project = await _context.Projects.FindAsync(id);
+            if (project == null) return NotFound("Không tìm thấy dự án.");
+
+            _context.Projects.Remove(project);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = "Đã xóa dự án thành công!" });
+        }
+
+        private string HashPassword(string password)
+        {
+            using (var sha256 = System.Security.Cryptography.SHA256.Create())
+            {
+                var hashedBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+                return BitConverter.ToString(hashedBytes).Replace("-", "").ToLower();
+            }
+        }
+    }
+
+    public class AssignPmRequest
+    {
+        public int ProjectId { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
     }
 }
