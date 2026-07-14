@@ -41,7 +41,7 @@ namespace AronErpPm.Api.Controllers
             }
 
             // Check if user is a System Admin (Global role check)
-            var isSystemAdmin = request.Username == "admin";
+            var isSystemAdmin = request.Username.ToLower() == "admin" || request.Username.ToLower() == "sysadmin";
             var globalRole = isSystemAdmin ? "SYSTEM_ADMIN" : "USER";
 
             // Query user's roles inside projects (Matrix Organization)

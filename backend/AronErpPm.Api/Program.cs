@@ -101,6 +101,37 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AronDbContext>();
     // db.Database.EnsureCreated(); // Auto scaffold locally if running on a real Postgres instance
+    
+    // Tự động seed tài khoản sysadmin nếu chưa có
+    try
+    {
+        var sysadminExists = db.Users.Any(u => u.Username.ToLower() == "sysadmin");
+        if (!sysadminExists)
+        {
+            string hash;
+            using (var sha256 = System.Security.Cryptography.SHA256.Create())
+            {
+                var hashedBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes("password123"));
+                hash = BitConverter.ToString(hashedBytes).Replace("-", "").ToLower();
+            }
+
+            var sysadmin = new AronErpPm.Api.Models.User
+            {
+                Username = "sysadmin",
+                PasswordHash = hash,
+                FullName = "System Administrator",
+                Email = "sysadmin@aron.vn",
+                IsActive = true,
+                CreatedDate = DateTime.UtcNow
+            };
+            db.Users.Add(sysadmin);
+            db.SaveChanges();
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error seeding sysadmin: {ex.Message}");
+    }
 }
 
 app.Run();

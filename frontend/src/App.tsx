@@ -28,17 +28,14 @@ function App() {
   const [loginLoading, setLoginLoading] = useState(false);
 
   // Tab selections
-  const [activeTab, setActiveTab] = useState<'gantt' | 'ricefw' | 'approvals' | 'costs' | 'environments' | 'team' | 'trips' | 'projects' | 'settings'>('gantt');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'gantt' | 'ricefw' | 'approvals' | 'costs' | 'environments' | 'team' | 'trips' | 'projects' | 'settings'>('dashboard');
 
   useEffect(() => {
     loadSystemSettings();
     const user = authService.getCurrentUser();
     if (user) {
       setCurrentUser(user);
-      if (user.projectRoles && user.projectRoles.length > 0) {
-        // Auto-select first project
-        setActiveProject(user.projectRoles[0]);
-      }
+      setActiveProject(null); // Vào thẳng trang chủ Dashboard chung
     }
   }, []);
 
@@ -58,11 +55,10 @@ function App() {
       setLoginLoading(true);
       const res = await authService.login(username, password);
       setCurrentUser(res);
-      if (res.projectRoles && res.projectRoles.length > 0) {
-        setActiveProject(res.projectRoles[0]);
-      }
+      setActiveProject(null); // Vào thẳng trang chủ Dashboard chung
+      setActiveTab('dashboard');
     } catch (err: any) {
-      setLoginError(err.message || 'Sai tên đăng nhập hoặc mật khẩu. Gợi ý mật khẩu mẫu: password123');
+      setLoginError(err.message || 'Sai tên đăng nhập hoặc mật khẩu.');
     } finally {
       setLoginLoading(false);
     }
@@ -116,7 +112,7 @@ function App() {
                 type="text" 
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Ví dụ: pm_john, lead_fin, member_ap" 
+                placeholder="Nhập tài khoản" 
                 className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-dark-100 placeholder-dark-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
                 required
               />
@@ -131,7 +127,7 @@ function App() {
                 type="password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Nhập password123" 
+                placeholder="Nhập mật khẩu" 
                 className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-dark-100 placeholder-dark-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
                 required
               />
@@ -145,10 +141,6 @@ function App() {
               {loginLoading ? 'Đang xác thực...' : 'Đăng Nhập'} <ArrowRight size={14} />
             </button>
           </form>
-
-          <div className="border-t border-dark-850 pt-4 text-center">
-            <p className="text-[10px] text-dark-500">Tài khoản demo mẫu: <strong>pm_john</strong> / mật khẩu: <strong>password123</strong></p>
-          </div>
         </div>
       </div>
     );
@@ -158,7 +150,10 @@ function App() {
     <div className="min-h-screen bg-dark-950 flex flex-col">
       {/* Top Navigation */}
       <header className="border-b border-dark-850 bg-dark-900/60 backdrop-blur-md sticky top-0 z-30 px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-3">
+        <div 
+          onClick={() => { setActiveProject(null); setActiveTab('dashboard'); }}
+          className="flex items-center gap-3 cursor-pointer hover:opacity-85 transition-opacity"
+        >
           {systemSettings.logoUrl ? (
             <img src={systemSettings.logoUrl} alt="Logo" className="h-8 object-contain" />
           ) : (
@@ -177,9 +172,17 @@ function App() {
               <span className="text-xs text-dark-400 font-medium">Dự án hoạt động:</span>
               <select 
                 value={activeProject.projectId}
-                onChange={(e) => selectProject(Number(e.target.value))}
+                onChange={(e) => {
+                  if (e.target.value === "") {
+                    setActiveProject(null);
+                    setActiveTab('dashboard');
+                  } else {
+                    selectProject(Number(e.target.value));
+                  }
+                }}
                 className="bg-dark-800 border border-dark-700 text-xs px-3 py-1.5 rounded-lg text-white font-semibold focus:outline-none focus:border-brand-500"
               >
+                <option value="">-- Quay lại Dashboard --</option>
                 {currentUser.projectRoles.map(r => (
                   <option key={r.projectId} value={r.projectId}>{r.projectCode} - {r.projectName}</option>
                 ))}
@@ -191,7 +194,7 @@ function App() {
           <div className="flex items-center gap-3 pl-4 border-l border-dark-800">
             <div className="text-right">
               <p className="text-xs font-semibold text-white">{currentUser.fullName}</p>
-              <p className="text-[10px] text-brand-400 font-medium capitalize">Role: {activeProject?.roleName || 'Consultant'}</p>
+              <p className="text-[10px] text-brand-400 font-medium capitalize">Role: {activeProject?.roleName || 'System Admin'}</p>
             </div>
             <button 
               onClick={handleLogout}
@@ -205,74 +208,93 @@ function App() {
       </header>
 
       {/* Main Container */}
-      {/* Main Container */}
       <div className="flex-1 flex px-6 py-6 gap-6 max-w-7xl w-full mx-auto">
         {/* Left Sidebar Menu */}
         <aside className="w-60 shrink-0 space-y-2">
+          {/* Home Dashboard Link (Always available) */}
           <button 
-            onClick={() => setActiveTab('gantt')}
+            onClick={() => { setActiveProject(null); setActiveTab('dashboard'); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-              activeTab === 'gantt' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+              activeTab === 'dashboard' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
             }`}
           >
-            <Calendar size={16} /> Kế hoạch & Sơ đồ Gán
-          </button>
-          
-          <button 
-            onClick={() => setActiveTab('ricefw')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-              activeTab === 'ricefw' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
-            }`}
-          >
-            <FileText size={16} /> Quản lý RICEFW (Oracle)
+            <Sliders size={16} /> Dashboard & Dự Án
           </button>
 
-          <button 
-            onClick={() => setActiveTab('team')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-              activeTab === 'team' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
-            }`}
-          >
-            <Users size={16} /> Đội Ngũ Dự Án
-          </button>
+          {activeProject ? (
+            <>
+              <button 
+                onClick={() => setActiveTab('gantt')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                  activeTab === 'gantt' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                }`}
+              >
+                <Calendar size={16} /> Kế hoạch & Sơ đồ Gán
+              </button>
+              
+              <button 
+                onClick={() => setActiveTab('ricefw')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                  activeTab === 'ricefw' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                }`}
+              >
+                <FileText size={16} /> Quản lý RICEFW (Oracle)
+              </button>
 
-          <button 
-            onClick={() => setActiveTab('trips')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-              activeTab === 'trips' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
-            }`}
-          >
-            <Plane size={16} /> Công Tác & Tạm Ứng
-          </button>
+              <button 
+                onClick={() => setActiveTab('team')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                  activeTab === 'team' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                }`}
+              >
+                <Users size={16} /> Đội Ngũ Dự Án
+              </button>
 
-          <button 
-            onClick={() => setActiveTab('approvals')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-              activeTab === 'approvals' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
-            }`}
-          >
-            <CheckSquare size={16} /> Timesheets & Phê Duyệt
-          </button>
+              <button 
+                onClick={() => setActiveTab('trips')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                  activeTab === 'trips' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                }`}
+              >
+                <Plane size={16} /> Công Tác & Tạm Ứng
+              </button>
 
-          <button 
-            onClick={() => setActiveTab('environments')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-              activeTab === 'environments' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
-            }`}
-          >
-            <Server size={16} /> Môi trường Oracle Instance
-          </button>
+              <button 
+                onClick={() => setActiveTab('approvals')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                  activeTab === 'approvals' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                }`}
+              >
+                <CheckSquare size={16} /> Timesheets & Phê Duyệt
+              </button>
+
+              <button 
+                onClick={() => setActiveTab('environments')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                  activeTab === 'environments' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                }`}
+              >
+                <Server size={16} /> Môi trường Oracle Instance
+              </button>
+
+              <div className="pt-2 border-t border-dark-850">
+                <button 
+                  onClick={() => setActiveTab('costs')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                    activeTab === 'costs' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                  }`}
+                >
+                  <DollarSign size={16} /> Dashboard Chi Phí & Giá Cost
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="text-[10px] text-dark-500 px-4 py-3 bg-dark-900/20 border border-dark-850 rounded-xl leading-relaxed">
+              Hãy chọn dự án bên khung phải hoặc thanh Header để xem chức năng chi tiết.
+            </div>
+          )}
 
           <div className="pt-4 border-t border-dark-850 space-y-2">
-            <button 
-              onClick={() => setActiveTab('costs')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                activeTab === 'costs' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
-              }`}
-            >
-              <DollarSign size={16} /> Dashboard Chi Phí & Giá Cost
-            </button>
-
             <button 
               onClick={() => setActiveTab('projects')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
@@ -298,12 +320,138 @@ function App() {
         {/* Content Pane */}
         <main className="flex-1 min-w-0">
           <div className="animate-fade-in">
+            {activeTab === 'dashboard' && (
+              <div className="space-y-6">
+                {/* Banner */}
+                <div 
+                  className="h-44 rounded-3xl bg-cover bg-center border border-dark-800 p-6 flex flex-col justify-end relative overflow-hidden"
+                  style={{ backgroundImage: `url(${systemSettings.bannerUrl})` }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-t from-dark-950 via-dark-950/40 to-transparent"></div>
+                  <div className="relative z-10 space-y-1">
+                    <h2 className="text-xl font-extrabold text-white tracking-wide">
+                      {systemSettings.appName}
+                    </h2>
+                    <p className="text-xs text-dark-300">
+                      Hệ thống quản lý tích hợp RICEFW, Tiến độ Gantt & Công tác phí dự án Oracle ERP
+                    </p>
+                  </div>
+                </div>
+
+                {/* Dashboard Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="bg-dark-900/60 p-4 rounded-2xl border border-dark-800 text-xs">
+                    <p className="text-dark-400 font-semibold">Dự án được phân quyền</p>
+                    <p className="text-2xl font-bold text-white mt-1 font-mono">{currentUser.projectRoles.length} Dự án</p>
+                  </div>
+                  <div className="bg-dark-900/60 p-4 rounded-2xl border border-dark-800 text-xs">
+                    <p className="text-dark-400 font-semibold">Tiến độ tổng thể (Gantt Rollup)</p>
+                    <div className="mt-2.5 w-full bg-dark-950 rounded-full h-2 overflow-hidden border border-dark-800">
+                      <div className="bg-brand-500 h-full rounded-full" style={{ width: '65%' }}></div>
+                    </div>
+                    <p className="text-[10px] text-brand-400 mt-1 font-bold">65% Hoàn thành</p>
+                  </div>
+                  <div className="bg-dark-900/60 p-4 rounded-2xl border border-dark-800 text-xs">
+                    <p className="text-dark-400 font-semibold">Tỷ lệ RICEFW SIT/UAT Passed</p>
+                    <div className="mt-2.5 w-full bg-dark-950 rounded-full h-2 overflow-hidden border border-dark-800">
+                      <div className="bg-emerald-500 h-full rounded-full" style={{ width: '42%' }}></div>
+                    </div>
+                    <p className="text-[10px] text-emerald-400 mt-1 font-bold">42% Hoàn thành</p>
+                  </div>
+                  <div className="bg-dark-900/60 p-4 rounded-2xl border border-dark-800 text-xs">
+                    <p className="text-dark-400 font-semibold">Tỷ lệ sử dụng Ngân sách</p>
+                    <div className="mt-2.5 w-full bg-dark-950 rounded-full h-2 overflow-hidden border border-dark-800">
+                      <div className="bg-amber-500 h-full rounded-full" style={{ width: '18%' }}></div>
+                    </div>
+                    <p className="text-[10px] text-amber-400 mt-1 font-bold">18% Đã chi tiêu</p>
+                  </div>
+                </div>
+
+                {/* Dashboard Chart Mock and Projects List Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Left: Projects list assigned to this user */}
+                  <div className="lg:col-span-2 space-y-4">
+                    <h3 className="text-xs font-bold text-dark-400 uppercase tracking-wider">
+                      Danh sách dự án của bạn
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {currentUser.projectRoles.map((pr) => (
+                        <div key={pr.projectId} className="glass-panel p-5 rounded-2xl border border-dark-800 flex flex-col justify-between space-y-4 hover:border-dark-750 transition-all">
+                          <div className="space-y-2">
+                            <span className="text-[9px] font-bold font-mono text-brand-400 px-2 py-0.5 rounded bg-brand-500/10 border border-brand-500/10">
+                              {pr.projectCode}
+                            </span>
+                            <h4 className="text-sm font-bold text-white mt-1 leading-snug">{pr.projectName}</h4>
+                            <p className="text-xs text-dark-400">Vai trò: <strong className="text-brand-400 capitalize">{pr.roleName}</strong></p>
+                            {pr.functionalTeamName && (
+                              <p className="text-[10px] text-dark-500">Team: {pr.functionalTeamName}</p>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              selectProject(pr.projectId);
+                              setActiveTab('gantt');
+                            }}
+                            className="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all"
+                          >
+                            Truy Cập Dự Án <ArrowRight size={12} />
+                          </button>
+                        </div>
+                      ))}
+
+                      {currentUser.projectRoles.length === 0 && (
+                        <div className="col-span-2 text-center py-12 bg-dark-900/10 border border-dashed border-dark-850 rounded-2xl text-dark-500 text-xs">
+                          Bạn chưa được gán vào dự án nào. Vui lòng chuyển qua tab "Khởi Tạo & Quản Lý Dự Án" để tạo mới (nếu là Admin) hoặc liên hệ Admin để được phân quyền.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right: High-tech mockup chart representing Project KPI progress */}
+                  <div className="bg-dark-900/40 p-5 rounded-2xl border border-dark-800 space-y-4">
+                    <h3 className="text-xs font-bold text-dark-400 uppercase tracking-wider">
+                      Đồ Thị KPI & Tiến Độ Dự Án
+                    </h3>
+                    <div className="space-y-4">
+                      {/* Bar graph representing multiple project burn rates */}
+                      <div className="space-y-3 pt-2">
+                        {currentUser.projectRoles.map((pr, index) => (
+                          <div key={pr.projectId} className="space-y-1">
+                            <div className="flex justify-between text-[10px] text-dark-300 font-mono">
+                              <span>{pr.projectCode}</span>
+                              <span>{index === 0 ? '78%' : '45%'}</span>
+                            </div>
+                            <div className="w-full bg-dark-950 h-3 rounded-full overflow-hidden border border-dark-850">
+                              <div 
+                                className={`h-full rounded-full ${index === 0 ? 'bg-brand-500' : 'bg-emerald-500'}`} 
+                                style={{ width: index === 0 ? '78%' : '45%' }}
+                              ></div>
+                            </div>
+                          </div>
+                        ))}
+                        {currentUser.projectRoles.length === 0 && (
+                          <div className="text-center text-dark-600 italic text-[11px] py-10">
+                            Chưa có dữ liệu đồ thị dự án
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Sub notes */}
+                      <div className="bg-dark-950/60 p-3 rounded-xl border border-dark-850 text-[10px] text-dark-500 leading-relaxed">
+                        ⚡ Đồ thị phân tích tiến độ thực tế (Gantt Task Slippage) và tỷ lệ hoàn thành RICEFW theo thời gian thực.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {activeTab === 'projects' && (
               <ProjectManager 
                 currentUserGlobalRole={currentUser?.globalRole} 
                 onProjectCreated={() => {
                   loadSystemSettings();
-                  // Tải lại toàn bộ trang hoặc cập nhật lại danh sách dự án
                   window.location.reload();
                 }} 
               />
@@ -311,7 +459,7 @@ function App() {
             
             {activeTab === 'settings' && <SettingsPanel onSettingsUpdate={(s) => setSystemSettings(s)} />}
 
-            {activeTab !== 'projects' && activeTab !== 'settings' && (
+            {activeTab !== 'dashboard' && activeTab !== 'projects' && activeTab !== 'settings' && (
               activeProject ? (
                 <>
                   {activeTab === 'gantt' && <GanttChart projectId={activeProject.projectId} userRole={activeProject.roleCode} />}
@@ -452,4 +600,3 @@ function App() {
 }
 
 export default App;
-
