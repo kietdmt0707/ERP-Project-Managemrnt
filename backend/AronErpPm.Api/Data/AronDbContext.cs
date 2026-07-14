@@ -143,6 +143,48 @@ namespace AronErpPm.Api.Data
                 .WithMany()
                 .HasForeignKey(oi => oi.ProjectId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Tự động chuyển toàn bộ Tên bảng, Cột, Khóa, Chỉ mục sang chữ thường để tương thích PostgreSQL
+            foreach (var entity in modelBuilder.Model.GetEntityTypes())
+            {
+                var tableName = entity.GetTableName();
+                if (!string.IsNullOrEmpty(tableName))
+                {
+                    entity.SetTableName(tableName.ToLowerInvariant());
+                }
+
+                foreach (var property in entity.GetProperties())
+                {
+                    property.SetColumnName(property.GetColumnName().ToLowerInvariant());
+                }
+
+                foreach (var key in entity.GetKeys())
+                {
+                    var keyName = key.GetName();
+                    if (!string.IsNullOrEmpty(keyName))
+                    {
+                        key.SetName(keyName.ToLowerInvariant());
+                    }
+                }
+
+                foreach (var fk in entity.GetForeignKeys())
+                {
+                    var fkName = fk.GetConstraintName();
+                    if (!string.IsNullOrEmpty(fkName))
+                    {
+                        fk.SetConstraintName(fkName.ToLowerInvariant());
+                    }
+                }
+
+                foreach (var index in entity.GetIndexes())
+                {
+                    var indexName = index.GetDatabaseName();
+                    if (!string.IsNullOrEmpty(indexName))
+                    {
+                        index.SetDatabaseName(indexName.ToLowerInvariant());
+                    }
+                }
+            }
         }
     }
 }
