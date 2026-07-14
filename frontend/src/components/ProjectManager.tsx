@@ -32,6 +32,16 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUserGloba
 
   const isAdmin = currentUserGlobalRole === 'SYSTEM_ADMIN';
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setLogoPath(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   useEffect(() => {
     loadProjects();
   }, []);
@@ -280,15 +290,26 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUserGloba
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs text-dark-300 font-semibold">Đường dẫn Logo dự án (Logo URL):</label>
+              <div className="space-y-2">
+                <label className="text-xs text-dark-300 font-semibold block">Logo dự án (Tải từ máy tính):</label>
                 <input 
-                  type="text" 
-                  value={logoPath}
-                  onChange={(e) => setLogoPath(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                  type="file" 
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="text-xs text-dark-400 file:bg-dark-800 file:border-0 file:text-white file:font-semibold file:px-3 file:py-1.5 file:rounded-lg file:mr-3 file:cursor-pointer"
                 />
+                {logoPath && (
+                  <div className="mt-2 p-2 bg-dark-950 rounded-lg flex justify-center border border-dark-800 relative group max-w-[120px]">
+                    <img src={logoPath} alt="Preview Project Logo" className="max-h-12 object-contain" />
+                    <button
+                      type="button"
+                      onClick={() => setLogoPath('')}
+                      className="absolute top-1 right-1 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-1 text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      X
+                    </button>
+                  </div>
+                )}
               </div>
 
               <button 

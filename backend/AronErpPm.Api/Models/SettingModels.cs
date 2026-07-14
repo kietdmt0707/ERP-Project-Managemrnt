@@ -14,10 +14,8 @@ namespace AronErpPm.Api.Models
         [MaxLength(250)]
         public string AppName { get; set; } = "ARON Project Management";
 
-        [MaxLength(500)]
         public string? LogoUrl { get; set; }
 
-        [MaxLength(500)]
         public string? BannerUrl { get; set; }
 
         [MaxLength(250)]

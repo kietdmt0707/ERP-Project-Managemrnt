@@ -74,7 +74,8 @@ namespace AronErpPm.Api.Controllers
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.GivenName, user.FullName),
                 new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, globalRole)
+                new Claim(ClaimTypes.Role, globalRole),
+                new Claim("GlobalRole", globalRole)
             };
 
             // Add project roles as custom claims to token for RLS interceptor decoding if needed

@@ -148,8 +148,8 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
           </td>
           <td className="py-3 px-4">{renderStatus(task.status)}</td>
           <td className="py-3 px-4 text-right">
-            {/* Permission Control: Member can update their tasks, Leader/PM can update any */}
-            {(userRole === 'PM' || userRole === 'LEADER' || task.assigneeName) && (
+            {/* Permission Control: Member can update their tasks, Leader/PM/PC can update any */}
+            {(userRole === 'PM' || userRole === 'LEADER' || userRole === 'PC' || task.assigneeName) && (
               <button 
                 onClick={() => selectTaskForUpdate(task)}
                 className="text-xs text-brand-400 hover:text-brand-300 font-medium hover:underline"
@@ -177,7 +177,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
           <p className="text-xs text-dark-400 mt-1">Phân cấp công việc 3 cấp WBS liên kết động với tiến độ phân hệ</p>
         </div>
         
-        {(userRole === 'PM' || userRole === 'SYSTEM_ADMIN') && (
+        {(userRole === 'PM' || userRole === 'SYSTEM_ADMIN' || userRole === 'PC') && (
           <button className="bg-brand-600 hover:bg-brand-500 text-white text-xs px-3 py-2 rounded-lg font-semibold flex items-center gap-1 transition-all">
             <Plus size={14} /> Thêm Task Giai Đoạn (Cấp 1)
           </button>
