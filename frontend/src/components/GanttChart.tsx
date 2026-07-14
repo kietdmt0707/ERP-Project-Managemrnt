@@ -118,7 +118,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
               )}
               <span className="text-xs text-dark-500 font-mono w-12">{task.taskCode}</span>
               <span className="truncate max-w-xs">{task.taskName}</span>
-              {!task.isVisibleToAll && <EyeOff size={14} className="text-rose-400" title="Chỉ mình tôi thấy" />}
+              {!task.isVisibleToAll && <span title="Chỉ mình tôi thấy"><EyeOff size={14} className="text-rose-400" /></span>}
             </div>
           </td>
           <td className="py-3 px-4 text-xs text-dark-300 font-medium">
