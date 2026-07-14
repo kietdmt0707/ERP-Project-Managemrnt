@@ -34,3 +34,6 @@ ALTER TABLE users ALTER COLUMN avatar_path TYPE TEXT;
 
 -- Add account expiry date field to users
 ALTER TABLE users ADD COLUMN IF NOT EXISTS expirydate TIMESTAMP WITH TIME ZONE;
+
+-- Add Sharepoint/OneDrive folder link to projects
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS sharepointfolderlink TEXT;
