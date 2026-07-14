@@ -1,6 +1,6 @@
 // Services to call .NET 8 Core Backend Web API
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 // Helper to get authorization headers
 function getHeaders(): HeadersInit {
