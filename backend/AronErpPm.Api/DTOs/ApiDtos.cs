@@ -35,6 +35,7 @@ namespace AronErpPm.Api.DTOs
     public class TaskTreeNodeDto
     {
         public int TaskId { get; set; }
+        public int ProjectId { get; set; }
         public string TaskCode { get; set; } = string.Empty; // e.g. 1.1.2
         public string TaskName { get; set; } = string.Empty;
         public string? Description { get; set; }

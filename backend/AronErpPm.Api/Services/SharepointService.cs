@@ -75,7 +75,7 @@ namespace AronErpPm.Api.Services
                     }
                 };
 
-                var createdRoot = await _graphClient.Drives[drive.Id].Root.Children.PostAsync(rootFolder);
+                var createdRoot = await _graphClient.Drives[drive.Id].Items["root"].Children.PostAsync(rootFolder);
                 if (createdRoot?.Id == null) return null;
 
                 // 2. Create subfolders for modules and deliverables
