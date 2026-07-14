@@ -20,6 +20,28 @@ builder.Services.AddScoped<SessionContextInterceptor>();
 builder.Services.AddDbContext<AronDbContext>((serviceProvider, options) =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    
+    // Tự động phân tích cú pháp nếu nhận được chuỗi kết nối dạng postgres:// hoặc postgresql:// từ Neon
+    if (!string.IsNullOrEmpty(connectionString) && (connectionString.StartsWith("postgres://") || connectionString.StartsWith("postgresql://")))
+    {
+        try
+        {
+            var uri = new Uri(connectionString);
+            var userInfo = uri.UserInfo.Split(':');
+            var username = userInfo[0];
+            var password = userInfo.Length > 1 ? userInfo[1] : "";
+            var host = uri.Host;
+            var port = uri.Port > 0 ? uri.Port : 5432;
+            var database = uri.AbsolutePath.TrimStart('/');
+            
+            connectionString = $"Host={host};Port={port};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=True;";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Lỗi phân tích Connection String URI: {ex.Message}");
+        }
+    }
+
     var interceptor = serviceProvider.GetRequiredService<SessionContextInterceptor>();
     
     options.UseNpgsql(connectionString)
