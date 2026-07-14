@@ -177,3 +177,190 @@ export const approvalService = {
     return response.json();
   }
 };
+
+// --- New Services for ARON Project Management ---
+
+export interface SystemSetting {
+  settingId?: number;
+  appName: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  smtpHost?: string;
+  smtpPort: number;
+  smtpUsername?: string;
+  smtpPassword?: string;
+  smtpEnableSsl: boolean;
+}
+
+export interface ProjectDto {
+  projectId?: number;
+  projectCode: string;
+  projectName: string;
+  address?: string;
+  sitesCount: number;
+  contactInfo?: string;
+  logoPath?: string;
+  isActive?: boolean;
+}
+
+export interface TeamMemberDto {
+  projectMemberId: number;
+  userId: number;
+  functionalTeamId?: number;
+  functionalTeamName: string;
+  roleId: number;
+  roleCode: string;
+  roleName: string;
+  username: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  title: string;
+  avatarPath: string;
+  dailyRate?: number;
+  isActive: boolean;
+}
+
+export interface BusinessTripDto {
+  tripId?: number;
+  projectId: number;
+  tripCode?: string;
+  title: string;
+  destination: string;
+  startDate: string;
+  endDate: string;
+  advanceAmount: number;
+  status?: string;
+  createdByName?: string;
+  approvedByName?: string;
+  members?: Array<{
+    tripMemberId: number;
+    projectMemberId: number;
+    fullName: string;
+    email: string;
+    phone: string;
+  }>;
+  expenses?: Array<{
+    expenseId: number;
+    expenseType: string;
+    amountPlanned: number;
+    amountActual: number;
+    notes?: string;
+    status: string;
+    claimantName: string;
+  }>;
+}
+
+export const settingService = {
+  async getSettings(): Promise<SystemSetting> {
+    const response = await fetch(`${API_BASE_URL}/setting`);
+    return response.json();
+  },
+  async updateSettings(settings: SystemSetting): Promise<SystemSetting> {
+    const response = await fetch(`${API_BASE_URL}/setting`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(settings)
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Lưu cấu hình thất bại.');
+    }
+    return response.json();
+  }
+};
+
+export const projectService = {
+  async getProjects(): Promise<ProjectDto[]> {
+    const response = await fetch(`${API_BASE_URL}/project`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải danh sách dự án.');
+    return response.json();
+  },
+  async createProject(project: ProjectDto): Promise<ProjectDto> {
+    const response = await fetch(`${API_BASE_URL}/project`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(project)
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Tạo dự án thất bại.');
+    }
+    return response.json();
+  }
+};
+
+export const teamService = {
+  async getTeams(projectId: number): Promise<{ teams: any[], members: TeamMemberDto[], roles: any[], functionalTeams: any[] }> {
+    const response = await fetch(`${API_BASE_URL}/team?projectId=${projectId}`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải sơ đồ đội ngũ.');
+    return response.json();
+  },
+  async createTeam(team: { projectId: number, teamName: string, parentTeamId?: number }): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/team`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(team)
+    });
+    return response.json();
+  },
+  async createFunctionalTeam(ft: { teamId: number, functionalTeamName: string }): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/team/functional`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(ft)
+    });
+    return response.json();
+  },
+  async assignMember(req: { projectId: number, username: string, fullName: string, email: string, phone?: string, title?: string, roleId: number, functionalTeamId?: number, dailyRate?: number }): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/team/member`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(req)
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Gán/tạo thành viên thất bại.');
+    }
+    return response.json();
+  }
+};
+
+export const businessTripService = {
+  async getTrips(projectId: number): Promise<BusinessTripDto[]> {
+    const response = await fetch(`${API_BASE_URL}/businesstrip?projectId=${projectId}`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải lịch công tác.');
+    return response.json();
+  },
+  async createTrip(trip: BusinessTripDto): Promise<BusinessTripDto> {
+    const response = await fetch(`${API_BASE_URL}/businesstrip`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(trip)
+    });
+    if (!response.ok) throw new Error('Tạo lịch công tác thất bại.');
+    return response.json();
+  },
+  async addTripMember(tripId: number, projectMemberId: number): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/businesstrip/${tripId}/member`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(projectMemberId)
+    });
+    return response.json();
+  },
+  async addTripExpense(tripId: number, expense: { expenseType: string, amountPlanned: number, amountActual: number, notes?: string }): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/businesstrip/${tripId}/expense`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(expense)
+    });
+    return response.json();
+  }
+};
