@@ -9,7 +9,7 @@ import { TeamConfigurator } from './components/TeamConfigurator';
 import { BusinessTripTracker } from './components/BusinessTripTracker';
 import { UserManager } from './components/UserManager';
 import { ProjectDocuments } from './components/ProjectDocuments';
-import { Calendar, FileText, CheckSquare, DollarSign, LogOut, ArrowRight, Server, ShieldAlert, Users, Sliders, Briefcase, Plane, Folder } from 'lucide-react';
+import { Calendar, FileText, CheckSquare, DollarSign, LogOut, ArrowRight, Server, ShieldAlert, Users, Sliders, Briefcase, Plane, Folder, Eye, EyeOff } from 'lucide-react';
 
 function App() {
   const [currentUser, setCurrentUser] = useState<AuthResponse | null>(null);
@@ -28,12 +28,24 @@ function App() {
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginLoading, setLoginLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   // Tab selections
   const [activeTab, setActiveTab] = useState<'dashboard' | 'gantt' | 'ricefw' | 'approvals' | 'costs' | 'environments' | 'team' | 'trips' | 'projects' | 'settings' | 'users'>('dashboard');
 
   useEffect(() => {
     loadSystemSettings();
+    
+    // Auto-fill saved credentials if they exist
+    const savedUser = localStorage.getItem('aron_pm_saved_username');
+    const savedPass = localStorage.getItem('aron_pm_saved_password');
+    if (savedUser && savedPass) {
+      setUsername(savedUser);
+      setPassword(savedPass);
+      setRememberMe(true);
+    }
+
     const user = authService.getCurrentUser();
     if (user) {
       setCurrentUser(user);
@@ -56,6 +68,16 @@ function App() {
       setLoginError(null);
       setLoginLoading(true);
       const res = await authService.login(username, password);
+
+      // Save credentials if Remember Me is checked
+      if (rememberMe) {
+        localStorage.setItem('aron_pm_saved_username', username);
+        localStorage.setItem('aron_pm_saved_password', password);
+      } else {
+        localStorage.removeItem('aron_pm_saved_username');
+        localStorage.removeItem('aron_pm_saved_password');
+      }
+
       setCurrentUser(res);
       setActiveProject(null); // Vào thẳng trang chủ Dashboard chung
       setActiveTab('dashboard');
@@ -148,14 +170,35 @@ function App() {
                 <label className="text-xs font-semibold text-dark-300">Mật khẩu:</label>
                 <button type="button" onClick={() => alert('Vui lòng liên hệ Admin hệ thống để reset mật khẩu.')} className="text-[10px] text-brand-400 hover:underline">Quên mật khẩu?</button>
               </div>
-              <input 
-                type="password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Nhập mật khẩu" 
-                className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-dark-100 placeholder-dark-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
-                required
-              />
+              <div className="relative">
+                <input 
+                  type={showPassword ? "text" : "password"} 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Nhập mật khẩu" 
+                  className="w-full bg-dark-900 border border-dark-800 text-xs p-3 pr-10 rounded-xl text-dark-100 placeholder-dark-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-1 pb-1">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input 
+                  type="checkbox" 
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="rounded bg-dark-900 border-dark-800 text-brand-500 focus:ring-brand-500/30 w-3.5 h-3.5"
+                />
+                <span className="text-[10px] text-dark-400 font-medium">Ghi nhớ đăng nhập</span>
+              </label>
             </div>
 
             <button 
