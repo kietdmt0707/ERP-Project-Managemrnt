@@ -569,7 +569,7 @@ function App() {
 
             {activeTab === 'users' && <UserManager currentUserGlobalRole={currentUser?.globalRole} />}
 
-            {activeTab !== 'dashboard' && activeTab !== 'projects' && activeTab !== 'settings' && activeTab !== 'users' && activeTab !== 'documents' && (
+            {activeTab !== 'dashboard' && activeTab !== 'projects' && activeTab !== 'settings' && activeTab !== 'users' && (
               activeProject ? (
                 <>
                   {activeTab === 'gantt' && <GanttChart projectId={activeProject.projectId} userRole={activeProject.roleCode} />}
