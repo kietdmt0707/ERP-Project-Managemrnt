@@ -32,6 +32,16 @@ namespace AronErpPm.Api.Models
         public string? SharepointFolderLink { get; set; }
 
         public bool IsActive { get; set; } = true;
+        
+        public string? ProjectScope { get; set; }
+        public int ImplementationWeeks { get; set; } = 24;
+        public DateTime? KickOffDate { get; set; }
+        public DateTime? TargetGoLiveDate { get; set; }
+        
+        [MaxLength(100)]
+        public string? CurrentPhase { get; set; } = "Analyze"; // Analyze, Design, Build, Transition, Go-Live
+        
+        public string? ModulesScope { get; set; } // GL, AP, AR, FA, PO, INV, OM
 
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 

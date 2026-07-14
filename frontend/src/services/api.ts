@@ -219,6 +219,13 @@ export interface ProjectDto {
   logoPath?: string;
   sharepointFolderLink?: string;
   isActive?: boolean;
+  projectScope?: string;
+  implementationWeeks?: number;
+  kickOffDate?: string;
+  targetGoLiveDate?: string;
+  currentPhase?: string;
+  modulesScope?: string;
+  projectSites?: any[];
 }
 
 export interface TeamMemberDto {

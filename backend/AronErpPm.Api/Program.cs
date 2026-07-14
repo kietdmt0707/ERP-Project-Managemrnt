@@ -110,6 +110,12 @@ using (var scope = app.Services.CreateScope())
     {
         ("ALTER TABLE users ADD COLUMN IF NOT EXISTS expirydate TIMESTAMP WITH TIME ZONE;", "Add expirydate to users"),
         ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS sharepointfolderlink TEXT;", "Add sharepointfolderlink to projects"),
+        ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS projectscope TEXT;", "Add projectscope to projects"),
+        ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS implementationweeks INT;", "Add implementationweeks to projects"),
+        ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS kickoffdate TIMESTAMP WITH TIME ZONE;", "Add kickoffdate to projects"),
+        ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS targetgolivedate TIMESTAMP WITH TIME ZONE;", "Add targetgolivedate to projects"),
+        ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS currentphase VARCHAR(100);", "Add currentphase to projects"),
+        ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS modulesscope TEXT;", "Add modulesscope to projects"),
         ("ALTER TABLE system_settings ALTER COLUMN logo_url TYPE TEXT;", "Alter logo_url in system_settings"),
         ("ALTER TABLE system_settings ALTER COLUMN banner_url TYPE TEXT;", "Alter banner_url in system_settings"),
         ("ALTER TABLE projects ALTER COLUMN logopath TYPE TEXT;", "Alter logopath in projects"),
