@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { projectService, ProjectDto } from '../services/api';
-import { FileText, Folder, Link, Settings, RefreshCw, Upload, Eye, File, FolderPlus, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Folder, Settings, Upload, Eye, File, ArrowRight, ShieldCheck } from 'lucide-react';
 
 interface ProjectDocumentsProps {
   projectId: number;
