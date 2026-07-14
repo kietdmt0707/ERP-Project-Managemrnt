@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { approvalService } from '../services/api';
-import { ShieldAlert, Send, Clock, CheckCircle, DollarSign, ListChecks } from 'lucide-react';
+import { ShieldAlert, Send, Clock, DollarSign, ListChecks } from 'lucide-react';
 
 interface ApprovalListProps {
   projectId: number;
