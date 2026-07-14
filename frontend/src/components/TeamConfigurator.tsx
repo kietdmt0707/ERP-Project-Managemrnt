@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { teamService, TeamMemberDto } from '../services/api';
-import { Users, Plus, Shield, UserPlus, DollarSign, Briefcase } from 'lucide-react';
+import { Users, Plus, UserPlus, Briefcase } from 'lucide-react';
 
 interface TeamConfiguratorProps {
   projectId: number;

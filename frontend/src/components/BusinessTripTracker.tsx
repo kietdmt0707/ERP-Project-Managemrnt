@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { businessTripService, teamService, approvalService, BusinessTripDto } from '../services/api';
-import { Calendar, MapPin, Plane, Plus, DollarSign, FileText, Send, User } from 'lucide-react';
+import { MapPin, Plane, Plus, DollarSign, FileText, Send, User } from 'lucide-react';
 
 interface BusinessTripTrackerProps {
   projectId: number;
   userRole: string;
 }
 
-export const BusinessTripTracker: React.FC<BusinessTripTrackerProps> = ({ projectId, userRole }) => {
+export const BusinessTripTracker: React.FC<BusinessTripTrackerProps> = ({ projectId, userRole: _userRole }) => {
   const [trips, setTrips] = useState<BusinessTripDto[]>([]);
   const [projectMembers, setProjectMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
