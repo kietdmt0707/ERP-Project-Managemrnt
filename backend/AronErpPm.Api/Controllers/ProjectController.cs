@@ -21,6 +21,32 @@ namespace AronErpPm.Api.Controllers
             _context = context;
         }
 
+        // GET: api/project/test-diagnostics
+        [HttpGet("test-diagnostics")]
+        [AllowAnonymous]
+        public async Task<IActionResult> TestDiagnostics()
+        {
+            try
+            {
+                var projects = await _context.Projects
+                    .Include(p => p.ProjectSites)
+                    .OrderByDescending(p => p.CreatedDate)
+                    .ToListAsync();
+
+                return Ok(new { status = "Success", count = projects.Count, projects });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { 
+                    status = "Error",
+                    message = "Lỗi truy vấn Database", 
+                    detail = ex.Message, 
+                    inner = ex.InnerException?.Message,
+                    stackTrace = ex.StackTrace 
+                });
+            }
+        }
+
         // GET: api/project
         [HttpGet]
         public async Task<IActionResult> GetProjects()
