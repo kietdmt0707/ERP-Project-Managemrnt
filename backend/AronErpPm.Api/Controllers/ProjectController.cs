@@ -53,8 +53,31 @@ namespace AronErpPm.Api.Controllers
         {
             try
             {
-                var projects = await _context.Projects
-                    .Include(p => p.ProjectSites)
+                var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == "GlobalRole")?.Value;
+                var isSysAdmin = globalRoleClaim == "SYSTEM_ADMIN";
+                var username = User.Identity?.Name;
+
+                IQueryable<Project> query = _context.Projects.Include(p => p.ProjectSites);
+
+                if (!isSysAdmin && username != null)
+                {
+                    var userObj = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
+                    if (userObj != null)
+                    {
+                        var assignedProjectIds = await _context.ProjectMembers
+                            .Where(pm => pm.UserId == userObj.UserId)
+                            .Select(pm => pm.ProjectId)
+                            .ToListAsync();
+
+                        query = query.Where(p => assignedProjectIds.Contains(p.ProjectId));
+                    }
+                    else
+                    {
+                        return Ok(new List<Project>());
+                    }
+                }
+
+                var projects = await query
                     .OrderByDescending(p => p.CreatedDate)
                     .ToListAsync();
 

@@ -471,7 +471,9 @@ function App() {
           <div className="flex items-center gap-3 pl-4 border-l border-dark-800">
             <div className="text-right">
               <p className="text-xs font-semibold text-white">{currentUser.fullName}</p>
-              <p className="text-[10px] text-brand-400 font-medium capitalize">Role: {activeProject?.roleName || 'System Admin'}</p>
+              <p className="text-[10px] text-brand-400 font-medium capitalize">
+                Role: {activeProject ? activeProject.roleName : (currentUser.globalRole === 'SYSTEM_ADMIN' ? 'Hệ thống Admin' : (currentUser.globalRole === 'PM' ? 'Project Manager' : 'Thành Viên'))}
+              </p>
             </div>
             <button 
               onClick={handleLogout}
