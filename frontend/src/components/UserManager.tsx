@@ -59,7 +59,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ currentUserGlobalRole 
       setGlobalRoles(rolesData.filter(r => r.isActive));
 
       const projRes = await projectService.getProjects();
-      setAllProjects(projRes.projects || []);
+      setAllProjects(projRes || []);
     } catch (err: any) {
       console.error('Lỗi khi tải danh mục Master roles/projects', err);
     }
@@ -156,9 +156,8 @@ export const UserManager: React.FC<UserManagerProps> = ({ currentUserGlobalRole 
     e.preventDefault();
     setError(null);
     try {
-      let savedUser: UserDto;
       if (editingUser && editingUser.userId) {
-        savedUser = await userService.updateUser(editingUser.userId, {
+        await userService.updateUser(editingUser.userId, {
           username,
           password: password || undefined,
           fullName,
@@ -173,7 +172,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ currentUserGlobalRole 
         await userService.updateUserProjects(editingUser.userId, memberships);
         alert('Cập nhật người dùng và phân quyền dự án thành công!');
       } else {
-        savedUser = await userService.createUser({
+        await userService.createUser({
           username,
           password,
           fullName,
