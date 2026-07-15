@@ -229,9 +229,24 @@ namespace AronErpPm.Api.Controllers
             try
             {
                 var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == "GlobalRole")?.Value;
-                if (globalRoleClaim != "SYSTEM_ADMIN")
+                var isSysAdmin = globalRoleClaim == "SYSTEM_ADMIN";
+                var username = User.Identity?.Name;
+
+                var isPm = false;
+                if (username != null)
                 {
-                    return Forbid("Chỉ Admin hệ thống mới có quyền phân công người dùng vào dự án.");
+                    var userObj = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
+                    if (userObj != null)
+                    {
+                        isPm = await _context.ProjectMembers
+                            .Include(pm => pm.Role)
+                            .AnyAsync(pm => pm.UserId == userObj.UserId && pm.Role != null && pm.Role.RoleCode == "PM");
+                    }
+                }
+
+                if (!isSysAdmin && !isPm)
+                {
+                    return Forbid("Chỉ Admin hệ thống hoặc PM mới có quyền phân công người dùng vào dự án.");
                 }
 
                 var existing = _context.ProjectMembers.Where(pm => pm.UserId == id);
