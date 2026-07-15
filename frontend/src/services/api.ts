@@ -23,9 +23,11 @@ export interface UserRole {
 
 export interface AuthResponse {
   token: string;
+  userId: number;
   username: string;
   fullName: string;
   email: string;
+  phone?: string;
   globalRole: string;
   permissionsJson?: string;
   projectRoles: UserRole[];

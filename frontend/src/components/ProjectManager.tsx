@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { projectService, ProjectDto, hasPermission } from '../services/api';
+import { projectService, userService, masterDataService, ProjectDto, UserDto, ProjectScopeOptionDto, hasPermission } from '../services/api';
 import { Briefcase, Plus, Folder, MapPin, Building, Phone, UserPlus, Trash2, Edit3, Calendar, Clock } from 'lucide-react';
 
 interface ProjectManagerProps {
@@ -55,9 +55,35 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUser, onP
   const [pmFullName, setPmFullName] = useState('');
   const [pmEmail, setPmEmail] = useState('');
   const [assigning, setAssigning] = useState(false);
+  const [allUsers, setAllUsers] = useState<UserDto[]>([]);
+
+  const loadUsers = async () => {
+    try {
+      const data = await userService.getUsers();
+      setAllUsers(data || []);
+    } catch (err) {
+      console.error("Không thể tải danh sách người dùng", err);
+    }
+  };
+
+  const handleOpenAssignPm = (projectId: number) => {
+    setSelectedProjectId(projectId);
+    loadUsers();
+    setShowAssignPmModal(true);
+  };
 
   const isAdmin = currentUser?.globalRole === 'SYSTEM_ADMIN';
-  const availableModules = ['GL', 'AP', 'AR', 'FA', 'PO', 'INV', 'OM'];
+  const [projectScopes, setProjectScopes] = useState<ProjectScopeOptionDto[]>([]);
+  const availableModules = projectScopes.length > 0 ? projectScopes.map(s => s.value) : ['GL', 'AP', 'AR', 'FA', 'PO', 'INV', 'OM'];
+
+  const loadProjectScopes = async () => {
+    try {
+      const data = await masterDataService.getScopes();
+      setProjectScopes(data.filter(s => s.isActive) || []);
+    } catch (err) {
+      console.error('Lỗi khi tải danh sách phạm vi dự án', err);
+    }
+  };
 
   // Check if current user is PM or PC or Admin for editing
   const checkUserAccess = (projectId: number) => {
@@ -106,6 +132,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUser, onP
 
   useEffect(() => {
     loadProjects();
+    loadProjectScopes();
   }, []);
 
   const loadProjects = async () => {
@@ -394,7 +421,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUser, onP
 
                   {isAdmin && (
                     <button
-                      onClick={() => { setSelectedProjectId(project.projectId!); setShowAssignPmModal(true); }}
+                      onClick={() => handleOpenAssignPm(project.projectId!)}
                       className="w-full bg-dark-800 hover:bg-dark-750 text-white font-bold text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 border border-dark-700 transition-colors"
                     >
                       <UserPlus size={14} /> Bổ nhiệm & Phân công PM
@@ -546,11 +573,14 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUser, onP
                 <div className="flex flex-wrap gap-2">
                   {availableModules.map(mod => {
                     const isChecked = selectedModules.includes(mod);
+                    const scopeInfo = projectScopes.find(s => s.value === mod);
+                    const desc = scopeInfo ? scopeInfo.description : '';
                     return (
                       <button
                         key={mod}
                         type="button"
                         onClick={() => handleModuleToggle(mod, false)}
+                        title={desc}
                         className={`text-xs px-3 py-1.5 rounded-lg border font-semibold transition-all ${
                           isChecked 
                             ? 'bg-brand-600 border-brand-500 text-white' 
@@ -696,11 +726,14 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUser, onP
                     <div className="flex flex-wrap gap-2">
                       {availableModules.map(mod => {
                         const isChecked = editSelectedModules.includes(mod);
+                        const scopeInfo = projectScopes.find(s => s.value === mod);
+                        const desc = scopeInfo ? scopeInfo.description : '';
                         return (
                           <button
                             key={mod}
                             type="button"
                             onClick={() => handleModuleToggle(mod, true)}
+                            title={desc}
                             className={`text-xs px-3 py-1.5 rounded-lg border font-semibold transition-all ${
                               isChecked 
                                 ? 'bg-brand-600 border-brand-500 text-white' 
@@ -886,6 +919,33 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUser, onP
             </div>
 
             <form onSubmit={handleAssignPmSubmit} className="space-y-4 text-left">
+              <div className="space-y-1">
+                <label className="text-xs text-dark-300 font-semibold block">Chọn tài khoản người dùng hệ thống:</label>
+                <select 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "") {
+                      setPmUsername('');
+                      setPmFullName('');
+                      setPmEmail('');
+                    } else {
+                      const selected = allUsers.find(u => u.username === val);
+                      if (selected) {
+                        setPmUsername(selected.username);
+                        setPmFullName(selected.fullName);
+                        setPmEmail(selected.email);
+                      }
+                    }
+                  }}
+                  className="w-full bg-dark-950 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                >
+                  <option value="">-- Chọn tài khoản người dùng sẵn có hoặc nhập thủ công --</option>
+                  {allUsers.map(u => (
+                    <option key={u.userId} value={u.username}>{u.fullName} ({u.username})</option>
+                  ))}
+                </select>
+              </div>
+
               <div className="space-y-1">
                 <label className="text-xs text-dark-300 font-semibold">Tên tài khoản PM (Username):</label>
                 <input 
