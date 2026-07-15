@@ -5,6 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace AronErpPm.Api.Models
 {
     // 1. RICEFW Registry & Progress Tracking
+    [Table("ricefwregistry")]
     public class RicefwRegistry
     {
         [Key]
