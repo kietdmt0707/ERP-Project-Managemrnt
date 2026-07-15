@@ -120,7 +120,62 @@ using (var scope = app.Services.CreateScope())
         ("ALTER TABLE system_settings ALTER COLUMN banner_url TYPE TEXT;", "Alter banner_url in system_settings"),
         ("ALTER TABLE projects ALTER COLUMN logopath TYPE TEXT;", "Alter logopath in projects"),
         ("ALTER TABLE users ALTER COLUMN avatarpath TYPE TEXT;", "Alter avatarpath in users"),
-        ("UPDATE projects SET implementationweeks = 24 WHERE implementationweeks IS NULL;", "Update NULL implementationweeks to 24")
+        ("UPDATE projects SET implementationweeks = 24 WHERE implementationweeks IS NULL;", "Update NULL implementationweeks to 24"),
+        ("ALTER TABLE roles ADD COLUMN IF NOT EXISTS description TEXT;", "Add description to roles"),
+        ("ALTER TABLE roles ADD COLUMN IF NOT EXISTS isactive BOOLEAN DEFAULT TRUE;", "Add isactive to roles"),
+        ("ALTER TABLE roles ADD COLUMN IF NOT EXISTS permissionsjson TEXT;", "Add permissionsjson to roles"),
+        ("ALTER TABLE users ADD COLUMN IF NOT EXISTS globalroleid INT;", "Add globalroleid to users"),
+        ("CREATE TABLE IF NOT EXISTS project_scope_options (optionid SERIAL PRIMARY KEY, value VARCHAR(100) NOT NULL, description VARCHAR(250) NOT NULL, isactive BOOLEAN DEFAULT TRUE, createddate TIMESTAMP WITH TIME ZONE DEFAULT NOW());", "Create project_scope_options table"),
+        (@"
+            INSERT INTO roles (rolecode, rolename, description, isactive, permissionsjson, hierarchylevel)
+            SELECT 'SYSTEM_ADMIN', 'Hệ thống Admin', 'Quản trị viên toàn quyền hệ thống', true, '{""Projects"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""RICEFW"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Gantt"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Team"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Approvals"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Costs"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Users"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Settings"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""MasterData"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true}}', 1
+            WHERE NOT EXISTS (SELECT 1 FROM roles WHERE rolecode = 'SYSTEM_ADMIN');
+        ", "Seed SYSTEM_ADMIN role"),
+        (@"
+            INSERT INTO roles (rolecode, rolename, description, isactive, permissionsjson, hierarchylevel)
+            SELECT 'PM', 'Project Manager', 'Quản trị dự án cấp cao', true, '{""Projects"":{""View"":true,""Create"":false,""Edit"":true,""Delete"":false},""RICEFW"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Gantt"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Team"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Approvals"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Costs"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Users"":{""View"":true,""Create"":false,""Edit"":false,""Delete"":false},""Settings"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false},""MasterData"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false}}', 2
+            WHERE NOT EXISTS (SELECT 1 FROM roles WHERE rolecode = 'PM');
+        ", "Seed PM role"),
+        (@"
+            INSERT INTO roles (rolecode, rolename, description, isactive, permissionsjson, hierarchylevel)
+            SELECT 'PC', 'Project Coordinator', 'Điều phối viên dự án', true, '{""Projects"":{""View"":true,""Create"":false,""Edit"":true,""Delete"":false},""RICEFW"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Gantt"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Team"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Approvals"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Costs"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Users"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false},""Settings"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false},""MasterData"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false}}', 3
+            WHERE NOT EXISTS (SELECT 1 FROM roles WHERE rolecode = 'PC');
+        ", "Seed PC role"),
+        (@"
+            INSERT INTO roles (rolecode, rolename, description, isactive, permissionsjson, hierarchylevel)
+            SELECT 'LEADER', 'Team Lead', 'Trưởng nhóm phân hệ', true, '{""Projects"":{""View"":true,""Create"":false,""Edit"":false,""Delete"":false},""RICEFW"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Gantt"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Team"":{""View"":true,""Create"":false,""Edit"":false,""Delete"":false},""Approvals"":{""View"":true,""Create"":true,""Edit"":false,""Delete"":false},""Costs"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Users"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false},""Settings"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false},""MasterData"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false}}', 4
+            WHERE NOT EXISTS (SELECT 1 FROM roles WHERE rolecode = 'LEADER');
+        ", "Seed LEADER role"),
+        (@"
+            INSERT INTO roles (rolecode, rolename, description, isactive, permissionsjson, hierarchylevel)
+            SELECT 'MEMBER', 'Team Member', 'Thành viên triển khai', true, '{""Projects"":{""View"":true,""Create"":false,""Edit"":false,""Delete"":false},""RICEFW"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Gantt"":{""View"":true,""Create"":false,""Edit"":false,""Delete"":false},""Team"":{""View"":true,""Create"":false,""Edit"":false,""Delete"":false},""Approvals"":{""View"":true,""Create"":true,""Edit"":false,""Delete"":false},""Costs"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Users"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false},""Settings"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false},""MasterData"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false}}', 5
+            WHERE NOT EXISTS (SELECT 1 FROM roles WHERE rolecode = 'MEMBER');
+        ", "Seed MEMBER role"),
+        (@"
+            INSERT INTO project_scope_options (value, description, isactive)
+            SELECT 'EBS_FIN', 'Oracle EBS Financials (GL, AP, AR, FA, CM)', true
+            WHERE NOT EXISTS (SELECT 1 FROM project_scope_options WHERE value = 'EBS_FIN');
+        ", "Seed EBS_FIN scope"),
+        (@"
+            INSERT INTO project_scope_options (value, description, isactive)
+            SELECT 'EBS_SCM', 'Oracle EBS Supply Chain (PO, INV, OM)', true
+            WHERE NOT EXISTS (SELECT 1 FROM project_scope_options WHERE value = 'EBS_SCM');
+        ", "Seed EBS_SCM scope"),
+        (@"
+            INSERT INTO project_scope_options (value, description, isactive)
+            SELECT 'CLOUD_FIN', 'Oracle ERP Cloud Financials', true
+            WHERE NOT EXISTS (SELECT 1 FROM project_scope_options WHERE value = 'CLOUD_FIN');
+        ", "Seed CLOUD_FIN scope"),
+        (@"
+            INSERT INTO project_scope_options (value, description, isactive)
+            SELECT 'CLOUD_SCM', 'Oracle ERP Cloud Supply Chain', true
+            WHERE NOT EXISTS (SELECT 1 FROM project_scope_options WHERE value = 'CLOUD_SCM');
+        ", "Seed CLOUD_SCM scope"),
+        (@"
+            UPDATE users 
+            SET globalroleid = (SELECT roleid FROM roles WHERE rolecode = 'SYSTEM_ADMIN' LIMIT 1) 
+            WHERE (username = 'admin' OR username = 'sysadmin') AND globalroleid IS NULL;
+        ", "Assign default SYSTEM_ADMIN globalrole to admin users")
     };
 
     foreach (var migration in migrations)

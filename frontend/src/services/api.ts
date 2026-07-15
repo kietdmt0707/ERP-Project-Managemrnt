@@ -434,6 +434,8 @@ export interface UserDto {
   phone?: string;
   isActive: boolean;
   expiryDate?: string;
+  globalRoleId?: number;
+  globalRole?: any;
 }
 
 export const userService = {
@@ -476,6 +478,95 @@ export const userService = {
     if (!response.ok) {
       const errText = await response.text();
       throw new Error(errText || 'Xóa người dùng thất bại.');
+    }
+    return response.json();
+  },
+  async getUserProjects(userId: number): Promise<any[]> {
+    const response = await fetch(`${API_BASE_URL}/user/${userId}/projects`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải danh sách dự án tham gia.');
+    return response.json();
+  },
+  async updateUserProjects(userId: number, memberships: any[]): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/user/${userId}/projects`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(memberships)
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Cập nhật phân công dự án thất bại.');
+    }
+    return response.json();
+  }
+};
+
+export interface ProjectScopeOptionDto {
+  optionId?: number;
+  value: string;
+  description: string;
+  isActive: boolean;
+}
+
+export interface SystemRoleDto {
+  roleId?: number;
+  roleCode: string;
+  roleName: string;
+  description?: string;
+  isActive: boolean;
+  permissionsJson?: string;
+  hierarchyLevel: number;
+}
+
+export const masterDataService = {
+  async getScopes(): Promise<ProjectScopeOptionDto[]> {
+    const response = await fetch(`${API_BASE_URL}/masterdata/scopes`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải danh sách phạm vi dự án.');
+    return response.json();
+  },
+  async createScope(scope: ProjectScopeOptionDto): Promise<ProjectScopeOptionDto> {
+    const response = await fetch(`${API_BASE_URL}/masterdata/scopes`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(scope)
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Tạo danh mục phạm vi thất bại.');
+    }
+    return response.json();
+  },
+  async updateScope(optionId: number, scope: ProjectScopeOptionDto): Promise<ProjectScopeOptionDto> {
+    const response = await fetch(`${API_BASE_URL}/masterdata/scopes/${optionId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(scope)
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Cập nhật danh mục phạm vi thất bại.');
+    }
+    return response.json();
+  },
+  async getRoles(): Promise<SystemRoleDto[]> {
+    const response = await fetch(`${API_BASE_URL}/masterdata/roles`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải danh sách vai trò hệ thống.');
+    return response.json();
+  },
+  async updateRole(roleId: number, role: SystemRoleDto): Promise<SystemRoleDto> {
+    const response = await fetch(`${API_BASE_URL}/masterdata/roles/${roleId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(role)
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Cập nhật ma trận phân quyền vai trò thất bại.');
     }
     return response.json();
   }

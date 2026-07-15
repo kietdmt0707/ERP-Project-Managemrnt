@@ -39,9 +39,17 @@ namespace AronErpPm.Api.Controllers
                 return Unauthorized(new { message = "Tài khoản hoặc mật khẩu không hợp lệ." });
             }
 
-            // Check if user is a System Admin (Global role check)
-            var isSystemAdmin = request.Username.ToLower() == "admin" || request.Username.ToLower() == "sysadmin";
-            var globalRole = isSystemAdmin ? "SYSTEM_ADMIN" : "USER";
+            // Check if user has a configured global role
+            var globalRole = "USER";
+            var dbUser = await _context.Users.Include(u => u.GlobalRole).FirstOrDefaultAsync(u => u.UserId == user.UserId);
+            if (dbUser?.GlobalRole != null)
+            {
+                globalRole = dbUser.GlobalRole.RoleCode;
+            }
+            else if (request.Username.ToLower() == "admin" || request.Username.ToLower() == "sysadmin")
+            {
+                globalRole = "SYSTEM_ADMIN";
+            }
 
             return await GenerateAuthResponse(user, globalRole);
         }
@@ -60,8 +68,16 @@ namespace AronErpPm.Api.Controllers
                 return BadRequest(new { message = "Email này chưa được cấp tài khoản hoặc đã bị khóa trong hệ thống. Vui lòng liên hệ Admin để đăng ký trước." });
             }
 
-            var isSystemAdmin = user.Username.ToLower() == "admin" || user.Username.ToLower() == "sysadmin";
-            var globalRole = isSystemAdmin ? "SYSTEM_ADMIN" : "USER";
+            var globalRole = "USER";
+            var dbUser = await _context.Users.Include(u => u.GlobalRole).FirstOrDefaultAsync(u => u.UserId == user.UserId);
+            if (dbUser?.GlobalRole != null)
+            {
+                globalRole = dbUser.GlobalRole.RoleCode;
+            }
+            else if (user.Username.ToLower() == "admin" || user.Username.ToLower() == "sysadmin")
+            {
+                globalRole = "SYSTEM_ADMIN";
+            }
 
             return await GenerateAuthResponse(user, globalRole);
         }
