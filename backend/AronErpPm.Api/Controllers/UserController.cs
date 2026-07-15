@@ -234,6 +234,7 @@ namespace AronErpPm.Api.Controllers
 
             var existing = _context.ProjectMembers.Where(pm => pm.UserId == id);
             _context.ProjectMembers.RemoveRange(existing);
+            await _context.SaveChangesAsync(); // Commit delete first to avoid EF Core unique constraint command reordering crash
 
             foreach (var mem in memberships)
             {
