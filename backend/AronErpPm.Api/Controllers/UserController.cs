@@ -243,6 +243,7 @@ namespace AronErpPm.Api.Controllers
                 mem.User = null;
                 mem.FunctionalTeam = null;
                 mem.Role = null;
+                mem.CreatedDate = DateTime.UtcNow; // Force DateTime.UtcNow to avoid C# MinValue PostgreSQL crash
                 _context.ProjectMembers.Add(mem);
             }
 
