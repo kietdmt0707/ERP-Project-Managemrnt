@@ -134,6 +134,13 @@ namespace AronErpPm.Api.Controllers
             var user = await _context.Users.FindAsync(id);
             if (user == null) return NotFound("Không tìm thấy người dùng.");
 
+            if (!string.IsNullOrEmpty(request.Username) && user.Username.ToLower() != request.Username.ToLower())
+            {
+                var exists = await _context.Users.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower());
+                if (exists) return BadRequest("Tên đăng nhập mới đã tồn tại.");
+                user.Username = request.Username;
+            }
+
             user.FullName = request.FullName;
             user.Email = request.Email;
             user.Phone = request.Phone;
@@ -241,6 +248,7 @@ namespace AronErpPm.Api.Controllers
 
     public class UpdateUserRequest
     {
+        public string Username { get; set; } = string.Empty;
         public string? Password { get; set; }
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;

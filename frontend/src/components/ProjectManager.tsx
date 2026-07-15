@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { projectService, ProjectDto } from '../services/api';
+import { projectService, ProjectDto, hasPermission } from '../services/api';
 import { Briefcase, Plus, Folder, MapPin, Building, Phone, UserPlus, Trash2, Edit3, Calendar, Clock } from 'lucide-react';
 
 interface ProjectManagerProps {
-  currentUserGlobalRole?: string;
+  currentUser?: any;
   onProjectCreated?: () => void;
 }
 
-export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUserGlobalRole, onProjectCreated }) => {
+export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUser, onProjectCreated }) => {
   const [projects, setProjects] = useState<ProjectDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,16 +56,15 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUserGloba
   const [pmEmail, setPmEmail] = useState('');
   const [assigning, setAssigning] = useState(false);
 
-  const isAdmin = currentUserGlobalRole === 'SYSTEM_ADMIN';
+  const isAdmin = currentUser?.globalRole === 'SYSTEM_ADMIN';
   const availableModules = ['GL', 'AP', 'AR', 'FA', 'PO', 'INV', 'OM'];
 
   // Check if current user is PM or PC or Admin for editing
   const checkUserAccess = (projectId: number) => {
-    if (isAdmin) return true;
-    const userStr = localStorage.getItem('aron_pm_user');
-    if (!userStr) return false;
-    const userData = JSON.parse(userStr);
-    const projectRole = userData.projectRoles?.find((r: any) => r.projectId === projectId);
+    if (!currentUser) return false;
+    if (currentUser.globalRole === 'SYSTEM_ADMIN') return true;
+    if (!hasPermission(currentUser, 'Projects', 'Edit')) return false;
+    const projectRole = currentUser.projectRoles?.find((r: any) => r.projectId === projectId);
     return projectRole?.roleCode === 'PM' || projectRole?.roleCode === 'PC';
   };
 

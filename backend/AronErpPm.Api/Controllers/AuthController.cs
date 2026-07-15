@@ -134,6 +134,9 @@ namespace AronErpPm.Api.Controllers
             var token = tokenHandler.CreateToken(tokenDescriptor);
             var tokenString = tokenHandler.WriteToken(token);
 
+            var dbUser = await _context.Users.Include(u => u.GlobalRole).FirstOrDefaultAsync(u => u.UserId == user.UserId);
+            var permissionsJson = dbUser?.GlobalRole?.PermissionsJson;
+
             return Ok(new AuthResponse
             {
                 Token = tokenString,
@@ -141,6 +144,7 @@ namespace AronErpPm.Api.Controllers
                 FullName = user.FullName,
                 Email = user.Email,
                 GlobalRole = globalRole,
+                PermissionsJson = permissionsJson,
                 ProjectRoles = projectRoles
             });
         }

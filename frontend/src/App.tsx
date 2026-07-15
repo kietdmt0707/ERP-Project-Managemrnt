@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { authService, AuthResponse, UserRole, settingService, SystemSetting } from './services/api';
+import { authService, AuthResponse, UserRole, settingService, SystemSetting, hasPermission } from './services/api';
 import { GanttChart } from './components/GanttChart';
 import { RicefwTracker } from './components/RicefwTracker';
 import { ApprovalList } from './components/ApprovalList';
@@ -312,79 +312,95 @@ function App() {
 
           {activeProject ? (
             <>
-              <button 
-                onClick={() => setActiveTab('gantt')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'gantt' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
-                }`}
-              >
-                <Calendar size={16} /> Kế hoạch & Sơ đồ Gán
-              </button>
-              
-              <button 
-                onClick={() => setActiveTab('ricefw')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'ricefw' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
-                }`}
-              >
-                <FileText size={16} /> Quản lý RICEFW (Oracle)
-              </button>
-
-              <button 
-                onClick={() => setActiveTab('team')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'team' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
-                }`}
-              >
-                <Users size={16} /> Đội Ngũ Dự Án
-              </button>
-
-              <button 
-                onClick={() => setActiveTab('trips')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'trips' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
-                }`}
-              >
-                <Plane size={16} /> Công Tác & Tạm Ứng
-              </button>
-
-              <button 
-                onClick={() => setActiveTab('approvals')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'approvals' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
-                }`}
-              >
-                <CheckSquare size={16} /> Timesheets & Phê Duyệt
-              </button>
-
-              <button 
-                onClick={() => setActiveTab('environments')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'environments' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
-                }`}
-              >
-                <Server size={16} /> Môi trường Oracle Instance
-              </button>
-
-              <button 
-                onClick={() => setActiveTab('documents')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'documents' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
-                }`}
-              >
-                <Folder size={16} /> Tài Liệu OneDrive/SharePoint
-              </button>
-
-              <div className="pt-2 border-t border-dark-850">
+              {hasPermission(currentUser, 'Gantt') && (
                 <button 
-                  onClick={() => setActiveTab('costs')}
+                  onClick={() => setActiveTab('gantt')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                    activeTab === 'costs' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                    activeTab === 'gantt' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
                   }`}
                 >
-                  <DollarSign size={16} /> Dashboard Chi Phí & Giá Cost
+                  <Calendar size={16} /> Kế hoạch & Sơ đồ Gán
                 </button>
-              </div>
+              )}
+              
+              {hasPermission(currentUser, 'RICEFW') && (
+                <button 
+                  onClick={() => setActiveTab('ricefw')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                    activeTab === 'ricefw' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                  }`}
+                >
+                  <FileText size={16} /> Quản lý RICEFW (Oracle)
+                </button>
+              )}
+
+              {hasPermission(currentUser, 'Team') && (
+                <button 
+                  onClick={() => setActiveTab('team')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                    activeTab === 'team' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                  }`}
+                >
+                  <Users size={16} /> Đội Ngũ Dự Án
+                </button>
+              )}
+
+              {(hasPermission(currentUser, 'Approvals') || hasPermission(currentUser, 'Costs')) && (
+                <button 
+                  onClick={() => setActiveTab('trips')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                    activeTab === 'trips' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                  }`}
+                >
+                  <Plane size={16} /> Công Tác & Tạm Ứng
+                </button>
+              )}
+
+              {hasPermission(currentUser, 'Approvals') && (
+                <button 
+                  onClick={() => setActiveTab('approvals')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                    activeTab === 'approvals' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                  }`}
+                >
+                  <CheckSquare size={16} /> Timesheets & Phê Duyệt
+                </button>
+              )}
+
+              {hasPermission(currentUser, 'Settings') && (
+                <button 
+                  onClick={() => setActiveTab('environments')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                    activeTab === 'environments' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                  }`}
+                >
+                  <Server size={16} /> Môi trường Oracle Instance
+                </button>
+              )}
+
+              {hasPermission(currentUser, 'Projects') && (
+                <button 
+                  onClick={() => setActiveTab('documents')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                    activeTab === 'documents' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                  }`}
+                >
+                  <Folder size={16} /> Tài Liệu OneDrive/SharePoint
+                </button>
+              )}
+
+              {hasPermission(currentUser, 'Costs') && (
+                <div className="pt-2 border-t border-dark-850">
+                  <button 
+                    onClick={() => setActiveTab('costs')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                      activeTab === 'costs' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                    }`}
+                  >
+                    <DollarSign size={16} /> Dashboard Chi Phí & Giá Cost
+                  </button>
+                </div>
+              )}
             </>
           ) : (
             <div className="text-[10px] text-dark-500 px-4 py-3 bg-dark-900/20 border border-dark-850 rounded-xl leading-relaxed">
@@ -402,7 +418,7 @@ function App() {
               <Briefcase size={16} /> Khởi Tạo & Quản Lý Dự Án
             </button>
 
-            {(currentUser.globalRole === 'SYSTEM_ADMIN' || currentUser.projectRoles?.some(r => r.roleCode === 'PM')) && (
+            {hasPermission(currentUser, 'Users') && (
               <button 
                 onClick={() => setActiveTab('users')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
@@ -413,7 +429,7 @@ function App() {
               </button>
             )}
 
-            {(currentUser.globalRole === 'SYSTEM_ADMIN' || currentUser.projectRoles?.some(r => r.roleCode === 'PM')) && (
+            {hasPermission(currentUser, 'MasterData') && (
               <button 
                 onClick={() => setActiveTab('masterdata')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
@@ -424,7 +440,7 @@ function App() {
               </button>
             )}
 
-            {currentUser.globalRole === 'SYSTEM_ADMIN' && (
+            {hasPermission(currentUser, 'Settings') && (
               <button 
                 onClick={() => setActiveTab('settings')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
@@ -569,7 +585,7 @@ function App() {
 
             {activeTab === 'projects' && (
               <ProjectManager 
-                currentUserGlobalRole={currentUser?.globalRole} 
+                currentUser={currentUser} 
                 onProjectCreated={() => {
                   loadSystemSettings();
                   window.location.reload();
