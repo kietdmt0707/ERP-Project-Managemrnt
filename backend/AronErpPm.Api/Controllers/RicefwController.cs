@@ -23,7 +23,6 @@ namespace AronErpPm.Api.Controllers
         }
 
         [HttpGet("project/{projectId}")]
-        [AllowAnonymous]
         public async Task<IActionResult> GetProjectRicefws(int projectId)
         {
             try
