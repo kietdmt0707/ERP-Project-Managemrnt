@@ -156,8 +156,9 @@ export const UserManager: React.FC<UserManagerProps> = ({ currentUserGlobalRole 
     e.preventDefault();
     setError(null);
     try {
+      let savedUser: UserDto;
       if (editingUser && editingUser.userId) {
-        await userService.updateUser(editingUser.userId, {
+        savedUser = await userService.updateUser(editingUser.userId, {
           username,
           password: password || undefined,
           fullName,
@@ -172,7 +173,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ currentUserGlobalRole 
         await userService.updateUserProjects(editingUser.userId, memberships);
         alert('Cập nhật người dùng và phân quyền dự án thành công!');
       } else {
-        await userService.createUser({
+        savedUser = await userService.createUser({
           username,
           password,
           fullName,
