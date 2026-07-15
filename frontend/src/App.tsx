@@ -46,6 +46,94 @@ function App() {
   const [resetError, setResetError] = useState<string | null>(null);
   const [resetLoading, setResetLoading] = useState(false);
 
+  // Theme & Mode States
+  const [activeTheme, setActiveTheme] = useState<string>(() => {
+    return localStorage.getItem('aron-app-theme') || 'default';
+  });
+  const [activeMode, setActiveMode] = useState<string>(() => {
+    return localStorage.getItem('aron-app-mode') || 'dark';
+  });
+
+  useEffect(() => {
+    const html = document.documentElement;
+    const themeKey = `${activeTheme}-${activeMode}`;
+    html.setAttribute('data-theme', themeKey);
+    localStorage.setItem('aron-app-theme', activeTheme);
+    localStorage.setItem('aron-app-mode', activeMode);
+  }, [activeTheme, activeMode]);
+
+  // Profile Modal states
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileFullName, setProfileFullName] = useState('');
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profilePhone, setProfilePhone] = useState('');
+  const [profilePassword, setProfilePassword] = useState('');
+  const [profileConfirmPassword, setProfileConfirmPassword] = useState('');
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  const handleOpenProfile = () => {
+    if (currentUser) {
+      setProfileFullName(currentUser.fullName);
+      setProfileEmail(currentUser.email);
+      setProfilePhone(currentUser.phone || '');
+      setProfilePassword('');
+      setProfileConfirmPassword('');
+      setProfileError(null);
+      setShowProfileModal(true);
+    }
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser || !currentUser.userId) return;
+
+    if (profilePassword && profilePassword.length < 8) {
+      setProfileError('Mật khẩu mới phải có ít nhất 8 ký tự.');
+      return;
+    }
+
+    if (profilePassword !== profileConfirmPassword) {
+      setProfileError('Mật khẩu xác nhận không khớp.');
+      return;
+    }
+
+    try {
+      setProfileSaving(true);
+      setProfileError(null);
+
+      const updateData: any = {
+        fullName: profileFullName,
+        email: profileEmail,
+        phone: profilePhone
+      };
+
+      if (profilePassword) {
+        updateData.password = profilePassword;
+      }
+
+      const updatedUser = await userService.updateUser(currentUser.userId, updateData);
+      
+      // Update local storage and current user state
+      const updatedCurrentUser = {
+        ...currentUser,
+        fullName: updatedUser.fullName,
+        email: updatedUser.email,
+        phone: updatedUser.phone
+      };
+
+      localStorage.setItem('aron_pm_user', JSON.stringify(updatedCurrentUser));
+      setCurrentUser(updatedCurrentUser);
+      
+      alert('Cập nhật thông tin cá nhân thành công!');
+      setShowProfileModal(false);
+    } catch (err: any) {
+      setProfileError(err.message || 'Cập nhật thất bại.');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
@@ -469,12 +557,16 @@ function App() {
 
           {/* Profile Card */}
           <div className="flex items-center gap-3 pl-4 border-l border-dark-800">
-            <div className="text-right">
+            <button 
+              onClick={handleOpenProfile}
+              className="text-right hover:opacity-80 transition-opacity flex flex-col items-end"
+              title="Thông tin cá nhân & Thiết lập giao diện"
+            >
               <p className="text-xs font-semibold text-white">{currentUser.fullName}</p>
               <p className="text-[10px] text-brand-400 font-medium capitalize">
                 Role: {activeProject ? activeProject.roleName : (currentUser.globalRole === 'SYSTEM_ADMIN' ? 'Hệ thống Admin' : (currentUser.globalRole === 'PM' ? 'Project Manager' : 'Thành Viên'))}
               </p>
-            </div>
+            </button>
             <button 
               onClick={handleLogout}
               className="p-2 hover:bg-dark-800 rounded-lg text-dark-400 hover:text-white transition-colors"
@@ -926,6 +1018,172 @@ function App() {
             )}
           </div>
         </main>
+      {showProfileModal && (
+        <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-2xl bg-dark-900 border border-dark-800 p-6 rounded-2xl shadow-2xl space-y-6 animate-slide-up text-left">
+            <div className="flex justify-between items-center border-b border-dark-850 pb-3">
+              <h3 className="text-md font-bold text-white flex items-center gap-2">
+                <Sliders className="text-brand-500" /> Cấu Hình Tài Khoản & Giao Diện
+              </h3>
+              <button 
+                onClick={() => setShowProfileModal(false)}
+                className="text-xs text-dark-400 hover:text-white"
+              >
+                Đóng
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveProfile} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left Column: Account Details & Security */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-brand-400 uppercase tracking-wider">Thông Tin Cá Nhân & Bảo Mật</h4>
+                
+                {profileError && (
+                  <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs p-3 rounded-xl">
+                    {profileError}
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <label className="text-xs text-dark-300 font-semibold">Tên đăng nhập (Username):</label>
+                  <input 
+                    type="text" 
+                    value={currentUser?.username || ''} 
+                    disabled 
+                    className="w-full bg-dark-950/50 border border-dark-850 text-xs p-3 rounded-xl text-dark-400 cursor-not-allowed focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-dark-300 font-semibold">Họ và Tên:</label>
+                  <input 
+                    type="text" 
+                    value={profileFullName} 
+                    onChange={e => setProfileFullName(e.target.value)} 
+                    required
+                    className="w-full bg-dark-950 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-dark-300 font-semibold">Email:</label>
+                  <input 
+                    type="email" 
+                    value={profileEmail} 
+                    onChange={e => setProfileEmail(e.target.value)} 
+                    required
+                    className="w-full bg-dark-950 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-dark-300 font-semibold">Số điện thoại:</label>
+                  <input 
+                    type="text" 
+                    value={profilePhone} 
+                    onChange={e => setProfilePhone(e.target.value)} 
+                    placeholder="Nhập số điện thoại..."
+                    className="w-full bg-dark-950 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+
+                <div className="border-t border-dark-850 pt-4 space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-xs text-dark-300 font-semibold">Mật khẩu mới (Để trống nếu không đổi):</label>
+                    <input 
+                      type="password" 
+                      value={profilePassword} 
+                      onChange={e => setProfilePassword(e.target.value)} 
+                      placeholder="Tối thiểu 8 ký tự..."
+                      className="w-full bg-dark-950 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-dark-300 font-semibold">Xác nhận mật khẩu mới:</label>
+                    <input 
+                      type="password" 
+                      value={profileConfirmPassword} 
+                      onChange={e => setProfileConfirmPassword(e.target.value)} 
+                      placeholder="Xác nhận mật khẩu..."
+                      className="w-full bg-dark-950 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Themes & Customizations */}
+              <div className="space-y-5 flex flex-col justify-between">
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-brand-400 uppercase tracking-wider">Cấu Hình Giao Diện Hệ Thống</h4>
+                  
+                  {/* Themes Select */}
+                  <div className="space-y-2">
+                    <label className="text-xs text-dark-300 font-semibold block">Lựa chọn Theme:</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { id: 'default', name: 'Default Blue', colors: ['#0d7fe7', '#0d0f12'] },
+                        { id: 'aron', name: 'ARON Classic', colors: ['#f97316', '#0a0d14'] },
+                        { id: 'fusion', name: 'Fusion Crimson', colors: ['#dc2626', '#140d0c'] },
+                        { id: 'emerald', name: 'Emerald Oracle', colors: ['#10b981', '#05100b'] }
+                      ].map(t => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => setActiveTheme(t.id)}
+                          className={`p-3 rounded-xl border text-left flex items-center gap-2.5 transition-all ${
+                            activeTheme === t.id 
+                              ? 'bg-brand-500/10 border-brand-500' 
+                              : 'bg-dark-950 border-dark-850 hover:border-dark-700'
+                          }`}
+                        >
+                          <div className="flex gap-1 shrink-0">
+                            <span className="w-3.5 h-3.5 rounded-full border border-dark-800" style={{ backgroundColor: t.colors[0] }} />
+                            <span className="w-3.5 h-3.5 rounded-full border border-dark-800" style={{ backgroundColor: t.colors[1] }} />
+                          </div>
+                          <span className="text-xs font-semibold text-white">{t.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Mode Select */}
+                  <div className="space-y-2">
+                    <label className="text-xs text-dark-300 font-semibold block">Chế độ hiển thị (Mode):</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { id: 'dark', name: 'Chế độ Tối (Dark)' },
+                        { id: 'light', name: 'Chế độ Sáng (Light)' }
+                      ].map(m => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => setActiveMode(m.id)}
+                          className={`p-3 rounded-xl border text-center font-semibold text-xs transition-all ${
+                            activeMode === m.id 
+                              ? 'bg-brand-500/10 border-brand-500' 
+                              : 'bg-dark-950 border-dark-850 hover:border-dark-700'
+                          }`}
+                        >
+                          <span className="text-white">{m.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <button 
+                  type="submit"
+                  disabled={profileSaving}
+                  className="w-full bg-brand-600 hover:bg-brand-500 text-white p-3 rounded-xl text-xs font-bold transition-all disabled:opacity-50 mt-6"
+                >
+                  {profileSaving ? 'Đang lưu...' : 'Lưu Thay Đổi'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

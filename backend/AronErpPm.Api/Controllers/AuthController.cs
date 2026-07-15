@@ -144,9 +144,11 @@ namespace AronErpPm.Api.Controllers
             return Ok(new AuthResponse
             {
                 Token = tokenString,
+                UserId = user.UserId,
                 Username = user.Username,
                 FullName = user.FullName,
                 Email = user.Email,
+                Phone = user.Phone,
                 GlobalRole = globalRole,
                 PermissionsJson = permissionsJson,
                 ProjectRoles = projectRoles

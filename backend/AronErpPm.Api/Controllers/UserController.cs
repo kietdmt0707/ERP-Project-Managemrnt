@@ -148,13 +148,24 @@ namespace AronErpPm.Api.Controllers
                 }
             }
 
-            if (!isSysAdmin && !isPm)
-            {
-                return Forbid("Chỉ Admin hệ thống hoặc PM mới có quyền cập nhật thông tin người dùng.");
-            }
-
             var user = await _context.Users.FindAsync(id);
             if (user == null) return NotFound("Không tìm thấy người dùng.");
+
+            var isOwnProfile = username != null && user.Username.ToLower() == username.ToLower();
+
+            if (!isSysAdmin && !isPm && !isOwnProfile)
+            {
+                return Forbid("Bạn không có quyền cập nhật thông tin của người dùng này.");
+            }
+
+            // Nếu tự chỉnh sửa thông tin cá nhân (hoặc không phải Admin hệ thống), chặn thay đổi vai trò, thời hạn, trạng thái hoạt động và username
+            if (!isSysAdmin)
+            {
+                request.Username = user.Username; // Không cho phép đổi tên tài khoản để giữ vững JWT token
+                request.IsActive = user.IsActive;
+                request.ExpiryDate = user.ExpiryDate;
+                request.GlobalRoleId = user.GlobalRoleId;
+            }
 
             if (!string.IsNullOrEmpty(request.Username) && user.Username.ToLower() != request.Username.ToLower())
             {
