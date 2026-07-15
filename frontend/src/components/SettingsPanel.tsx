@@ -21,6 +21,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onSettingsUpdate }
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Test email states
+  const [testEmailDest, setTestEmailDest] = useState('');
+  const [testingMail, setTestingMail] = useState(false);
+  const [testResult, setTestResult] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   useEffect(() => {
     loadSettings();
   }, []);
@@ -29,10 +34,37 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onSettingsUpdate }
     try {
       const data = await settingService.getSettings();
       setSettings(data);
+      if (data.smtpUsername) {
+        setTestEmailDest(data.smtpUsername);
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTestEmail = async () => {
+    if (!testEmailDest || !testEmailDest.includes('@')) {
+      alert('Vui lòng nhập email nhận thử nghiệm hợp lệ.');
+      return;
+    }
+    setTestingMail(true);
+    setTestResult(null);
+    try {
+      const res = await settingService.testEmail({
+        smtpHost: settings.smtpHost || '',
+        smtpPort: settings.smtpPort,
+        smtpUsername: settings.smtpUsername || '',
+        smtpPassword: settings.smtpPassword || undefined,
+        smtpEnableSsl: settings.smtpEnableSsl,
+        destinationEmail: testEmailDest
+      });
+      setTestResult({ type: 'success', text: res.message || 'Gửi email thử nghiệm thành công!' });
+    } catch (err: any) {
+      setTestResult({ type: 'error', text: err.message || 'Lỗi gửi email thử nghiệm.' });
+    } finally {
+      setTestingMail(false);
     }
   };
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, targetKey: 'logoUrl' | 'bannerUrl') => {
@@ -218,6 +250,35 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onSettingsUpdate }
           <div className="bg-dark-950 p-3 rounded-xl border border-dark-850 flex gap-2 items-start text-[10px] text-dark-400">
             <Info size={14} className="shrink-0 text-brand-400 mt-0.5" />
             <p>Mailer dùng để gửi email kèm link bảo mật phê duyệt nhanh trực tiếp cho Leader, PM và Director khi thành viên khai báo công việc hoặc công tác phí.</p>
+          </div>
+
+          {/* Test connection block */}
+          <div className="pt-3 border-t border-dark-850 space-y-3">
+            <h4 className="text-xs font-bold text-white">Kiểm tra kết nối gửi Mail</h4>
+            <div className="flex gap-2">
+              <input 
+                type="email"
+                value={testEmailDest}
+                onChange={e => setTestEmailDest(e.target.value)}
+                placeholder="Nhập email nhận thử"
+                className="flex-1 bg-dark-900 border border-dark-800 text-xs p-2.5 rounded-xl text-white placeholder-dark-600 focus:outline-none focus:border-brand-500"
+              />
+              <button
+                type="button"
+                onClick={handleTestEmail}
+                disabled={testingMail}
+                className="bg-dark-800 hover:bg-dark-750 text-white font-bold text-xs px-4 rounded-xl transition-all disabled:opacity-50"
+              >
+                {testingMail ? 'Đang gửi...' : 'Gửi Thử'}
+              </button>
+            </div>
+            {testResult && (
+              <div className={`p-3 rounded-xl text-[10px] border leading-normal ${
+                testResult.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+              }`}>
+                {testResult.text}
+              </div>
+            )}
           </div>
         </div>
 
