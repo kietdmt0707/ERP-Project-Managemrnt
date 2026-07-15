@@ -180,7 +180,32 @@ namespace AronErpPm.Api.Controllers
             user.ResetTokenExpiry = DateTime.UtcNow.AddHours(1);
             await _context.SaveChangesAsync();
 
-            var webPortalUrl = _configuration["ApiSettings:WebPortalUrl"] ?? "https://erp-project-managemrnt-sage.vercel.app";
+            // Dynamically detect frontend origin from request headers
+            var webPortalUrl = Request.Headers["Origin"].ToString();
+            if (string.IsNullOrEmpty(webPortalUrl))
+            {
+                var referer = Request.Headers["Referer"].ToString();
+                if (!string.IsNullOrEmpty(referer))
+                {
+                    // Extract origin from referer (e.g. https://domain.com/path -> https://domain.com)
+                    try
+                    {
+                        var uri = new Uri(referer);
+                        webPortalUrl = $"{uri.Scheme}://{uri.Authority}";
+                    }
+                    catch
+                    {
+                        webPortalUrl = referer;
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(webPortalUrl))
+            {
+                webPortalUrl = _configuration["ApiSettings:WebPortalUrl"] ?? "https://erp-project-managemrnt-sage.vercel.app";
+            }
+
+            webPortalUrl = webPortalUrl.TrimEnd('/');
             var resetLink = $"{webPortalUrl}/reset-password?token={token}";
 
             await _emailService.SendPasswordResetEmailAsync(user.Email, user.FullName, resetLink);
