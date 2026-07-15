@@ -536,8 +536,13 @@ export const userService = {
       body: JSON.stringify(memberships)
     });
     if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(errText || 'Cập nhật phân công dự án thất bại.');
+      try {
+        const errJson = await response.json();
+        throw new Error(errJson.detail || errJson.message || 'Cập nhật phân công dự án thất bại.');
+      } catch {
+        const errText = await response.text();
+        throw new Error(errText || 'Cập nhật phân công dự án thất bại.');
+      }
     }
     return response.json();
   }

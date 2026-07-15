@@ -226,30 +226,47 @@ namespace AronErpPm.Api.Controllers
         [HttpPost("{id}/projects")]
         public async Task<IActionResult> UpdateUserProjects(int id, [FromBody] System.Collections.Generic.List<ProjectMember> memberships)
         {
-            var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == "GlobalRole")?.Value;
-            if (globalRoleClaim != "SYSTEM_ADMIN")
+            try
             {
-                return Forbid("Chỉ Admin hệ thống mới có quyền phân công người dùng vào dự án.");
+                var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == "GlobalRole")?.Value;
+                if (globalRoleClaim != "SYSTEM_ADMIN")
+                {
+                    return Forbid("Chỉ Admin hệ thống mới có quyền phân công người dùng vào dự án.");
+                }
+
+                var existing = _context.ProjectMembers.Where(pm => pm.UserId == id);
+                _context.ProjectMembers.RemoveRange(existing);
+                await _context.SaveChangesAsync(); // Commit delete first to avoid EF Core unique constraint command reordering crash
+
+                foreach (var mem in memberships)
+                {
+                    mem.UserId = id;
+                    mem.ProjectMemberId = 0; // DB auto-increment
+                    mem.Project = null;
+                    mem.User = null;
+                    mem.FunctionalTeam = null;
+                    mem.Role = null;
+                    mem.CreatedDate = DateTime.UtcNow; // Force DateTime.UtcNow to avoid C# MinValue PostgreSQL crash
+                    _context.ProjectMembers.Add(mem);
+                }
+
+                await _context.SaveChangesAsync();
+                return Ok(new { Message = "Cập nhật phân quyền dự án thành công!" });
             }
-
-            var existing = _context.ProjectMembers.Where(pm => pm.UserId == id);
-            _context.ProjectMembers.RemoveRange(existing);
-            await _context.SaveChangesAsync(); // Commit delete first to avoid EF Core unique constraint command reordering crash
-
-            foreach (var mem in memberships)
+            catch (Exception ex)
             {
-                mem.UserId = id;
-                mem.ProjectMemberId = 0; // DB auto-increment
-                mem.Project = null;
-                mem.User = null;
-                mem.FunctionalTeam = null;
-                mem.Role = null;
-                mem.CreatedDate = DateTime.UtcNow; // Force DateTime.UtcNow to avoid C# MinValue PostgreSQL crash
-                _context.ProjectMembers.Add(mem);
+                var details = ex.Message;
+                if (ex.InnerException != null)
+                {
+                    details += " -> " + ex.InnerException.Message;
+                }
+                return BadRequest(new { 
+                    status = "Error", 
+                    message = "Lỗi lưu phân quyền dự án", 
+                    detail = details,
+                    stackTrace = ex.StackTrace
+                });
             }
-
-            await _context.SaveChangesAsync();
-            return Ok(new { Message = "Cập nhật phân quyền dự án thành công!" });
         }
 
         private string HashPassword(string password)
