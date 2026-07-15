@@ -5,6 +5,10 @@ using Microsoft.IdentityModel.Tokens;
 using AronErpPm.Api.Data;
 using AronErpPm.Api.Services;
 
+// Config polling file watcher globally to avoid Linux container inotify limit issues on Render
+Environment.SetEnvironmentVariable("DOTNET_USE_POLLING_FILE_WATCHER", "true");
+Environment.SetEnvironmentVariable("DOTNET_USE_POLLING_FILE_WATCHER", "1");
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
