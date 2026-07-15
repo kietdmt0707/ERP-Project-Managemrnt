@@ -33,7 +33,7 @@ function App() {
   const [rememberMe, setRememberMe] = useState(false);
 
   // Tab selections
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'gantt' | 'ricefw' | 'approvals' | 'costs' | 'environments' | 'team' | 'trips' | 'projects' | 'settings' | 'users' | 'documents'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'gantt' | 'ricefw' | 'approvals' | 'costs' | 'environments' | 'team' | 'trips' | 'projects' | 'settings' | 'users' | 'documents' | 'masterdata'>('dashboard');
 
   useEffect(() => {
     loadSystemSettings();

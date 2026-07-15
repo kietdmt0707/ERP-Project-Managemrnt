@@ -316,6 +316,9 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
           {/* Roles Selector Sidebar */}
           <div className="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl space-y-3">
             <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider px-2">Danh sách chức danh</h4>
+            {roleError && (
+              <div className="p-2 bg-red-950/40 border border-red-800/30 text-red-400 text-[10px] rounded-lg">{roleError}</div>
+            )}
             {roleLoading ? (
               <div className="text-slate-500 text-center py-6 text-sm">Đang tải...</div>
             ) : (

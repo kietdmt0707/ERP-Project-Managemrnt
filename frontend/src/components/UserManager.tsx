@@ -59,7 +59,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ currentUserGlobalRole 
       setGlobalRoles(rolesData.filter(r => r.isActive));
 
       const projRes = await projectService.getProjects();
-      setAllProjects(projRes.projects || []);
+      setAllProjects(projRes || []);
     } catch (err: any) {
       console.error('Lỗi khi tải danh mục Master roles/projects', err);
     }
