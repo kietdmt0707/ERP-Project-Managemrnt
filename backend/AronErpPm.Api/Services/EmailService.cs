@@ -121,6 +121,7 @@ namespace AronErpPm.Api.Services
                         {
                             smtp.Credentials = new NetworkCredential(settings.SmtpUsername, settings.SmtpPassword);
                             smtp.EnableSsl = settings.SmtpEnableSsl;
+                            smtp.Timeout = 10000; // 10 seconds timeout
                             await smtp.SendMailAsync(mail);
                         }
                     }
@@ -185,6 +186,7 @@ namespace AronErpPm.Api.Services
                         {
                             smtp.Credentials = new NetworkCredential(settings.SmtpUsername, settings.SmtpPassword);
                             smtp.EnableSsl = settings.SmtpEnableSsl;
+                            smtp.Timeout = 10000; // 10 seconds timeout
                             await smtp.SendMailAsync(mail);
                         }
                     }

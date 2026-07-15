@@ -147,6 +147,7 @@ namespace AronErpPm.Api.Controllers
                     {
                         smtp.Credentials = new System.Net.NetworkCredential(request.SmtpUsername, password);
                         smtp.EnableSsl = request.SmtpEnableSsl;
+                        smtp.Timeout = 10000; // 10 seconds timeout
                         await smtp.SendMailAsync(mail);
                     }
                 }
