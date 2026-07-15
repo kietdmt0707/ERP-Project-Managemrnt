@@ -181,8 +181,15 @@ export const UserManager: React.FC<UserManagerProps> = ({ currentUserGlobalRole 
           expiryDate: expiryDate ? new Date(expiryDate).toISOString() : undefined
         });
 
-        // Save project memberships
-        await userService.updateUserProjects(editingUser.userId, memberships);
+        // Save project memberships - only send required fields to prevent JSON binding cycles / failures
+        const cleanMemberships = memberships.map(m => ({
+          projectId: m.projectId,
+          roleId: m.roleId,
+          functionalTeamId: m.functionalTeamId,
+          dailyRate: m.dailyRate,
+          isActive: m.isActive
+        }));
+        await userService.updateUserProjects(editingUser.userId, cleanMemberships);
         alert('Cập nhật người dùng và phân quyền dự án thành công!');
       } else {
         await userService.createUser({
