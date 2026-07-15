@@ -226,6 +226,7 @@ namespace AronErpPm.Api.Models
     }
 
     // 8. Project Scope Master Data
+    [Table("project_scope_options")]
     public class ProjectScopeOption
     {
         [Key]
