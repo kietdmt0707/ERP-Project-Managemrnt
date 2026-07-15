@@ -29,7 +29,12 @@
 }
 
 .glass-panel-hover {
-  @apply transition-all duration-300 hover:border-brand-500/30 hover:shadow-lg hover:shadow-brand-500/5;
+  transition: all 0.3s ease;
+}
+.glass-panel-hover:hover {
+  border-color: color-mix(in srgb, var(--color-brand-500, #0d7fe7) 30%, transparent);
+  box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--color-brand-500, #0d7fe7) 5%, transparent), 
+              0 4px 6px -4px color-mix(in srgb, var(--color-brand-500, #0d7fe7) 5%, transparent);
 }
 
 /* Gantt Chart Grid Pattern */
