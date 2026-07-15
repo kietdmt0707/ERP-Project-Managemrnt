@@ -1059,9 +1059,8 @@ function App() {
                   <input 
                     type="text" 
                     value={profileFullName} 
-                    onChange={e => setProfileFullName(e.target.value)} 
-                    required
-                    className="w-full bg-dark-950 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                    disabled 
+                    className="w-full bg-dark-950/50 border border-dark-850 text-xs p-3 rounded-xl text-dark-400 cursor-not-allowed focus:outline-none"
                   />
                 </div>
 
@@ -1070,9 +1069,8 @@ function App() {
                   <input 
                     type="email" 
                     value={profileEmail} 
-                    onChange={e => setProfileEmail(e.target.value)} 
-                    required
-                    className="w-full bg-dark-950 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                    disabled 
+                    className="w-full bg-dark-950/50 border border-dark-850 text-xs p-3 rounded-xl text-dark-400 cursor-not-allowed focus:outline-none"
                   />
                 </div>
 
