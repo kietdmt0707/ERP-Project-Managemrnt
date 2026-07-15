@@ -111,7 +111,8 @@ namespace AronErpPm.Api.Services
                 {
                     using (var mail = new MailMessage())
                     {
-                        mail.From = new MailAddress(settings!.SmtpUsername!, appName);
+                        var senderEmail = !string.IsNullOrEmpty(settings!.SmtpSenderEmail) ? settings.SmtpSenderEmail : settings.SmtpUsername;
+                        mail.From = new MailAddress(senderEmail!, appName);
                         mail.To.Add(toEmail);
                         mail.Subject = $"[{appName}] Yêu cầu phê duyệt {targetType} - {projectName}";
                         mail.Body = htmlBody;
@@ -176,7 +177,8 @@ namespace AronErpPm.Api.Services
                 {
                     using (var mail = new MailMessage())
                     {
-                        mail.From = new MailAddress(settings!.SmtpUsername!, appName);
+                        var senderEmail = !string.IsNullOrEmpty(settings!.SmtpSenderEmail) ? settings.SmtpSenderEmail : settings.SmtpUsername;
+                        mail.From = new MailAddress(senderEmail!, appName);
                         mail.To.Add(toEmail);
                         mail.Subject = $"[{appName}] Khôi phục mật khẩu tài khoản";
                         mail.Body = htmlBody;

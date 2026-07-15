@@ -57,6 +57,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onSettingsUpdate }
         smtpPort: settings.smtpPort,
         smtpUsername: settings.smtpUsername || '',
         smtpPassword: settings.smtpPassword || undefined,
+        smtpSenderEmail: settings.smtpSenderEmail || undefined,
         smtpEnableSsl: settings.smtpEnableSsl,
         destinationEmail: testEmailDest
       });
@@ -221,6 +222,20 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onSettingsUpdate }
               value={settings.smtpUsername || ''}
               onChange={e => setSettings({ ...settings, smtpUsername: e.target.value })}
               placeholder="example@gmail.com"
+              className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-white placeholder-dark-600 focus:outline-none focus:border-brand-500"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs text-dark-300 font-semibold block">
+              Email người gửi (Sender Email):
+              <span className="text-[10px] text-dark-400 font-normal ml-1.5">(Nhập email gửi tin chính thức của bạn đã verify ở Brevo/SendGrid)</span>
+            </label>
+            <input 
+              type="email"
+              value={settings.smtpSenderEmail || ''}
+              onChange={e => setSettings({ ...settings, smtpSenderEmail: e.target.value })}
+              placeholder="example@yourdomain.com"
               className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-white placeholder-dark-600 focus:outline-none focus:border-brand-500"
             />
           </div>
