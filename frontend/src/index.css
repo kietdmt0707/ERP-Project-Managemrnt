@@ -263,5 +263,80 @@ html, [data-theme="default-dark"] {
   --color-dark-700: #86efac;
   --color-dark-800: #bbf7d0;
   --color-dark-900: #dcfce7;
-  --color-dark-950: #f0fdf4;
+}
+
+/* --- LIGHT MODE CONTRAST OVERRIDES --- */
+[data-theme$="-light"] {
+  color: var(--color-dark-50);
+}
+[data-theme$="-light"] input:not([type="checkbox"]), 
+[data-theme$="-light"] select, 
+[data-theme$="-light"] textarea {
+  color: var(--color-dark-50) !important;
+  background-color: var(--color-dark-900) !important;
+  border-color: var(--color-dark-850) !important;
+}
+[data-theme$="-light"] input::placeholder {
+  color: var(--color-dark-400) !important;
+}
+[data-theme$="-light"] .text-white {
+  color: var(--color-dark-50) !important;
+}
+[data-theme$="-light"] .text-dark-100 {
+  color: var(--color-dark-50) !important;
+}
+[data-theme$="-light"] .text-dark-300 {
+  color: var(--color-dark-400) !important;
+}
+[data-theme$="-light"] .text-dark-400 {
+  color: var(--color-dark-500) !important;
+}
+[data-theme$="-light"] .border-dark-800,
+[data-theme$="-light"] .border-dark-850 {
+  border-color: var(--color-dark-800) !important;
+}
+[data-theme$="-light"] .bg-dark-900 {
+  background-color: var(--color-dark-900) !important;
+}
+[data-theme$="-light"] .bg-dark-950 {
+  background-color: var(--color-dark-950) !important;
+}
+[data-theme$="-light"] .glass-panel {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Maintain light text inside dark buttons / badges */
+[data-theme$="-light"] button.bg-brand-600,
+[data-theme$="-light"] button.bg-brand-500,
+[data-theme$="-light"] button.bg-brand-600 *,
+[data-theme$="-light"] button.bg-brand-500 *,
+[data-theme$="-light"] .bg-brand-600,
+[data-theme$="-light"] .bg-brand-500,
+[data-theme$="-light"] .bg-brand-600 *,
+[data-theme$="-light"] .bg-brand-500 *,
+[data-theme$="-light"] .bg-emerald-600 *,
+[data-theme$="-light"] .bg-rose-600 * {
+  color: #ffffff !important;
+}
+
+/* --- THEME-SPECIFIC BACKGROUND PATTERNS & STYLES --- */
+[data-theme^="default-"] {
+  background-image: radial-gradient(at 0% 0%, rgba(13, 127, 231, 0.12) 0px, transparent 50%),
+                    radial-gradient(at 100% 100%, rgba(13, 127, 231, 0.06) 0px, transparent 50%);
+}
+[data-theme^="aron-"] {
+  background-image: radial-gradient(at 0% 0%, rgba(249, 115, 22, 0.12) 0px, transparent 50%),
+                    radial-gradient(at 100% 100%, rgba(249, 115, 22, 0.06) 0px, transparent 50%),
+                    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54 48c-2 0-3 1-4 2v4c0 1-1 2-2 2h-4c-1 0-2 1-2 2s1 2 2 2h4c3 0 6-3 6-6v-4c0-1 1-2 2-2s2-1 2-2-1-2-2-2zm-42 0c1 0 2 1 2 2v4c0 3 3 6 6 6h4c1 0 2-1 2-2s-1-2-2-2h-4c-1 0-2-1-2-2v-4c0-1-1-2-2-2s-2 1-2 2zm0-36c-1 0-2-1-2-2v-4c0-3 3-6 6-6h4c1 0 2 1 2 2s-1 2-2 2h-4c-1 0-2 1-2 2v4c0 1-1 2-2 2zm42 0c2 0 3-1 4-2v-4c0-1 1-2 2-2s2 1 2 2v4c0 3-3 6-6 6h-4c-1 0-2 1-2 2s1 2 2 2h4z' fill='%23f97316' fill-opacity='0.04' fill-rule='evenodd'/%3E%3C/svg%3E");
+}
+[data-theme^="fusion-"] {
+  background-image: radial-gradient(at 0% 0%, rgba(220, 38, 38, 0.1) 0px, transparent 50%),
+                    radial-gradient(at 100% 100%, rgba(223, 214, 200, 0.15) 0px, transparent 50%),
+                    url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M14 16c0-1.1.9-2 2-2h48c1.1 0 2 .9 2 2v48c0 1.1-.9 2-2 2H16c-1.1 0-2-.9-2-2V16zm2 2v44h44V18H16zm12 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm20 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm-20 20a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm20 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z' fill='%23dc2626' fill-opacity='0.025' fill-rule='evenodd'/%3E%3C/svg%3E");
+}
+[data-theme^="emerald-"] {
+  background-image: radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
+                    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%),
+                    url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20.5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zM30 10.5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zM10 30.5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1zM20 0h2v40h-2V0zm-10 0h2v40h-2V0zM0 20v-2h40v2H0zm0-10v-2h40v2H0z' fill='%2310b981' fill-opacity='0.035'/%3E%3C/svg%3E");
 }
