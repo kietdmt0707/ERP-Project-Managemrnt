@@ -37,6 +37,10 @@ namespace AronErpPm.Api.Models
         [Column("smtp_password")]
         public string? SmtpPassword { get; set; }
 
+        [MaxLength(250)]
+        [Column("smtp_sender_email")]
+        public string? SmtpSenderEmail { get; set; }
+
         [Column("smtp_enable_ssl")]
         public bool SmtpEnableSsl { get; set; } = true;
 

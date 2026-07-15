@@ -233,6 +233,7 @@ export interface SystemSetting {
   smtpPort: number;
   smtpUsername?: string;
   smtpPassword?: string;
+  smtpSenderEmail?: string;
   smtpEnableSsl: boolean;
 }
 
@@ -320,7 +321,7 @@ export const settingService = {
     }
     return response.json();
   },
-  async testEmail(payload: { smtpHost: string; smtpPort: number; smtpUsername: string; smtpPassword?: string; smtpEnableSsl: boolean; destinationEmail: string }): Promise<any> {
+  async testEmail(payload: { smtpHost: string; smtpPort: number; smtpUsername: string; smtpPassword?: string; smtpSenderEmail?: string; smtpEnableSsl: boolean; destinationEmail: string }): Promise<any> {
     const response = await fetch(`${API_BASE_URL}/setting/test-email`, {
       method: 'POST',
       headers: getHeaders(),

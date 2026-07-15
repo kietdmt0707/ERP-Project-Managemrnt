@@ -120,6 +120,7 @@ using (var scope = app.Services.CreateScope())
         ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS targetgolivedate TIMESTAMP WITH TIME ZONE;", "Add targetgolivedate to projects"),
         ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS currentphase VARCHAR(100);", "Add currentphase to projects"),
         ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS modulesscope TEXT;", "Add modulesscope to projects"),
+        ("ALTER TABLE system_settings ADD COLUMN IF NOT EXISTS smtp_sender_email VARCHAR(250);", "Add smtp_sender_email to system_settings"),
         ("ALTER TABLE system_settings ALTER COLUMN logo_url TYPE TEXT;", "Alter logo_url in system_settings"),
         ("ALTER TABLE system_settings ALTER COLUMN banner_url TYPE TEXT;", "Alter banner_url in system_settings"),
         ("ALTER TABLE projects ALTER COLUMN logopath TYPE TEXT;", "Alter logopath in projects"),

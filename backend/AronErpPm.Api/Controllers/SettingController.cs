@@ -65,6 +65,7 @@ namespace AronErpPm.Api.Controllers
             settings.SmtpHost = request.SmtpHost;
             settings.SmtpPort = request.SmtpPort;
             settings.SmtpUsername = request.SmtpUsername;
+            settings.SmtpSenderEmail = request.SmtpSenderEmail;
             
             // Only update password if a new one is provided
             if (!string.IsNullOrEmpty(request.SmtpPassword))
@@ -113,7 +114,8 @@ namespace AronErpPm.Api.Controllers
             {
                 using (var mail = new System.Net.Mail.MailMessage())
                 {
-                    mail.From = new System.Net.Mail.MailAddress(request.SmtpUsername, appName);
+                    var senderEmail = !string.IsNullOrEmpty(request.SmtpSenderEmail) ? request.SmtpSenderEmail : request.SmtpUsername;
+                    mail.From = new System.Net.Mail.MailAddress(senderEmail, appName);
                     mail.To.Add(request.DestinationEmail);
                     mail.Subject = $"[{appName}] Kiểm tra cấu hình kết nối SMTP Server";
                     mail.Body = $@"
@@ -147,6 +149,7 @@ namespace AronErpPm.Api.Controllers
                     {
                         smtp.Credentials = new System.Net.NetworkCredential(request.SmtpUsername, password);
                         smtp.EnableSsl = request.SmtpEnableSsl;
+                        smtp.Timeout = 10000; // 10 seconds timeout
                         await smtp.SendMailAsync(mail);
                     }
                 }
@@ -171,6 +174,7 @@ namespace AronErpPm.Api.Controllers
         public int SmtpPort { get; set; } = 587;
         public string SmtpUsername { get; set; } = string.Empty;
         public string? SmtpPassword { get; set; }
+        public string? SmtpSenderEmail { get; set; }
         public bool SmtpEnableSsl { get; set; } = true;
         public string DestinationEmail { get; set; } = string.Empty;
     }
