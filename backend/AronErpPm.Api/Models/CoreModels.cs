@@ -138,6 +138,12 @@ namespace AronErpPm.Api.Models
         [MaxLength(100)]
         public string RoleName { get; set; } = string.Empty;
 
+        public string? Description { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
+        public string? PermissionsJson { get; set; } // JSON chứa ma trận quyền trên từng chức năng
+
         public int HierarchyLevel { get; set; } // 1: System Admin -> 5: Member
     }
 
@@ -175,6 +181,10 @@ namespace AronErpPm.Api.Models
 
         public DateTime? ExpiryDate { get; set; }
 
+        public int? GlobalRoleId { get; set; }
+        [ForeignKey("GlobalRoleId")]
+        public Role? GlobalRole { get; set; }
+
         [MaxLength(255)]
         public string? ResetToken { get; set; }
 
@@ -209,6 +219,25 @@ namespace AronErpPm.Api.Models
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal? DailyRate { get; set; } // Costing (PM and above only)
+
+        public bool IsActive { get; set; } = true;
+
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+    }
+
+    // 8. Project Scope Master Data
+    public class ProjectScopeOption
+    {
+        [Key]
+        public int OptionId { get; set; }
+
+        [Required]
+        [MaxLength(100)]
+        public string Value { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(250)]
+        public string Description { get; set; } = string.Empty;
 
         public bool IsActive { get; set; } = true;
 

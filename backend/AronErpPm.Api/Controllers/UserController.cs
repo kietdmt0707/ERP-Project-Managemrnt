@@ -47,6 +47,7 @@ namespace AronErpPm.Api.Controllers
             }
 
             var users = await _context.Users
+                .Include(u => u.GlobalRole)
                 .OrderBy(u => u.Username)
                 .ToListAsync();
 
@@ -95,6 +96,7 @@ namespace AronErpPm.Api.Controllers
                 Phone = request.Phone,
                 IsActive = request.IsActive,
                 ExpiryDate = request.ExpiryDate,
+                GlobalRoleId = request.GlobalRoleId,
                 CreatedDate = DateTime.UtcNow
             };
 
@@ -137,6 +139,7 @@ namespace AronErpPm.Api.Controllers
             user.Phone = request.Phone;
             user.IsActive = request.IsActive;
             user.ExpiryDate = request.ExpiryDate;
+            user.GlobalRoleId = request.GlobalRoleId;
             user.UpdatedDate = DateTime.UtcNow;
 
             if (!string.IsNullOrEmpty(request.Password))
@@ -167,6 +170,53 @@ namespace AronErpPm.Api.Controllers
             return Ok(new { Message = "Đã xóa người dùng thành công!" });
         }
 
+        // GET: api/user/{id}/projects
+        [HttpGet("{id}/projects")]
+        public async Task<IActionResult> GetUserProjects(int id)
+        {
+            var memberships = await _context.ProjectMembers
+                .Where(pm => pm.UserId == id)
+                .Select(pm => new {
+                    pm.ProjectMemberId,
+                    pm.ProjectId,
+                    pm.RoleId,
+                    pm.FunctionalTeamId,
+                    pm.DailyRate,
+                    pm.IsActive
+                })
+                .ToListAsync();
+
+            return Ok(memberships);
+        }
+
+        // POST: api/user/{id}/projects
+        [HttpPost("{id}/projects")]
+        public async Task<IActionResult> UpdateUserProjects(int id, [FromBody] System.Collections.Generic.List<ProjectMember> memberships)
+        {
+            var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == "GlobalRole")?.Value;
+            if (globalRoleClaim != "SYSTEM_ADMIN")
+            {
+                return Forbid("Chỉ Admin hệ thống mới có quyền phân công người dùng vào dự án.");
+            }
+
+            var existing = _context.ProjectMembers.Where(pm => pm.UserId == id);
+            _context.ProjectMembers.RemoveRange(existing);
+
+            foreach (var mem in memberships)
+            {
+                mem.UserId = id;
+                mem.ProjectMemberId = 0; // DB auto-increment
+                mem.Project = null;
+                mem.User = null;
+                mem.FunctionalTeam = null;
+                mem.Role = null;
+                _context.ProjectMembers.Add(mem);
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { Message = "Cập nhật phân quyền dự án thành công!" });
+        }
+
         private string HashPassword(string password)
         {
             using (var sha256 = System.Security.Cryptography.SHA256.Create())
@@ -185,6 +235,7 @@ namespace AronErpPm.Api.Controllers
         public string Email { get; set; } = string.Empty;
         public string? Phone { get; set; }
         public bool IsActive { get; set; } = true;
+        public int? GlobalRoleId { get; set; }
         public DateTime? ExpiryDate { get; set; }
     }
 
@@ -195,6 +246,7 @@ namespace AronErpPm.Api.Controllers
         public string Email { get; set; } = string.Empty;
         public string? Phone { get; set; }
         public bool IsActive { get; set; } = true;
+        public int? GlobalRoleId { get; set; }
         public DateTime? ExpiryDate { get; set; }
     }
 }
