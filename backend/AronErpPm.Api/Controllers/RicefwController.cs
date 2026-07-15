@@ -22,35 +22,48 @@ namespace AronErpPm.Api.Controllers
             _sharepointService = sharepointService;
         }
 
-        // Get RICEFW objects for a project
         [HttpGet("project/{projectId}")]
-        public async Task<ActionResult<List<RicefwRegistryDto>>> GetProjectRicefws(int projectId)
+        [AllowAnonymous]
+        public async Task<IActionResult> GetProjectRicefws(int projectId)
         {
-            var list = await _context.RicefwRegistries
-                .Include(r => r.ResponsibleMember).ThenInclude(m => m!.User)
-                .Where(r => r.ProjectId == projectId)
-                .Select(r => new RicefwRegistryDto
-                {
-                    RicefwId = r.RicefwId,
-                    ProjectId = r.ProjectId,
-                    RicefwCode = r.RicefwCode,
-                    RicefwName = r.RicefwName,
-                    ModuleCode = r.ModuleCode,
-                    ObjectType = r.ObjectType,
-                    Complexity = r.Complexity,
-                    FunctionalSpecStatus = r.FunctionalSpecStatus,
-                    TechnicalSpecStatus = r.TechnicalSpecStatus,
-                    CodingStatus = r.CodingStatus,
-                    UnitTestingStatus = r.UnitTestingStatus,
-                    SitStatus = r.SitStatus,
-                    UatStatus = r.UatStatus,
-                    ResponsibleMemberId = r.ResponsibleMemberId,
-                    ResponsibleMemberName = r.ResponsibleMember != null ? r.ResponsibleMember.User!.FullName : null,
-                    SharepointFolderLink = r.SharepointFolderLink
-                })
-                .ToListAsync();
+            try
+            {
+                var list = await _context.RicefwRegistries
+                    .Include(r => r.ResponsibleMember).ThenInclude(m => m!.User)
+                    .Where(r => r.ProjectId == projectId)
+                    .Select(r => new RicefwRegistryDto
+                    {
+                        RicefwId = r.RicefwId,
+                        ProjectId = r.ProjectId,
+                        RicefwCode = r.RicefwCode,
+                        RicefwName = r.RicefwName,
+                        ModuleCode = r.ModuleCode,
+                        ObjectType = r.ObjectType,
+                        Complexity = r.Complexity,
+                        FunctionalSpecStatus = r.FunctionalSpecStatus,
+                        TechnicalSpecStatus = r.TechnicalSpecStatus,
+                        CodingStatus = r.CodingStatus,
+                        UnitTestingStatus = r.UnitTestingStatus,
+                        SitStatus = r.SitStatus,
+                        UatStatus = r.UatStatus,
+                        ResponsibleMemberId = r.ResponsibleMemberId,
+                        ResponsibleMemberName = r.ResponsibleMember != null && r.ResponsibleMember.User != null ? r.ResponsibleMember.User.FullName : null,
+                        SharepointFolderLink = r.SharepointFolderLink
+                    })
+                    .ToListAsync();
 
-            return Ok(list);
+                return Ok(list);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { 
+                    status = "Error",
+                    message = "Lỗi truy vấn RICEFW Database",
+                    detail = ex.Message, 
+                    inner = ex.InnerException?.Message,
+                    stackTrace = ex.StackTrace 
+                });
+            }
         }
 
         // Create or Update RICEFW Object
