@@ -51,7 +51,29 @@ namespace AronErpPm.Api.Controllers
                 .OrderBy(u => u.Username)
                 .ToListAsync();
 
-            return Ok(users);
+            var memberships = await _context.ProjectMembers
+                .Include(pm => pm.Project)
+                .ToListAsync();
+
+            var userDtos = users.Select(u => new UserDto
+            {
+                UserId = u.UserId,
+                Username = u.Username,
+                FullName = u.FullName,
+                Email = u.Email,
+                Phone = u.Phone,
+                IsActive = u.IsActive,
+                ExpiryDate = u.ExpiryDate,
+                GlobalRoleId = u.GlobalRoleId,
+                GlobalRole = u.GlobalRole,
+                ProjectNames = memberships
+                    .Where(pm => pm.UserId == u.UserId && pm.Project != null)
+                    .Select(pm => pm.Project!.ProjectName)
+                    .Distinct()
+                    .ToList()
+            }).ToList();
+
+            return Ok(userDtos);
         }
 
         // POST: api/user
@@ -79,9 +101,9 @@ namespace AronErpPm.Api.Controllers
                 return Forbid("Chỉ Admin hệ thống hoặc PM mới có quyền tạo người dùng.");
             }
 
-            if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
+            if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password) || request.Password.Length < 8)
             {
-                return BadRequest("Tên đăng nhập và mật khẩu không được trống.");
+                return BadRequest("Tên đăng nhập và mật khẩu không được trống, mật khẩu phải có ít nhất 8 ký tự.");
             }
 
             var exists = await _context.Users.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower());
@@ -151,6 +173,10 @@ namespace AronErpPm.Api.Controllers
 
             if (!string.IsNullOrEmpty(request.Password))
             {
+                if (request.Password.Length < 8)
+                {
+                    return BadRequest("Mật khẩu mới phải có ít nhất 8 ký tự.");
+                }
                 user.PasswordHash = HashPassword(request.Password);
             }
 
@@ -256,5 +282,19 @@ namespace AronErpPm.Api.Controllers
         public bool IsActive { get; set; } = true;
         public int? GlobalRoleId { get; set; }
         public DateTime? ExpiryDate { get; set; }
+    }
+
+    public class UserDto
+    {
+        public int UserId { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string? Phone { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime? ExpiryDate { get; set; }
+        public int? GlobalRoleId { get; set; }
+        public Role? GlobalRole { get; set; }
+        public List<string> ProjectNames { get; set; } = new();
     }
 }

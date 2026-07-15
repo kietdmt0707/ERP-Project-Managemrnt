@@ -16,11 +16,13 @@ namespace AronErpPm.Api.Controllers
     {
         private readonly AronDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly IEmailService _emailService;
 
-        public AuthController(AronDbContext context, IConfiguration configuration)
+        public AuthController(AronDbContext context, IConfiguration configuration, IEmailService emailService)
         {
             _context = context;
             _configuration = configuration;
+            _emailService = emailService;
         }
 
         [HttpPost("login")]
@@ -158,6 +160,72 @@ namespace AronErpPm.Api.Controllers
                 return BitConverter.ToString(hashedBytes).Replace("-", "").ToLower();
             }
         }
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            if (string.IsNullOrEmpty(request.Email))
+            {
+                return BadRequest("Email không được trống.");
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower());
+            if (user == null || !user.IsActive)
+            {
+                return Ok(new { message = "Nếu email tồn tại trong hệ thống, liên kết đặt lại mật khẩu đã được gửi đi." });
+            }
+
+            var token = EmailService.GenerateSecureToken();
+            user.ResetToken = token;
+            user.ResetTokenExpiry = DateTime.UtcNow.AddHours(1);
+            await _context.SaveChangesAsync();
+
+            var webPortalUrl = _configuration["ApiSettings:WebPortalUrl"] ?? "https://erp-project-managemrnt-sage.vercel.app";
+            var resetLink = $"{webPortalUrl}/reset-password?token={token}";
+
+            await _emailService.SendPasswordResetEmailAsync(user.Email, user.FullName, resetLink);
+
+            return Ok(new { message = "Nếu email tồn tại trong hệ thống, liên kết đặt lại mật khẩu đã được gửi đi." });
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            if (string.IsNullOrEmpty(request.Token))
+            {
+                return BadRequest("Mã xác thực token không hợp lệ.");
+            }
+
+            if (string.IsNullOrEmpty(request.NewPassword) || request.NewPassword.Length < 8)
+            {
+                return BadRequest("Mật khẩu mới phải có ít nhất 8 ký tự.");
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.ResetToken == request.Token && u.ResetTokenExpiry > DateTime.UtcNow);
+            if (user == null)
+            {
+                return BadRequest("Liên kết đặt lại mật khẩu đã hết hạn hoặc không hợp lệ.");
+            }
+
+            user.PasswordHash = HashPassword(request.NewPassword);
+            user.ResetToken = null;
+            user.ResetTokenExpiry = null;
+            user.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Đặt lại mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới." });
+        }
+    }
+
+    public class ForgotPasswordRequest
+    {
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class ResetPasswordRequest
+    {
+        public string Token { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
     }
 
     public class SsoRequest

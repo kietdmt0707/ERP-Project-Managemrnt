@@ -32,6 +32,80 @@ function App() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
+  // Forgot / Reset password states
+  const [authMode, setAuthMode] = useState<'login' | 'forgot' | 'reset'>('login');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotMessage, setForgotMessage] = useState<string | null>(null);
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [forgotLoading, setForgotLoading] = useState(false);
+
+  const [resetToken, setResetToken] = useState<string | null>(null);
+  const [resetPasswordStr, setResetPasswordStr] = useState('');
+  const [resetConfirmPasswordStr, setResetConfirmPasswordStr] = useState('');
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    if (token) {
+      setResetToken(token);
+      setAuthMode('reset');
+    }
+  }, []);
+
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setForgotError(null);
+      setForgotMessage(null);
+      setForgotLoading(true);
+      const res = await authService.forgotPassword(forgotEmail);
+      setForgotMessage(res.message || 'Yêu cầu thành công. Vui lòng kiểm tra email của bạn.');
+    } catch (err: any) {
+      setForgotError(err.message || 'Có lỗi xảy ra khi yêu cầu khôi phục mật khẩu.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (resetPasswordStr.length < 8) {
+      setResetError('Mật khẩu mới phải có ít nhất 8 ký tự.');
+      return;
+    }
+    if (resetPasswordStr !== resetConfirmPasswordStr) {
+      setResetError('Mật khẩu xác nhận không khớp.');
+      return;
+    }
+    if (!resetToken) {
+      setResetError('Mã xác thực token bị thiếu.');
+      return;
+    }
+
+    try {
+      setResetError(null);
+      setResetMessage(null);
+      setResetLoading(true);
+      const res = await authService.resetPassword(resetToken, resetPasswordStr);
+      setResetMessage(res.message || 'Đặt lại mật khẩu thành công.');
+      setTimeout(() => {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        setResetToken(null);
+        setAuthMode('login');
+        setResetMessage(null);
+        setResetPasswordStr('');
+        setResetConfirmPasswordStr('');
+      }, 3000);
+    } catch (err: any) {
+      setResetError(err.message || 'Có lỗi xảy ra khi đặt lại mật khẩu.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   // Tab selections
   const [activeTab, setActiveTab] = useState<'dashboard' | 'gantt' | 'ricefw' | 'approvals' | 'costs' | 'environments' | 'team' | 'trips' | 'projects' | 'settings' | 'users' | 'documents' | 'masterdata'>('dashboard');
 
@@ -128,7 +202,7 @@ function App() {
     }
   };
 
-  // Login view with rich dark theme aesthetics
+  // Login, Forgot, Reset password view with rich dark theme aesthetics
   if (!currentUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-dark-950 px-4 relative overflow-hidden">
@@ -147,89 +221,203 @@ function App() {
             <p className="mt-2 text-xs text-dark-400">Oracle Unified Implementation Tracker</p>
           </div>
 
-          {loginError && (
-            <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs p-3 rounded-xl">
-              {loginError}
-            </div>
-          )}
+          {authMode === 'login' && (
+            <>
+              {loginError && (
+                <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs p-3 rounded-xl">
+                  {loginError}
+                </div>
+              )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-dark-300">Tên tài khoản (User account):</label>
-              <input 
-                type="text" 
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Nhập tài khoản" 
-                className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-dark-100 placeholder-dark-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
-                required
-              />
-            </div>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-dark-300">Tên tài khoản (User account):</label>
+                  <input 
+                    type="text" 
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Nhập tài khoản" 
+                    className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-dark-100 placeholder-dark-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
+                    required
+                  />
+                </div>
 
-            <div className="space-y-1">
-              <div className="flex justify-between items-center">
-                <label className="text-xs font-semibold text-dark-300">Mật khẩu:</label>
-                <button type="button" onClick={() => alert('Vui lòng liên hệ Admin hệ thống để reset mật khẩu.')} className="text-[10px] text-brand-400 hover:underline">Quên mật khẩu?</button>
-              </div>
-              <div className="relative">
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Nhập mật khẩu" 
-                  className="w-full bg-dark-900 border border-dark-800 text-xs p-3 pr-10 rounded-xl text-dark-100 placeholder-dark-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
-                  required
-                />
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-semibold text-dark-300">Mật khẩu:</label>
+                    <button 
+                      type="button" 
+                      onClick={() => { setAuthMode('forgot'); setLoginError(null); }} 
+                      className="text-[10px] text-brand-400 hover:underline"
+                    >
+                      Quên mật khẩu?
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? "text" : "password"} 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Nhập mật khẩu" 
+                      className="w-full bg-dark-900 border border-dark-800 text-xs p-3 pr-10 rounded-xl text-dark-100 placeholder-dark-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white transition-colors"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1 pb-1">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input 
+                      type="checkbox" 
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="rounded bg-dark-900 border-dark-800 text-brand-500 focus:ring-brand-500/30 w-3.5 h-3.5"
+                    />
+                    <span className="text-[10px] text-dark-400 font-medium">Ghi nhớ đăng nhập</span>
+                  </label>
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={loginLoading}
+                  className="w-full bg-brand-600 hover:bg-brand-500 text-white p-3 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1 shadow-lg shadow-brand-600/20 disabled:opacity-50"
+                >
+                  {loginLoading ? 'Đang xác thực...' : 'Đăng Nhập'} <ArrowRight size={14} />
+                </button>
+
+                <div className="flex items-center my-3">
+                  <div className="flex-1 border-t border-dark-850"></div>
+                  <span className="px-3 text-[9px] text-dark-500 uppercase tracking-wider font-semibold">Hoặc đăng nhập bằng</span>
+                  <div className="flex-1 border-t border-dark-850"></div>
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-white transition-colors"
+                  onClick={handleMicrosoftSSO}
+                  className="w-full bg-dark-900 hover:bg-dark-850 border border-dark-800 text-dark-100 p-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2"
                 >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M0 0H10.8286V10.8286H0V0Z" fill="#F25022"/>
+                    <path d="M12.1714 0H23V10.8286H12.1714V0Z" fill="#7FBA00"/>
+                    <path d="M0 12.1714H10.8286V23H0V12.1714Z" fill="#00A4EF"/>
+                    <path d="M12.1714 12.1714H23V23H12.1714V12.1714Z" fill="#FFB900"/>
+                  </svg>
+                  Tài Khoản Microsoft Office 365
                 </button>
-              </div>
-            </div>
+              </form>
+            </>
+          )}
 
-            <div className="flex items-center justify-between pt-1 pb-1">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input 
-                  type="checkbox" 
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="rounded bg-dark-900 border-dark-800 text-brand-500 focus:ring-brand-500/30 w-3.5 h-3.5"
-                />
-                <span className="text-[10px] text-dark-400 font-medium">Ghi nhớ đăng nhập</span>
-              </label>
-            </div>
+          {authMode === 'forgot' && (
+            <>
+              {forgotMessage && (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs p-3 rounded-xl">
+                  {forgotMessage}
+                </div>
+              )}
+              {forgotError && (
+                <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs p-3 rounded-xl">
+                  {forgotError}
+                </div>
+              )}
 
-            <button 
-              type="submit" 
-              disabled={loginLoading}
-              className="w-full bg-brand-600 hover:bg-brand-500 text-white p-3 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1 shadow-lg shadow-brand-600/20 disabled:opacity-50"
-            >
-              {loginLoading ? 'Đang xác thực...' : 'Đăng Nhập'} <ArrowRight size={14} />
-            </button>
+              <form onSubmit={handleForgotPasswordSubmit} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-dark-300">Nhập Email tài khoản:</label>
+                  <input 
+                    type="email" 
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="example@aron.com" 
+                    className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-dark-100 placeholder-dark-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
+                    required
+                  />
+                  <p className="text-[10px] text-dark-500 mt-1">Hệ thống sẽ gửi link khôi phục mật khẩu nếu email tồn tại.</p>
+                </div>
 
-            <div className="flex items-center my-3">
-              <div className="flex-1 border-t border-dark-850"></div>
-              <span className="px-3 text-[9px] text-dark-500 uppercase tracking-wider font-semibold">Hoặc đăng nhập bằng</span>
-              <div className="flex-1 border-t border-dark-850"></div>
-            </div>
+                <button 
+                  type="submit" 
+                  disabled={forgotLoading}
+                  className="w-full bg-brand-600 hover:bg-brand-500 text-white p-3 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1 shadow-lg shadow-brand-600/20 disabled:opacity-50"
+                >
+                  {forgotLoading ? 'Đang xử lý...' : 'Gửi Yêu Cầu Khôi Phục'} <ArrowRight size={14} />
+                </button>
 
-            <button
-              type="button"
-              onClick={handleMicrosoftSSO}
-              className="w-full bg-dark-900 hover:bg-dark-850 border border-dark-800 text-dark-100 p-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2"
-            >
-              <svg className="w-4 h-4 shrink-0" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M0 0H10.8286V10.8286H0V0Z" fill="#F25022"/>
-                <path d="M12.1714 0H23V10.8286H12.1714V0Z" fill="#7FBA00"/>
-                <path d="M0 12.1714H10.8286V23H0V12.1714Z" fill="#00A4EF"/>
-                <path d="M12.1714 12.1714H23V23H12.1714V12.1714Z" fill="#FFB900"/>
-              </svg>
-              Tài Khoản Microsoft Office 365
-            </button>
-          </form>
+                <button 
+                  type="button" 
+                  onClick={() => { setAuthMode('login'); setForgotError(null); setForgotMessage(null); }}
+                  className="w-full text-center text-xs text-dark-400 hover:text-white pt-2 hover:underline block"
+                >
+                  Quay lại Đăng nhập
+                </button>
+              </form>
+            </>
+          )}
+
+          {authMode === 'reset' && (
+            <>
+              {resetMessage && (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs p-3 rounded-xl">
+                  {resetMessage}
+                </div>
+              )}
+              {resetError && (
+                <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs p-3 rounded-xl">
+                  {resetError}
+                </div>
+              )}
+
+              <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-dark-300">Mật khẩu mới (ít nhất 8 ký tự):</label>
+                  <input 
+                    type="password" 
+                    value={resetPasswordStr}
+                    onChange={(e) => setResetPasswordStr(e.target.value)}
+                    placeholder="Mật khẩu mới" 
+                    className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-dark-100 placeholder-dark-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
+                    required
+                    minLength={8}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-dark-300">Xác nhận mật khẩu mới:</label>
+                  <input 
+                    type="password" 
+                    value={resetConfirmPasswordStr}
+                    onChange={(e) => setResetConfirmPasswordStr(e.target.value)}
+                    placeholder="Xác nhận mật khẩu" 
+                    className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-dark-100 placeholder-dark-600 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all"
+                    required
+                  />
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={resetLoading}
+                  className="w-full bg-brand-600 hover:bg-brand-500 text-white p-3 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1 shadow-lg shadow-brand-600/20 disabled:opacity-50"
+                >
+                  {resetLoading ? 'Đang cập nhật...' : 'Xác Nhận Đổi Mật Khẩu'} <ArrowRight size={14} />
+                </button>
+
+                <button 
+                  type="button" 
+                  onClick={() => { setAuthMode('login'); setResetError(null); setResetMessage(null); }}
+                  className="w-full text-center text-xs text-dark-400 hover:text-white pt-2 hover:underline block"
+                >
+                  Quay lại Đăng nhập
+                </button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     );
