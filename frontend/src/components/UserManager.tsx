@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { userService, masterDataService, projectService, teamService, UserDto, SystemRoleDto } from '../services/api';
-import { Users, Edit2, Trash2, Shield, UserPlus } from 'lucide-react';
+import { Users, Edit2, Trash2, Shield, UserPlus, Search } from 'lucide-react';
 
 interface UserManagerProps {
   currentUserGlobalRole?: string;
@@ -35,6 +35,19 @@ export const UserManager: React.FC<UserManagerProps> = ({ currentUserGlobalRole 
   const [projFtMap, setProjFtMap] = useState<Record<number, any[]>>({}); // Maps projectId -> functionalTeams
 
   const isAdmin = currentUserGlobalRole === 'SYSTEM_ADMIN';
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredUsers = users.filter(u => {
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return true;
+    return (
+      (u.username && u.username.toLowerCase().includes(term)) ||
+      (u.fullName && u.fullName.toLowerCase().includes(term)) ||
+      (u.email && u.email.toLowerCase().includes(term)) ||
+      (u.phone && u.phone.toLowerCase().includes(term)) ||
+      (u.projectNames && u.projectNames.some((p: string) => p.toLowerCase().includes(term)))
+    );
+  });
 
   useEffect(() => {
     loadUsers();
@@ -221,6 +234,31 @@ export const UserManager: React.FC<UserManagerProps> = ({ currentUserGlobalRole 
         </button>
       </div>
 
+      {/* Search filter bar */}
+      <div className="bg-dark-900/40 p-4 rounded-xl border border-dark-800 flex items-center gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400" />
+          <input 
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Tìm theo tài khoản, tên, email, sđt hoặc tên dự án..."
+            className="w-full bg-dark-950 border border-dark-800 text-xs pl-9 pr-4 py-2 rounded-xl text-white focus:outline-none focus:border-brand-500 placeholder-dark-500"
+          />
+        </div>
+        {searchTerm && (
+          <button 
+            onClick={() => setSearchTerm('')} 
+            className="text-[11px] text-dark-400 hover:text-white transition-colors"
+          >
+            Xóa bộ lọc
+          </button>
+        )}
+        <div className="text-[11px] text-dark-500 ml-auto font-medium">
+          Tìm thấy: <span className="text-white font-bold">{filteredUsers.length}</span> / {users.length} tài khoản
+        </div>
+      </div>
+
       {error && (
         <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs p-3 rounded-xl">
           {error}
@@ -244,10 +282,21 @@ export const UserManager: React.FC<UserManagerProps> = ({ currentUserGlobalRole 
               </tr>
             </thead>
             <tbody className="divide-y divide-dark-850/40">
-              {users.map((u) => (
+              {filteredUsers.map((u) => (
                 <tr key={u.userId} className="hover:bg-dark-900/30 transition-colors">
                   <td className="p-4 font-mono font-semibold text-brand-400">{u.username}</td>
-                  <td className="p-4 font-medium text-white">{u.fullName}</td>
+                  <td className="p-4 font-medium text-white">
+                    <div>{u.fullName}</div>
+                    {u.projectNames && u.projectNames.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {u.projectNames.map((p: string) => (
+                          <span key={p} className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-dark-800 text-dark-400 border border-dark-750">
+                            {p}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </td>
                   <td className="p-4">
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 border border-blue-500/20 text-blue-400">
                       <Shield className="w-3 h-3 text-blue-500" />

@@ -76,6 +76,32 @@ export const authService = {
   getCurrentUser(): AuthResponse | null {
     const user = localStorage.getItem('aron_pm_user');
     return user ? JSON.parse(user) : null;
+  },
+
+  async forgotPassword(email: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    if (!response.ok) {
+      const txt = await response.text();
+      throw new Error(txt || 'Yêu cầu khôi phục mật khẩu thất bại.');
+    }
+    return response.json();
+  },
+
+  async resetPassword(token: string, newPassword: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, newPassword })
+    });
+    if (!response.ok) {
+      const txt = await response.text();
+      throw new Error(txt || 'Đặt lại mật khẩu thất bại.');
+    }
+    return response.json();
   }
 };
 
@@ -437,6 +463,7 @@ export interface UserDto {
   expiryDate?: string;
   globalRoleId?: number;
   globalRole?: any;
+  projectNames?: string[];
 }
 
 export const userService = {
