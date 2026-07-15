@@ -170,6 +170,30 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
     }));
   };
 
+  const handleSelectAll = () => {
+    if (!isAdmin) return;
+    const allChecked: Record<string, Record<string, boolean>> = {};
+    systemFeatures.forEach(feat => {
+      allChecked[feat.key] = {};
+      actions.forEach(act => {
+        allChecked[feat.key][act.key] = true;
+      });
+    });
+    setPermissions(allChecked);
+  };
+
+  const handleClearAll = () => {
+    if (!isAdmin) return;
+    const allCleared: Record<string, Record<string, boolean>> = {};
+    systemFeatures.forEach(feat => {
+      allCleared[feat.key] = {};
+      actions.forEach(act => {
+        allCleared[feat.key][act.key] = false;
+      });
+    });
+    setPermissions(allCleared);
+  };
+
   const handleRoleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRole || !selectedRole.roleId) return;
@@ -402,7 +426,24 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
                       <ShieldAlert className="w-4 h-4 text-indigo-500" />
                       Ma Trận Phân Quyền Tính Năng (Permission Matrix)
                     </h4>
-                    {!isAdmin && (
+                    {isAdmin ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleSelectAll}
+                          className="bg-blue-600/20 hover:bg-blue-600/35 text-blue-400 font-bold text-[10px] py-1.5 px-3 rounded-lg border border-blue-500/20 transition-all cursor-pointer"
+                        >
+                          Chọn Tất Cả
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleClearAll}
+                          className="bg-slate-800 hover:bg-slate-750 text-slate-350 font-bold text-[10px] py-1.5 px-3 rounded-lg border border-slate-700 transition-all cursor-pointer"
+                        >
+                          Bỏ Chọn Tất Cả
+                        </button>
+                      </div>
+                    ) : (
                       <span className="text-amber-400 text-xs bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/20">
                         Chỉ Admin hệ thống mới được phép sửa đổi ma trận này.
                       </span>
