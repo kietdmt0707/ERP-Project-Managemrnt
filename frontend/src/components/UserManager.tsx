@@ -334,8 +334,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ currentUserGlobalRole 
                         type="text" 
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        disabled={!!editingUser}
-                        className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500 disabled:opacity-50"
+                        className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
                         required
                       />
                     </div>

@@ -27,6 +27,7 @@ export interface AuthResponse {
   fullName: string;
   email: string;
   globalRole: string;
+  permissionsJson?: string;
   projectRoles: UserRole[];
 }
 
@@ -570,4 +571,19 @@ export const masterDataService = {
     }
     return response.json();
   }
+};
+
+export const hasPermission = (user: any, feature: string, action: string = 'View'): boolean => {
+  if (!user) return false;
+  if (user.globalRole === 'SYSTEM_ADMIN') return true; // SYSTEM_ADMIN has bypass access to all features and actions
+  
+  try {
+    if (user.permissionsJson) {
+      const matrix = JSON.parse(user.permissionsJson);
+      return !!matrix[feature]?.[action];
+    }
+  } catch (e) {
+    console.error('Error parsing permissionsJson', e);
+  }
+  return false;
 };
