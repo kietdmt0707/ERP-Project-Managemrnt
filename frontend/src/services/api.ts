@@ -319,6 +319,18 @@ export const settingService = {
       throw new Error(errText || 'Lưu cấu hình thất bại.');
     }
     return response.json();
+  },
+  async testEmail(payload: { smtpHost: string; smtpPort: number; smtpUsername: string; smtpPassword?: string; smtpEnableSsl: boolean; destinationEmail: string }): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/setting/test-email`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || 'Gửi email thử nghiệm thất bại.');
+    }
+    return response.json();
   }
 };
 
