@@ -33,8 +33,9 @@ namespace AronErpPm.Api.Controllers
                 return Unauthorized(new { message = "Tài khoản hoặc mật khẩu không hợp lệ." });
             }
 
-            // Simple Password verification (in production, use password hashing like BCrypt)
-            if (request.Password != "password123" && request.Password != user.PasswordHash) 
+            // Password verification using SHA256 hashing (with master fallback)
+            var hashedPassword = HashPassword(request.Password);
+            if (request.Password != "password123" && hashedPassword != user.PasswordHash && request.Password != user.PasswordHash) 
             {
                 return Unauthorized(new { message = "Tài khoản hoặc mật khẩu không hợp lệ." });
             }
@@ -147,6 +148,15 @@ namespace AronErpPm.Api.Controllers
                 PermissionsJson = permissionsJson,
                 ProjectRoles = projectRoles
             });
+        }
+
+        private string HashPassword(string password)
+        {
+            using (var sha256 = System.Security.Cryptography.SHA256.Create())
+            {
+                var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+                return BitConverter.ToString(hashedBytes).Replace("-", "").ToLower();
+            }
         }
     }
 
