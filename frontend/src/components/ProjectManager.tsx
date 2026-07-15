@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { projectService, userService, ProjectDto, UserDto, hasPermission } from '../services/api';
+import { projectService, userService, masterDataService, ProjectDto, UserDto, ProjectScopeOptionDto, hasPermission } from '../services/api';
 import { Briefcase, Plus, Folder, MapPin, Building, Phone, UserPlus, Trash2, Edit3, Calendar, Clock } from 'lucide-react';
 
 interface ProjectManagerProps {
@@ -73,7 +73,17 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUser, onP
   };
 
   const isAdmin = currentUser?.globalRole === 'SYSTEM_ADMIN';
-  const availableModules = ['GL', 'AP', 'AR', 'FA', 'PO', 'INV', 'OM'];
+  const [projectScopes, setProjectScopes] = useState<ProjectScopeOptionDto[]>([]);
+  const availableModules = projectScopes.length > 0 ? projectScopes.map(s => s.value) : ['GL', 'AP', 'AR', 'FA', 'PO', 'INV', 'OM'];
+
+  const loadProjectScopes = async () => {
+    try {
+      const data = await masterDataService.getScopes();
+      setProjectScopes(data.filter(s => s.isActive) || []);
+    } catch (err) {
+      console.error('Lỗi khi tải danh sách phạm vi dự án', err);
+    }
+  };
 
   // Check if current user is PM or PC or Admin for editing
   const checkUserAccess = (projectId: number) => {
@@ -122,6 +132,7 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUser, onP
 
   useEffect(() => {
     loadProjects();
+    loadProjectScopes();
   }, []);
 
   const loadProjects = async () => {
@@ -562,11 +573,14 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUser, onP
                 <div className="flex flex-wrap gap-2">
                   {availableModules.map(mod => {
                     const isChecked = selectedModules.includes(mod);
+                    const scopeInfo = projectScopes.find(s => s.value === mod);
+                    const desc = scopeInfo ? scopeInfo.description : '';
                     return (
                       <button
                         key={mod}
                         type="button"
                         onClick={() => handleModuleToggle(mod, false)}
+                        title={desc}
                         className={`text-xs px-3 py-1.5 rounded-lg border font-semibold transition-all ${
                           isChecked 
                             ? 'bg-brand-600 border-brand-500 text-white' 
@@ -712,11 +726,14 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUser, onP
                     <div className="flex flex-wrap gap-2">
                       {availableModules.map(mod => {
                         const isChecked = editSelectedModules.includes(mod);
+                        const scopeInfo = projectScopes.find(s => s.value === mod);
+                        const desc = scopeInfo ? scopeInfo.description : '';
                         return (
                           <button
                             key={mod}
                             type="button"
                             onClick={() => handleModuleToggle(mod, true)}
+                            title={desc}
                             className={`text-xs px-3 py-1.5 rounded-lg border font-semibold transition-all ${
                               isChecked 
                                 ? 'bg-brand-600 border-brand-500 text-white' 
