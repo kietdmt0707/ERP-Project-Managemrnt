@@ -113,6 +113,14 @@ namespace AronErpPm.Api.Models
         [MaxLength(500)]
         public string? Notes { get; set; }
 
+        public bool IsOverLimit { get; set; } = false;
+
+        [MaxLength(500)]
+        public string? Justification { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal OverLimitAmount { get; set; } = 0.00m;
+
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
     }
 }

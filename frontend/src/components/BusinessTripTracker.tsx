@@ -28,6 +28,9 @@ export const BusinessTripTracker: React.FC<BusinessTripTrackerProps> = ({ projec
   const [amountPlanned, setAmountPlanned] = useState(0);
   const [amountActual, setAmountActual] = useState(0);
   const [notes, setNotes] = useState('');
+  const [showSoftWarning, setShowSoftWarning] = useState(false);
+  const [softWarningMessage, setSoftWarningMessage] = useState('');
+  const [justification, setJustification] = useState('');
 
   // Assign Member state
   const [showMemberModal, setShowMemberModal] = useState(false);
@@ -94,15 +97,23 @@ export const BusinessTripTracker: React.FC<BusinessTripTrackerProps> = ({ projec
         expenseType,
         amountPlanned,
         amountActual,
-        notes
+        notes,
+        justification
       });
       setShowExpenseModal(false);
       setAmountPlanned(0);
       setAmountActual(0);
       setNotes('');
+      setJustification('');
+      setShowSoftWarning(false);
       loadTrips();
     } catch (err: any) {
-      alert(err.message || 'Thêm chi phí thất bại.');
+      if (err.isSoftWarning) {
+        setShowSoftWarning(true);
+        setSoftWarningMessage(err.message);
+      } else {
+        alert(err.message || 'Thêm chi phí thất bại.');
+      }
     }
   };
 
@@ -206,7 +217,13 @@ export const BusinessTripTracker: React.FC<BusinessTripTrackerProps> = ({ projec
                     + Thành Viên
                   </button>
                   <button
-                    onClick={() => { setSelectedTrip(trip); setShowExpenseModal(true); }}
+                    onClick={() => { 
+                      setSelectedTrip(trip); 
+                      setShowExpenseModal(true); 
+                      setShowSoftWarning(false);
+                      setJustification('');
+                      setSoftWarningMessage('');
+                    }}
                     className="bg-dark-800 hover:bg-dark-700 border border-dark-700 text-white font-bold text-xs py-2.5 px-3 rounded-xl flex items-center gap-1 transition-all"
                   >
                     + Khách Sạn / Chi Phí
@@ -413,11 +430,31 @@ export const BusinessTripTracker: React.FC<BusinessTripTrackerProps> = ({ projec
                 />
               </div>
 
+              {showSoftWarning && (
+                <div className="space-y-3">
+                  <div className="bg-amber-500/10 border text-amber-400 text-xs p-3 rounded-xl" style={{ borderColor: 'rgba(245, 158, 11, 0.2)' }}>
+                    {softWarningMessage}
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-amber-400 font-bold">Lý do vượt định mức (Bắt buộc):</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={justification}
+                      onChange={(e) => setJustification(e.target.value)}
+                      placeholder="Giải trình lý do phòng tăng giá/hết phòng..."
+                      className="w-full bg-dark-900 border text-xs p-3 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                      style={{ borderColor: 'rgba(245, 158, 11, 0.3)' }}
+                    />
+                  </div>
+                </div>
+              )}
+
               <button 
                 type="submit"
                 className="w-full bg-brand-600 hover:bg-brand-500 text-white p-3 rounded-xl text-xs font-bold transition-all"
               >
-                Thêm Chi Phí
+                {showSoftWarning ? 'Xác Nhận & Lưu Chi Phí' : 'Thêm Chi Phí'}
               </button>
             </form>
           </div>

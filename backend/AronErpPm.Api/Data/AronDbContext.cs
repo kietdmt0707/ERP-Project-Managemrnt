@@ -33,6 +33,8 @@ namespace AronErpPm.Api.Data
         public DbSet<ProjectScopeOption> ProjectScopeOptions { get; set; } = null!;
         public DbSet<LeaveRequest> LeaveRequests { get; set; } = null!;
         public DbSet<LeaveProjectApproval> LeaveProjectApprovals { get; set; } = null!;
+        public DbSet<TravelRegion> TravelRegions { get; set; } = null!;
+        public DbSet<TravelExpensePolicy> TravelExpensePolicies { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

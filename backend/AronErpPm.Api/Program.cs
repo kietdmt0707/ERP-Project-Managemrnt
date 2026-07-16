@@ -191,7 +191,30 @@ using (var scope = app.Services.CreateScope())
         ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS siteid INT;", "Add siteid to expenses"),
         ("ALTER TABLE business_trip_members ADD COLUMN IF NOT EXISTS isgroupleader BOOLEAN DEFAULT FALSE;", "Add isgroupleader to business_trip_members"),
         ("ALTER TABLE users ADD COLUMN IF NOT EXISTS annualleavedays INT DEFAULT 12;", "Add annualleavedays to users"),
-        ("ALTER TABLE users ADD COLUMN IF NOT EXISTS carryoverdays INT DEFAULT 0;", "Add carryoverdays to users")
+        ("ALTER TABLE users ADD COLUMN IF NOT EXISTS carryoverdays INT DEFAULT 0;", "Add carryoverdays to users"),
+        ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS isoverlimit BOOLEAN DEFAULT FALSE;", "Add isoverlimit to expenses"),
+        ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS justification TEXT;", "Add justification to expenses"),
+        ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS overlimitamount DECIMAL(18,2) DEFAULT 0.00;", "Add overlimitamount to expenses"),
+        (@"
+            CREATE TABLE IF NOT EXISTS travel_regions (
+                region_id SERIAL PRIMARY KEY,
+                region_code VARCHAR(20) UNIQUE NOT NULL,
+                region_name VARCHAR(100) NOT NULL,
+                provinces_included TEXT NOT NULL
+            );
+        ", "Create travel_regions table"),
+        (@"
+            CREATE TABLE IF NOT EXISTS travel_expense_policies (
+                policy_id SERIAL PRIMARY KEY,
+                region_code VARCHAR(20) NOT NULL,
+                role_code VARCHAR(20) NOT NULL,
+                per_diem_allowance DECIMAL(12,2) NOT NULL,
+                max_hotel_rate DECIMAL(12,2) NOT NULL,
+                currency VARCHAR(3) DEFAULT 'VND',
+                is_active BOOLEAN DEFAULT TRUE,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        ", "Create travel_expense_policies table")
     };
 
     foreach (var migration in migrations)
@@ -251,6 +274,39 @@ using (var scope = app.Services.CreateScope())
                 CreatedDate = DateTime.UtcNow
             };
             db.Users.Add(sysadmin);
+            db.SaveChanges();
+        }
+
+        // 3. Seed Travel Regions
+        if (!db.TravelRegions.Any())
+        {
+            db.TravelRegions.AddRange(new List<AronErpPm.Api.Models.TravelRegion>
+            {
+                new AronErpPm.Api.Models.TravelRegion { RegionCode = "TIERS_1", RegionName = "Vùng 1 (Hà Nội, HCM)", ProvincesIncluded = "Hà Nội, Hồ Chí Minh" },
+                new AronErpPm.Api.Models.TravelRegion { RegionCode = "TIERS_2", RegionName = "Vùng 2 (Cần Thơ, Đà Nẵng, Hải Phòng)", ProvincesIncluded = "Cần Thơ, Đà Nẵng, Hải Phòng" },
+                new AronErpPm.Api.Models.TravelRegion { RegionCode = "TIERS_3", RegionName = "Vùng 3 (Các tỉnh thành còn lại)", ProvincesIncluded = "Bình Dương, Đồng Nai, Long An, Bà Rịa - Vũng Tàu, Tây Ninh, Hải Dương, Hưng Yên, Bắc Ninh, Vĩnh Phúc" }
+            });
+            db.SaveChanges();
+        }
+
+        // 4. Seed Travel Expense Policies
+        if (!db.TravelExpensePolicies.Any())
+        {
+            db.TravelExpensePolicies.AddRange(new List<AronErpPm.Api.Models.TravelExpensePolicy>
+            {
+                // Vùng 1
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_1", RoleCode = "MEMBER", PerDiemAllowance = 250000m, MaxHotelRate = 400000m },
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_1", RoleCode = "LEADER", PerDiemAllowance = 250000m, MaxHotelRate = 500000m },
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_1", RoleCode = "PM", PerDiemAllowance = 300000m, MaxHotelRate = 700000m },
+                // Vùng 2
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_2", RoleCode = "MEMBER", PerDiemAllowance = 180000m, MaxHotelRate = 350000m },
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_2", RoleCode = "LEADER", PerDiemAllowance = 180000m, MaxHotelRate = 450000m },
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_2", RoleCode = "PM", PerDiemAllowance = 220000m, MaxHotelRate = 600000m },
+                // Vùng 3
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_3", RoleCode = "MEMBER", PerDiemAllowance = 120000m, MaxHotelRate = 250000m },
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_3", RoleCode = "LEADER", PerDiemAllowance = 120000m, MaxHotelRate = 350000m },
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_3", RoleCode = "PM", PerDiemAllowance = 150000m, MaxHotelRate = 500000m }
+            });
             db.SaveChanges();
         }
     }

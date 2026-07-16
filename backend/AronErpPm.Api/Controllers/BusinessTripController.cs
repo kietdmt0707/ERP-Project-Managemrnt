@@ -172,14 +172,79 @@ namespace AronErpPm.Api.Controllers
 
             if (member == null) return Forbid("Bạn không phải thành viên dự án này.");
 
+            var claimantMemberId = request.ClaimantMemberId > 0 ? request.ClaimantMemberId : member.ProjectMemberId;
+            var claimant = await _context.ProjectMembers
+                .Include(pm => pm.Role)
+                .Include(pm => pm.User)
+                .FirstOrDefaultAsync(pm => pm.ProjectMemberId == claimantMemberId);
+
+            if (claimant == null) return BadRequest("Không tìm thấy thành viên thực hiện thanh toán.");
+
+            // Match travel region
+            var regions = await _context.TravelRegions.ToListAsync();
+            var matchedRegion = regions.FirstOrDefault(r => 
+                !string.IsNullOrEmpty(trip.Destination) && 
+                r.ProvincesIncluded.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(p => p.Trim().ToLower())
+                    .Any(p => trip.Destination.ToLower().Contains(p))
+            );
+
+            var regionCode = matchedRegion?.RegionCode ?? "TIERS_3";
+            var roleCode = claimant.Role?.RoleCode ?? "MEMBER";
+
+            // Query policy
+            var policy = await _context.TravelExpensePolicies
+                .FirstOrDefaultAsync(p => p.RegionCode == regionCode && p.RoleCode == roleCode && p.IsActive);
+
+            decimal limit = 0;
+            if (request.ExpenseType == "HOTEL" && policy != null)
+            {
+                limit = policy.MaxHotelRate;
+            }
+            else if (request.ExpenseType == "MEALS" && policy != null)
+            {
+                limit = policy.PerDiemAllowance;
+            }
+
+            bool isOverLimit = false;
+            decimal overLimitAmount = 0;
+
+            if (limit > 0 && request.AmountActual > limit)
+            {
+                isOverLimit = true;
+                overLimitAmount = request.AmountActual - limit;
+
+                // Hard Tolerance: exceeds limit by more than 50%
+                if (request.AmountActual > limit * 1.5m)
+                {
+                    return BadRequest(new { 
+                        message = $"Chặn cứng: Chi phí [{request.ExpenseType}] thực tế ({request.AmountActual:N0} VND) vượt quá 50% hạn mức quy định ({limit:N0} VND) cho chức danh {roleCode} tại {regionCode}. Vui lòng liên hệ Admin hoặc PM để được duyệt ngoại lệ." 
+                    });
+                }
+
+                // Soft Tolerance: require justification
+                if (string.IsNullOrEmpty(request.Justification))
+                {
+                    return BadRequest(new {
+                        isSoftWarning = true,
+                        limitAmount = limit,
+                        overAmount = overLimitAmount,
+                        message = $"Cảnh báo định mức: Chi phí [{request.ExpenseType}] thực tế ({request.AmountActual:N0} VND) vượt hạn mức quy định ({limit:N0} VND) tại Vùng {regionCode[-1..]} cho {roleCode}. Vui lòng nhập lý do giải trình để PM/Director xem xét."
+                    });
+                }
+            }
+
             var expense = new Expense
             {
                 TripId = id,
-                ClaimantMemberId = member.ProjectMemberId,
+                ClaimantMemberId = claimantMemberId,
                 ExpenseType = request.ExpenseType, // HOTEL, TRANSPORT, MEALS, OTHER
                 AmountPlanned = request.AmountPlanned,
                 AmountActual = request.AmountActual,
                 Notes = request.Notes,
+                IsOverLimit = isOverLimit,
+                Justification = request.Justification,
+                OverLimitAmount = overLimitAmount,
                 Status = "DRAFT",
                 CreatedDate = DateTime.UtcNow
             };

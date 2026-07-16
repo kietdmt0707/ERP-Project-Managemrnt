@@ -464,12 +464,64 @@ export const businessTripService = {
     if (!response.ok) throw new Error('Thêm thành viên thất bại.');
     return response.json();
   },
-  async addTripExpense(tripId: number, expense: { expenseType: string, amountPlanned: number, amountActual: number, notes?: string }): Promise<any> {
+  async addTripExpense(tripId: number, expense: { expenseType: string, amountPlanned: number, amountActual: number, notes?: string, claimantMemberId?: number, justification?: string }): Promise<any> {
     const response = await fetch(`${API_BASE_URL}/businesstrip/${tripId}/expense`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(expense)
     });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw {
+        status: response.status,
+        message: errorData.message || 'Thêm chi phí thất bại.',
+        isSoftWarning: errorData.isSoftWarning,
+        limitAmount: errorData.limitAmount,
+        overAmount: errorData.overAmount
+      };
+    }
+    return response.json();
+  }
+};
+
+export interface TravelExpensePolicy {
+  policyId: number;
+  regionCode: string;
+  roleCode: string;
+  perDiemAllowance: number;
+  maxHotelRate: number;
+  currency: string;
+  isActive: boolean;
+  updatedAt: string;
+}
+
+export const travelPolicyService = {
+  async getPolicies(): Promise<TravelExpensePolicy[]> {
+    const response = await fetch(`${API_BASE_URL}/travelpolicy`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải quy định công tác phí.');
+    return response.json();
+  },
+  async updatePolicy(id: number, policy: Partial<TravelExpensePolicy>): Promise<TravelExpensePolicy> {
+    const response = await fetch(`${API_BASE_URL}/travelpolicy/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(policy)
+    });
+    if (!response.ok) throw new Error('Không thể cập nhật quy định công tác phí.');
+    return response.json();
+  },
+  async clonePolicies(inflationPercentage: number): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/travelpolicy/clone`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ inflationPercentage })
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || 'Không thể nhân bản quy định.');
+    }
     return response.json();
   }
 };
