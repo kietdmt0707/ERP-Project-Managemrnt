@@ -69,6 +69,7 @@ namespace AronErpPm.Api.Controllers
                 {
                     m.TripMemberId,
                     m.ProjectMemberId,
+                    m.IsGroupLeader,
                     FullName = m.ProjectMember?.User?.FullName ?? "Unknown",
                     Email = m.ProjectMember?.User?.Email ?? "",
                     Phone = m.ProjectMember?.User?.Phone ?? ""
@@ -126,21 +127,29 @@ namespace AronErpPm.Api.Controllers
 
         // POST: api/businesstrip/{id}/member
         [HttpPost("{id}/member")]
-        public async Task<IActionResult> AddTripMember(int id, [FromBody] int projectMemberId)
+        public async Task<IActionResult> AddTripMember(int id, [FromBody] TripMemberRequest request)
         {
             var trip = await _context.BusinessTrips.FindAsync(id);
             if (trip == null) return NotFound("Không tìm thấy chuyến công tác.");
 
             // Check if member already in trip
             var exists = await _context.BusinessTripMembers
-                .AnyAsync(m => m.TripId == id && m.ProjectMemberId == projectMemberId);
+                .FirstOrDefaultAsync(m => m.TripId == id && m.ProjectMemberId == request.ProjectMemberId);
 
-            if (exists) return BadRequest("Thành viên đã ở trong danh sách công tác.");
+            if (exists != null)
+            {
+                // Update Group Leader status if already in trip
+                exists.IsGroupLeader = request.IsGroupLeader;
+                _context.BusinessTripMembers.Update(exists);
+                await _context.SaveChangesAsync();
+                return Ok(exists);
+            }
 
             var tripMember = new BusinessTripMember
             {
                 TripId = id,
-                ProjectMemberId = projectMemberId
+                ProjectMemberId = request.ProjectMemberId,
+                IsGroupLeader = request.IsGroupLeader
             };
 
             _context.BusinessTripMembers.Add(tripMember);
@@ -180,5 +189,11 @@ namespace AronErpPm.Api.Controllers
 
             return Ok(expense);
         }
+    }
+
+    public class TripMemberRequest
+    {
+        public int ProjectMemberId { get; set; }
+        public bool IsGroupLeader { get; set; }
     }
 }

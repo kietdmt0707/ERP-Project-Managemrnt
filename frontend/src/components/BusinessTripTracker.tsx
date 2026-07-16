@@ -32,6 +32,7 @@ export const BusinessTripTracker: React.FC<BusinessTripTrackerProps> = ({ projec
   // Assign Member state
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [memberToAssign, setMemberToAssign] = useState<number>(0);
+  const [isGroupLeader, setIsGroupLeader] = useState<boolean>(false);
 
   useEffect(() => {
     loadTrips();
@@ -109,8 +110,9 @@ export const BusinessTripTracker: React.FC<BusinessTripTrackerProps> = ({ projec
     e.preventDefault();
     if (!selectedTrip || !selectedTrip.tripId) return;
     try {
-      await businessTripService.addTripMember(selectedTrip.tripId, memberToAssign);
+      await businessTripService.addTripMember(selectedTrip.tripId, { projectMemberId: memberToAssign, isGroupLeader });
       setShowMemberModal(false);
+      setIsGroupLeader(false);
       loadTrips();
     } catch (err: any) {
       alert(err.message || 'Thêm thành viên thất bại.');
@@ -223,6 +225,9 @@ export const BusinessTripTracker: React.FC<BusinessTripTrackerProps> = ({ projec
                     {trip.members?.map(m => (
                       <div key={m.tripMemberId} className="text-xs text-white font-medium flex items-center gap-2">
                         <span>👤 {m.fullName}</span>
+                        {m.isGroupLeader && (
+                          <span className="text-[9px] bg-brand-500/10 border border-brand-500/20 text-brand-400 font-bold px-1.5 py-0.25 rounded-full shrink-0">Trưởng Nhóm</span>
+                        )}
                         <span className="text-[10px] text-dark-500">({m.phone || m.email})</span>
                       </div>
                     ))}
@@ -443,6 +448,17 @@ export const BusinessTripTracker: React.FC<BusinessTripTrackerProps> = ({ projec
                     <option key={pm.projectMemberId} value={pm.projectMemberId}>{pm.fullName} ({pm.roleName})</option>
                   ))}
                 </select>
+              </div>
+
+              <div className="flex items-center gap-2 py-1">
+                <input 
+                  type="checkbox" 
+                  id="isGroupLeader"
+                  checked={isGroupLeader}
+                  onChange={(e) => setIsGroupLeader(e.target.checked)}
+                  className="rounded text-brand-500 focus:ring-brand-500 bg-dark-900 border-dark-800"
+                />
+                <label htmlFor="isGroupLeader" className="text-xs text-dark-300 font-semibold cursor-pointer select-none">Chỉ định làm Trưởng Nhóm Công Tác</label>
               </div>
 
               <button 

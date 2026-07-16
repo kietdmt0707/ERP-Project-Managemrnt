@@ -293,6 +293,7 @@ export interface BusinessTripDto {
   members?: Array<{
     tripMemberId: number;
     projectMemberId: number;
+    isGroupLeader: boolean;
     fullName: string;
     email: string;
     phone: string;
@@ -451,12 +452,13 @@ export const businessTripService = {
     if (!response.ok) throw new Error('Tạo lịch công tác thất bại.');
     return response.json();
   },
-  async addTripMember(tripId: number, projectMemberId: number): Promise<any> {
+  async addTripMember(tripId: number, payload: { projectMemberId: number, isGroupLeader: boolean }): Promise<any> {
     const response = await fetch(`${API_BASE_URL}/businesstrip/${tripId}/member`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify(projectMemberId)
+      body: JSON.stringify(payload)
     });
+    if (!response.ok) throw new Error('Thêm thành viên thất bại.');
     return response.json();
   },
   async addTripExpense(tripId: number, expense: { expenseType: string, amountPlanned: number, amountActual: number, notes?: string }): Promise<any> {

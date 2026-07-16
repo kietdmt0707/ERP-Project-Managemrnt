@@ -63,6 +63,8 @@ namespace AronErpPm.Api.Models
         public int ProjectMemberId { get; set; }
         [ForeignKey("ProjectMemberId")]
         public ProjectMember? ProjectMember { get; set; }
+
+        public bool IsGroupLeader { get; set; } = false;
     }
 
     // 3. Expense Claims
