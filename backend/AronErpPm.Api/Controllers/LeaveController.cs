@@ -31,13 +31,13 @@ namespace AronErpPm.Api.Controllers
             if (user == null) return NotFound("Không tìm thấy thông tin tài khoản.");
 
             // Carry-over logic: Expiry date is April 1st (Month >= 4)
-            int carryOverDays = 5;
+            int carryOverDays = user.CarryOverDays;
             if (DateTime.Today.Month >= 4)
             {
                 carryOverDays = 0;
             }
 
-            int annualLeaveDays = 13; // Standard annual leave balance
+            int annualLeaveDays = user.AnnualLeaveDays;
 
             // Sum up used leaves (APPROVED status)
             var usedLeaveDays = await _context.LeaveRequests

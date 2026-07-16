@@ -68,6 +68,9 @@ function App() {
   const [profileFullName, setProfileFullName] = useState('');
   const [profileEmail, setProfileEmail] = useState('');
   const [profilePhone, setProfilePhone] = useState('');
+  const [profileAvatarPath, setProfileAvatarPath] = useState('');
+  const [profileAnnualLeaveDays, setProfileAnnualLeaveDays] = useState(12);
+  const [profileCarryOverDays, setProfileCarryOverDays] = useState(0);
   const [profilePassword, setProfilePassword] = useState('');
   const [profileConfirmPassword, setProfileConfirmPassword] = useState('');
   const [profileSaving, setProfileSaving] = useState(false);
@@ -78,6 +81,9 @@ function App() {
       setProfileFullName(currentUser.fullName);
       setProfileEmail(currentUser.email);
       setProfilePhone(currentUser.phone || '');
+      setProfileAvatarPath(currentUser.avatarPath || '');
+      setProfileAnnualLeaveDays(currentUser.annualLeaveDays || 12);
+      setProfileCarryOverDays(currentUser.carryOverDays || 0);
       setProfilePassword('');
       setProfileConfirmPassword('');
       setProfileError(null);
@@ -106,7 +112,10 @@ function App() {
       const updateData: any = {
         fullName: profileFullName,
         email: profileEmail,
-        phone: profilePhone
+        phone: profilePhone,
+        avatarPath: profileAvatarPath,
+        annualLeaveDays: Number(profileAnnualLeaveDays),
+        carryOverDays: Number(profileCarryOverDays)
       };
 
       if (profilePassword) {
@@ -120,7 +129,10 @@ function App() {
         ...currentUser,
         fullName: updatedUser.fullName,
         email: updatedUser.email,
-        phone: updatedUser.phone
+        phone: updatedUser.phone,
+        avatarPath: updatedUser.avatarPath,
+        annualLeaveDays: updatedUser.annualLeaveDays,
+        carryOverDays: updatedUser.carryOverDays
       };
 
       localStorage.setItem('aron_pm_user', JSON.stringify(updatedCurrentUser));
@@ -570,6 +582,14 @@ function App() {
 
           {/* Profile Card */}
           <div className="flex items-center gap-3 pl-4 border-l border-dark-800">
+            {currentUser.avatarPath && (
+              <img 
+                src={currentUser.avatarPath} 
+                alt="Avatar" 
+                className="w-8 h-8 rounded-full border border-dark-750 object-cover cursor-pointer hover:scale-105 transition-transform" 
+                onClick={handleOpenProfile}
+              />
+            )}
             <button 
               onClick={handleOpenProfile}
               className="text-right hover:opacity-80 transition-opacity flex flex-col items-end"
@@ -1245,6 +1265,48 @@ function App() {
                     placeholder="Nhập số điện thoại..."
                     className="w-full bg-dark-950 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
                   />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-dark-300 font-semibold flex items-center justify-between">
+                    <span>Ảnh Đại Diện (URL ảnh):</span>
+                    {profileAvatarPath && (
+                      <img src={profileAvatarPath} alt="Avatar Preview" className="w-7 h-7 rounded-full border border-dark-850 object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    )}
+                  </label>
+                  <input 
+                    type="text" 
+                    value={profileAvatarPath} 
+                    onChange={e => setProfileAvatarPath(e.target.value)} 
+                    placeholder="Nhập link ảnh (URL)..."
+                    className="w-full bg-dark-950 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs text-dark-300 font-semibold">Tồn ngày phép năm:</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      max="30"
+                      value={profileAnnualLeaveDays} 
+                      onChange={e => setProfileAnnualLeaveDays(Number(e.target.value) || 0)} 
+                      className="w-full bg-dark-950 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-dark-300 font-semibold">Phép năm ngoái (Carry-over):</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      max="5"
+                      value={profileCarryOverDays} 
+                      onChange={e => setProfileCarryOverDays(Number(e.target.value) || 0)} 
+                      className="w-full bg-dark-950 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
                 </div>
 
                 <div className="border-t border-dark-850 pt-4 space-y-3">

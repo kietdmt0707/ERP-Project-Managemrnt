@@ -28,6 +28,9 @@ export interface AuthResponse {
   fullName: string;
   email: string;
   phone?: string;
+  avatarPath?: string;
+  annualLeaveDays?: number;
+  carryOverDays?: number;
   globalRole: string;
   permissionsJson?: string;
   projectRoles: UserRole[];
@@ -478,6 +481,7 @@ export interface UserDto {
   fullName: string;
   email: string;
   phone?: string;
+  avatarPath?: string;
   isActive: boolean;
   expiryDate?: string;
   globalRoleId?: number;

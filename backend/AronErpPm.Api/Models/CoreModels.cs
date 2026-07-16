@@ -188,6 +188,9 @@ namespace AronErpPm.Api.Models
 
         public string? AvatarPath { get; set; }
 
+        public int AnnualLeaveDays { get; set; } = 12;
+        public int CarryOverDays { get; set; } = 0;
+
         public bool IsActive { get; set; } = true;
 
         public DateTime? ExpiryDate { get; set; }

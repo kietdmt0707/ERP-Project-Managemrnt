@@ -188,7 +188,10 @@ using (var scope = app.Services.CreateScope())
         ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS aimcode VARCHAR(50);", "Add aimcode to tasks"),
         ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS visibilityscope VARCHAR(30) DEFAULT 'PUBLIC';", "Add visibilityscope to tasks"),
         ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS taskid INT;", "Add taskid to expenses"),
-        ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS siteid INT;", "Add siteid to expenses")
+        ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS siteid INT;", "Add siteid to expenses"),
+        ("ALTER TABLE business_trip_members ADD COLUMN IF NOT EXISTS isgroupleader BOOLEAN DEFAULT FALSE;", "Add isgroupleader to business_trip_members"),
+        ("ALTER TABLE users ADD COLUMN IF NOT EXISTS annualleavedays INT DEFAULT 12;", "Add annualleavedays to users"),
+        ("ALTER TABLE users ADD COLUMN IF NOT EXISTS carryoverdays INT DEFAULT 0;", "Add carryoverdays to users")
     };
 
     foreach (var migration in migrations)

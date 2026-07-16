@@ -18,6 +18,9 @@ namespace AronErpPm.Api.DTOs
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string? Phone { get; set; }
+        public string? AvatarPath { get; set; }
+        public int AnnualLeaveDays { get; set; }
+        public int CarryOverDays { get; set; }
         public string GlobalRole { get; set; } = string.Empty;
         public string? PermissionsJson { get; set; }
         public List<ProjectRoleDto> ProjectRoles { get; set; } = new List<ProjectRoleDto>();

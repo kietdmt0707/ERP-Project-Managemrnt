@@ -177,6 +177,9 @@ namespace AronErpPm.Api.Controllers
             user.FullName = request.FullName;
             user.Email = request.Email;
             user.Phone = request.Phone;
+            user.AvatarPath = request.AvatarPath;
+            user.AnnualLeaveDays = request.AnnualLeaveDays;
+            user.CarryOverDays = request.CarryOverDays;
             user.IsActive = request.IsActive;
             user.ExpiryDate = request.ExpiryDate;
             user.GlobalRoleId = request.GlobalRoleId;
@@ -327,6 +330,9 @@ namespace AronErpPm.Api.Controllers
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string? Phone { get; set; }
+        public string? AvatarPath { get; set; }
+        public int AnnualLeaveDays { get; set; } = 12;
+        public int CarryOverDays { get; set; } = 0;
         public bool IsActive { get; set; } = true;
         public int? GlobalRoleId { get; set; }
         public DateTime? ExpiryDate { get; set; }
@@ -339,6 +345,9 @@ namespace AronErpPm.Api.Controllers
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string? Phone { get; set; }
+        public string? AvatarPath { get; set; }
+        public int AnnualLeaveDays { get; set; }
+        public int CarryOverDays { get; set; }
         public bool IsActive { get; set; }
         public DateTime? ExpiryDate { get; set; }
         public int? GlobalRoleId { get; set; }
