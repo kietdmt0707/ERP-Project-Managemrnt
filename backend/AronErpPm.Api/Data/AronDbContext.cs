@@ -31,6 +31,8 @@ namespace AronErpPm.Api.Data
         public DbSet<SharepointMapping> SharepointMappings { get; set; } = null!;
         public DbSet<SystemSetting> SystemSettings { get; set; } = null!;
         public DbSet<ProjectScopeOption> ProjectScopeOptions { get; set; } = null!;
+        public DbSet<LeaveRequest> LeaveRequests { get; set; } = null!;
+        public DbSet<LeaveProjectApproval> LeaveProjectApprovals { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

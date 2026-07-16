@@ -10,6 +10,7 @@ import { BusinessTripTracker } from './components/BusinessTripTracker';
 import { UserManager } from './components/UserManager';
 import { MasterDataManager } from './components/MasterDataManager';
 import { ProjectDocuments } from './components/ProjectDocuments';
+import { LeaveManagement } from './components/LeaveManagement';
 import { Calendar, FileText, CheckSquare, DollarSign, LogOut, ArrowRight, Server, ShieldAlert, Users, Sliders, Briefcase, Plane, Folder, Eye, EyeOff } from 'lucide-react';
 
 function App() {
@@ -650,6 +651,15 @@ function App() {
                 </button>
               )}
 
+              <button 
+                onClick={() => setActiveTab('leaves')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                  activeTab === 'leaves' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                }`}
+              >
+                <Calendar size={16} /> Quản Lý Nghỉ Phép
+              </button>
+
               {hasPermission(currentUser, 'Approvals') && (
                 <button 
                   onClick={() => setActiveTab('approvals')}
@@ -1031,7 +1041,9 @@ function App() {
 
             {activeTab === 'masterdata' && <MasterDataManager currentUserGlobalRole={currentUser?.globalRole} />}
 
-            {activeTab !== 'dashboard' && activeTab !== 'projects' && activeTab !== 'settings' && activeTab !== 'users' && activeTab !== 'masterdata' && (
+            {activeTab === 'leaves' && <LeaveManagement />}
+
+            {activeTab !== 'dashboard' && activeTab !== 'projects' && activeTab !== 'settings' && activeTab !== 'users' && activeTab !== 'masterdata' && activeTab !== 'leaves' && (
               activeProject ? (
                 <>
                   {activeTab === 'gantt' && <GanttChart projectId={activeProject.projectId} userRole={activeProject.roleCode} />}

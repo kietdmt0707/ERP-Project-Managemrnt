@@ -77,13 +77,18 @@ namespace AronErpPm.Api.Controllers
             var step2ApproverId = pmMember?.ProjectMemberId ?? dirMember?.ProjectMemberId ?? step1ApproverId;
             var step3ApproverId = dirMember?.ProjectMemberId ?? step2ApproverId;
 
+            // Self-approval bypass check: If the initiator is the PM of the project
+            var isInitiatorPm = member.Role?.RoleCode == "PM";
+
             // Step 1 Record
             var step1 = new ApprovalStep
             {
                 WorkflowId = workflow.WorkflowId,
                 StepNumber = 1,
                 ApproverMemberId = step1ApproverId,
-                StepStatus = "PENDING",
+                StepStatus = isInitiatorPm ? "APPROVED" : "PENDING",
+                ActionDate = isInitiatorPm ? DateTime.UtcNow : (DateTime?)null,
+                Comments = isInitiatorPm ? "Tự động duyệt (Khởi tạo bởi PM)" : null,
                 SecureToken = EmailService.GenerateSecureToken(),
                 TokenExpiry = DateTime.UtcNow.AddHours(24)
             };
@@ -94,7 +99,9 @@ namespace AronErpPm.Api.Controllers
                 WorkflowId = workflow.WorkflowId,
                 StepNumber = 2,
                 ApproverMemberId = step2ApproverId,
-                StepStatus = "PENDING",
+                StepStatus = isInitiatorPm ? "APPROVED" : "PENDING",
+                ActionDate = isInitiatorPm ? DateTime.UtcNow : (DateTime?)null,
+                Comments = isInitiatorPm ? "Tự động duyệt (Khởi tạo bởi PM)" : null,
                 SecureToken = EmailService.GenerateSecureToken(),
                 TokenExpiry = DateTime.UtcNow.AddHours(48)
             };
@@ -102,6 +109,13 @@ namespace AronErpPm.Api.Controllers
             if (request.TargetType.ToUpper() == "TIMESHEET")
             {
                 _context.ApprovalSteps.AddRange(step1, step2);
+                if (isInitiatorPm)
+                {
+                    workflow.WorkflowStatus = "APPROVED";
+                    workflow.UpdatedDate = DateTime.UtcNow;
+                    _context.ApprovalWorkflows.Update(workflow);
+                    await UpdateTargetItemStatusAsync(workflow.TargetType, workflow.TargetId, "APPROVED");
+                }
             }
             else
             {
@@ -116,12 +130,36 @@ namespace AronErpPm.Api.Controllers
                     TokenExpiry = DateTime.UtcNow.AddHours(72)
                 };
                 _context.ApprovalSteps.AddRange(step1, step2, step3);
+
+                if (isInitiatorPm)
+                {
+                    workflow.CurrentStepNumber = 3;
+                    _context.ApprovalWorkflows.Update(workflow);
+                }
             }
             await _context.SaveChangesAsync();
 
-            // Trigger Email to Level 1 Approver
-            var currentApprover = leaderMember ?? pmMember;
-            if (currentApprover?.User != null)
+            // Trigger Email to the correct starting step approver
+            ProjectMember? currentApprover = null;
+            int stepIdToSend = step1.StepId;
+            string tokenToSend = step1.SecureToken!;
+
+            if (isInitiatorPm && request.TargetType.ToUpper() != "TIMESHEET")
+            {
+                currentApprover = dirMember;
+                var savedStep3 = await _context.ApprovalSteps.FirstOrDefaultAsync(s => s.WorkflowId == workflow.WorkflowId && s.StepNumber == 3);
+                if (savedStep3 != null)
+                {
+                    stepIdToSend = savedStep3.StepId;
+                    tokenToSend = savedStep3.SecureToken!;
+                }
+            }
+            else
+            {
+                currentApprover = leaderMember ?? pmMember;
+            }
+
+            if (currentApprover?.User != null && (!isInitiatorPm || request.TargetType.ToUpper() != "TIMESHEET"))
             {
                 await _emailService.SendApprovalEmailAsync(
                     currentApprover.User.Email,
@@ -131,8 +169,8 @@ namespace AronErpPm.Api.Controllers
                     workflow.TargetType,
                     request.Description,
                     request.Amount,
-                    step1.StepId,
-                    step1.SecureToken!
+                    stepIdToSend,
+                    tokenToSend
                 );
             }
 
