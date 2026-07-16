@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, User, Check, X, Clipboard, Clock, Briefcase, Plus, RefreshCw } from 'lucide-react';
+import { Calendar, Clock, Plus, RefreshCw } from 'lucide-react';
 
 interface LeaveHistoryItem {
   leaveId: number;
@@ -159,6 +159,14 @@ export const LeaveManagement: React.FC = () => {
       console.error(err);
     }
   };
+  if (loading) {
+    return (
+      <div className="text-center py-10 bg-[#F9F6F0] p-8 rounded-2xl border border-[#E6E1D6]">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#A45A52]"></div>
+        <p className="text-xs text-[#595250] mt-2 font-semibold">Đang tải thông tin nghỉ phép...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -319,13 +327,21 @@ export const LeaveManagement: React.FC = () => {
                             <p className="font-bold text-[#231F20]">{app.project?.projectName || 'Dự án'}</p>
                             {app.comments && <p className="text-[9px] text-[#595250] italic">Ghi chú: {app.comments}</p>}
                           </div>
-                          <span className={`font-mono text-[9px] font-bold ${
-                            app.status === 'APPROVED' ? 'text-emerald-600' :
-                            app.status === 'REJECTED' ? 'text-rose-600' :
-                            'text-amber-600'
-                          }`}>
-                            {app.status === 'APPROVED' ? '✓ Đã duyệt' : app.status === 'REJECTED' ? '✗ Từ chối' : '● Chờ PM'}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            {app.status === 'PENDING' ? (
+                              <div className="flex gap-1.5">
+                                <button type="button" onClick={() => handleApproveReject(app.approvalId, true)} className="text-[10px] text-emerald-600 hover:text-emerald-500 font-bold hover:underline">Duyệt</button>
+                                <span className="text-[#E6E1D6]">|</span>
+                                <button type="button" onClick={() => handleApproveReject(app.approvalId, false)} className="text-[10px] text-rose-600 hover:text-rose-500 font-bold hover:underline">Từ chối</button>
+                              </div>
+                            ) : (
+                              <span className={`font-mono text-[9px] font-bold ${
+                                app.status === 'APPROVED' ? 'text-emerald-600' : 'text-rose-600'
+                              }`}>
+                                {app.status === 'APPROVED' ? '✓ Đã duyệt' : '✗ Từ chối'}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
