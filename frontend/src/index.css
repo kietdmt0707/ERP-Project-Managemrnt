@@ -158,58 +158,60 @@ html, [data-theme="default-dark"] {
   --color-dark-950: #f8fafc;
 }
 
-/* Fusion Crimson - Dark Mode */
+/* Fusion Crimson - Dark Mode (Oracle Redwood Dark Theme) */
 [data-theme="fusion-dark"] {
-  --color-brand-50: #fef2f2;
-  --color-brand-100: #fee2e2;
-  --color-brand-200: #fecaca;
-  --color-brand-300: #fca5a5;
+  --color-brand-50: #3f0707;
+  --color-brand-100: #450a0a;
+  --color-brand-200: #7f1d1d;
+  --color-brand-300: #991b1b;
   --color-brand-400: #f87171;
-  --color-brand-500: #dc2626;
+  --color-brand-500: #A45A52; /* Terracotta */
   --color-brand-600: #b91c1c;
-  --color-brand-700: #991b1b;
-  --color-brand-800: #7f1d1d;
-  --color-brand-900: #450a0a;
-  --color-brand-950: #3f0707;
+  --color-brand-700: #dc2626;
+  --color-brand-800: #fecaca;
+  --color-brand-900: #fee2e2;
+  --color-brand-950: #140d0c;
 
-  --color-dark-50: #fafaf9;
-  --color-dark-100: #f5f5f4;
-  --color-dark-200: #e7e5e4;
-  --color-dark-300: #d6d3d1;
-  --color-dark-400: #a8a29e;
+  --color-dark-50: #FAFAF9;
+  --color-dark-100: #F5F5F4;
+  --color-dark-200: #E7E5E4;
+  --color-dark-300: #D6D3D1;
+  --color-dark-400: #A8A29E;
   --color-dark-500: #78716c;
   --color-dark-600: #57524e;
-  --color-dark-700: #44403c;
-  --color-dark-800: #322523;
-  --color-dark-900: #211614;
-  --color-dark-950: #140d0c;
+  --color-dark-700: #2c1e1c; /* Sidebar background dark */
+  --color-dark-800: #382522; /* Border dark */
+  --color-dark-850: #382522;
+  --color-dark-900: #1b1210; /* Card background dark */
+  --color-dark-950: #140d0c; /* Canvas background dark */
 }
 
-/* Fusion Crimson - Light Mode */
+/* Fusion Crimson - Light Mode (Oracle Redwood Light Theme) */
 [data-theme="fusion-light"] {
-  --color-brand-50: #fef2f2;
-  --color-brand-100: #fee2e2;
-  --color-brand-200: #fecaca;
-  --color-brand-300: #fca5a5;
-  --color-brand-400: #f87171;
-  --color-brand-500: #dc2626;
-  --color-brand-600: #b91c1c;
-  --color-brand-700: #991b1b;
-  --color-brand-800: #7f1d1d;
-  --color-brand-900: #450a0a;
-  --color-brand-950: #fee2e2;
+  --color-brand-50: #F9F6F0;
+  --color-brand-100: #F0EDE5;
+  --color-brand-200: #E6E1D6;
+  --color-brand-300: #dfa39b;
+  --color-brand-400: #D97706; /* Amber */
+  --color-brand-500: #A45A52; /* Terracotta */
+  --color-brand-600: #8b3c34;
+  --color-brand-700: #6f2b25;
+  --color-brand-800: #541c18;
+  --color-brand-900: #3b0f0b;
+  --color-brand-950: #F9F6F0;
 
-  --color-dark-50: #140d0c;
-  --color-dark-100: #211614;
-  --color-dark-200: #322523;
-  --color-dark-300: #44403c;
-  --color-dark-400: #57524e;
-  --color-dark-500: #78716c;
-  --color-dark-600: #a8a29e;
-  --color-dark-700: #d6d3d1;
-  --color-dark-800: #e7e5e4;
-  --color-dark-900: #f5f5f4;
-  --color-dark-950: #fafaf9;
+  --color-dark-50: #231F20;  /* Primary Text */
+  --color-dark-100: #231F20;
+  --color-dark-200: #595250; /* Secondary Text */
+  --color-dark-300: #595250;
+  --color-dark-400: #595250;
+  --color-dark-500: #595250;
+  --color-dark-600: #8f9aa7;
+  --color-dark-700: #F0EDE5; /* Sidebar background */
+  --color-dark-800: #E6E1D6; /* Border light */
+  --color-dark-850: #E6E1D6; /* Border light */
+  --color-dark-900: #FFFFFF; /* Card background */
+  --color-dark-950: #F9F6F0; /* Canvas background */
 }
 
 /* Emerald Oracle - Dark Mode */
