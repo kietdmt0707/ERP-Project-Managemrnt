@@ -180,7 +180,15 @@ using (var scope = app.Services.CreateScope())
             UPDATE users 
             SET globalroleid = (SELECT roleid FROM roles WHERE rolecode = 'SYSTEM_ADMIN' LIMIT 1) 
             WHERE (username = 'admin' OR username = 'sysadmin') AND globalroleid IS NULL;
-        ", "Assign default SYSTEM_ADMIN globalrole to admin users")
+        ", "Assign default SYSTEM_ADMIN globalrole to admin users"),
+        ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS sharepointfolderid TEXT;", "Add sharepointfolderid to projects"),
+        ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS baselinebudget DECIMAL(18,2) DEFAULT 0.00;", "Add baselinebudget to projects"),
+        ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS actualcost DECIMAL(18,2) DEFAULT 0.00;", "Add actualcost to projects"),
+        ("ALTER TABLE teams ADD COLUMN IF NOT EXISTS teamtype VARCHAR(50) DEFAULT 'ARON';", "Add teamtype to teams"),
+        ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS aimcode VARCHAR(50);", "Add aimcode to tasks"),
+        ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS visibilityscope VARCHAR(30) DEFAULT 'PUBLIC';", "Add visibilityscope to tasks"),
+        ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS taskid INT;", "Add taskid to expenses"),
+        ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS siteid INT;", "Add siteid to expenses")
     };
 
     foreach (var migration in migrations)
