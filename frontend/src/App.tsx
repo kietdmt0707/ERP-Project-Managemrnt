@@ -525,8 +525,20 @@ function App() {
             <span className="text-2xl">📊</span>
           )}
           <div>
-            <h1 className="text-md font-bold text-white tracking-wide">{systemSettings.appName}</h1>
+            <h1 className="text-sm font-bold text-white tracking-wide">{systemSettings.appName} - Built for Oracle Ecosystem</h1>
             <p className="text-[10px] text-dark-400">Oracle Unified Implementation Tracker</p>
+          </div>
+        </div>
+
+        {/* Global Search Bar (Oracle ERP Redwood Style) */}
+        <div className="flex-1 max-w-sm mx-6 hidden md:block">
+          <div className="relative">
+            <input 
+              type="text" 
+              placeholder="Global Search..." 
+              className="w-full bg-dark-950 border border-dark-850 text-xs pl-9 pr-3 py-2 rounded-xl text-white placeholder-dark-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/20"
+            />
+            <span className="absolute left-3 top-2.5 text-[10px] text-dark-400">🔍</span>
           </div>
         </div>
 
@@ -740,126 +752,264 @@ function App() {
           <div className="animate-fade-in">
             {activeTab === 'dashboard' && (
               <div className="space-y-6">
-                {/* Banner */}
-                <div 
-                  className="h-44 rounded-3xl bg-cover bg-center border border-dark-800 p-6 flex flex-col justify-end relative overflow-hidden"
-                  style={{ backgroundImage: `url(${systemSettings.bannerUrl})` }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-t from-dark-950 via-dark-950/40 to-transparent"></div>
-                  <div className="relative z-10 space-y-1">
-                    <h2 className="text-xl font-extrabold text-white tracking-wide">
-                      {systemSettings.appName}
-                    </h2>
-                    <p className="text-xs text-dark-300">
-                      Hệ thống quản lý tích hợp RICEFW, Tiến độ Gantt & Công tác phí dự án Oracle ERP
-                    </p>
+                {/* PROJECT PORTFOLIO OVERVIEW HEADER */}
+                <div className="flex justify-between items-center pb-1">
+                  <div>
+                    <h2 className="text-lg font-extrabold text-white uppercase tracking-wider">Project Portfolio Overview</h2>
+                    <p className="text-xs text-dark-400">Hệ thống quản lý tích hợp RICEFW, Tiến độ Gantt & Tài chính dự án Oracle ERP</p>
+                  </div>
+                  <div className="bg-dark-900 border border-dark-800 px-4 py-2 rounded-xl text-xs flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="font-semibold text-white">Oracle Ecosystem Connected</span>
                   </div>
                 </div>
 
-                {/* Dashboard Stats */}
+                {/* 4 ORACLE REDWOOD INFOLETS */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <div className="bg-dark-900/60 p-4 rounded-2xl border border-dark-800 text-xs">
-                    <p className="text-dark-400 font-semibold">Dự án được phân quyền</p>
-                    <p className="text-2xl font-bold text-white mt-1 font-mono">{currentUser.projectRoles.length} Dự án</p>
-                  </div>
-                  <div className="bg-dark-900/60 p-4 rounded-2xl border border-dark-800 text-xs">
-                    <p className="text-dark-400 font-semibold">Tiến độ tổng thể (Gantt Rollup)</p>
-                    <div className="mt-2.5 w-full bg-dark-950 rounded-full h-2 overflow-hidden border border-dark-800">
-                      <div className="bg-brand-500 h-full rounded-full" style={{ width: '65%' }}></div>
+                  {/* Infolet 1: Project Health */}
+                  <div className="bg-dark-900 p-5 rounded-2xl border border-dark-850 shadow-md space-y-3">
+                    <p className="text-dark-400 font-semibold text-[11px] uppercase tracking-wider">Project Health</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-extrabold text-white">85%</span>
+                      <span className="text-emerald-500 font-bold text-sm flex items-center">↑</span>
                     </div>
-                    <p className="text-[10px] text-brand-400 mt-1 font-bold">65% Hoàn thành</p>
-                  </div>
-                  <div className="bg-dark-900/60 p-4 rounded-2xl border border-dark-800 text-xs">
-                    <p className="text-dark-400 font-semibold">Tỷ lệ RICEFW SIT/UAT Passed</p>
-                    <div className="mt-2.5 w-full bg-dark-950 rounded-full h-2 overflow-hidden border border-dark-800">
-                      <div className="bg-emerald-500 h-full rounded-full" style={{ width: '42%' }}></div>
+                    <div className="w-full bg-dark-950 h-1.5 rounded-full overflow-hidden border border-dark-800">
+                      <div className="bg-emerald-600 h-full rounded-full" style={{ width: '85%' }}></div>
                     </div>
-                    <p className="text-[10px] text-emerald-400 mt-1 font-bold">42% Hoàn thành</p>
+                    <p className="text-[10px] text-dark-500">of projects on track</p>
                   </div>
-                  <div className="bg-dark-900/60 p-4 rounded-2xl border border-dark-800 text-xs">
-                    <p className="text-dark-400 font-semibold">Tỷ lệ sử dụng Ngân sách</p>
-                    <div className="mt-2.5 w-full bg-dark-950 rounded-full h-2 overflow-hidden border border-dark-800">
-                      <div className="bg-amber-500 h-full rounded-full" style={{ width: '18%' }}></div>
+
+                  {/* Infolet 2: Active Projects */}
+                  <div className="bg-dark-900 p-5 rounded-2xl border border-dark-850 shadow-md space-y-3">
+                    <p className="text-dark-400 font-semibold text-[11px] uppercase tracking-wider">Active Projects</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-extrabold text-white">12</span>
                     </div>
-                    <p className="text-[10px] text-amber-400 mt-1 font-bold">18% Đã chi tiêu</p>
+                    <div className="w-full bg-dark-950 h-1.5 rounded-full overflow-hidden border border-dark-800">
+                      <div className="bg-brand-500 h-full rounded-full" style={{ width: '100%' }}></div>
+                    </div>
+                    <p className="text-[10px] text-dark-500">total active projects</p>
+                  </div>
+
+                  {/* Infolet 3: Tasks At-Risk */}
+                  <div className="bg-dark-900 p-5 rounded-2xl border border-dark-850 shadow-md space-y-3">
+                    <p className="text-dark-400 font-semibold text-[11px] uppercase tracking-wider">Task At-Risk</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-extrabold text-brand-500">15</span>
+                    </div>
+                    <div className="w-full bg-dark-950 h-1.5 rounded-full overflow-hidden border border-dark-800">
+                      <div className="bg-brand-500 h-full rounded-full" style={{ width: '45%' }}></div>
+                    </div>
+                    <p className="text-[10px] text-dark-500">tasks overdue or high risk</p>
+                  </div>
+
+                  {/* Infolet 4: Budget Burn */}
+                  <div className="bg-dark-900 p-5 rounded-2xl border border-dark-850 shadow-md space-y-3">
+                    <p className="text-dark-400 font-semibold text-[11px] uppercase tracking-wider">Budget Burn</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-extrabold text-amber-500">72%</span>
+                    </div>
+                    <div className="w-full bg-dark-950 h-1.5 rounded-full overflow-hidden border border-dark-800">
+                      <div className="bg-amber-500 h-full rounded-full" style={{ width: '72%' }}></div>
+                    </div>
+                    <p className="text-[10px] text-dark-500">average project budget utilized</p>
                   </div>
                 </div>
 
-                {/* Dashboard Chart Mock and Projects List Grid */}
+                {/* DASHBOARD GRID: 3 COLUMNS */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Left: Projects list assigned to this user */}
-                  <div className="lg:col-span-2 space-y-4">
-                    <h3 className="text-xs font-bold text-dark-400 uppercase tracking-wider">
-                      Danh sách dự án của bạn
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {currentUser.projectRoles.map((pr) => (
-                        <div key={pr.projectId} className="glass-panel p-5 rounded-2xl border border-dark-800 flex flex-col justify-between space-y-4 hover:border-dark-750 transition-all">
-                          <div className="space-y-2">
-                            <span className="text-[9px] font-bold font-mono text-brand-400 px-2 py-0.5 rounded bg-brand-500/10 border border-brand-500/10">
-                              {pr.projectCode}
-                            </span>
-                            <h4 className="text-sm font-bold text-white mt-1 leading-snug">{pr.projectName}</h4>
-                            <p className="text-xs text-dark-400">Vai trò: <strong className="text-brand-400 capitalize">{pr.roleName}</strong></p>
-                            {pr.functionalTeamName && (
-                              <p className="text-[10px] text-dark-500">Team: {pr.functionalTeamName}</p>
-                            )}
-                          </div>
-
-                          <button
-                            onClick={() => {
-                              selectProject(pr.projectId);
-                              setActiveTab('gantt');
-                            }}
-                            className="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all"
-                          >
-                            Truy Cập Dự Án <ArrowRight size={12} />
-                          </button>
-                        </div>
-                      ))}
-
-                      {currentUser.projectRoles.length === 0 && (
-                        <div className="col-span-2 text-center py-12 bg-dark-900/10 border border-dashed border-dark-850 rounded-2xl text-dark-500 text-xs">
-                          Bạn chưa được gán vào dự án nào. Vui lòng chuyển qua tab "Khởi Tạo & Quản Lý Dự Án" để tạo mới (nếu là Admin) hoặc liên hệ Admin để được phân quyền.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Right: High-tech mockup chart representing Project KPI progress */}
-                  <div className="bg-dark-900/40 p-5 rounded-2xl border border-dark-800 space-y-4">
-                    <h3 className="text-xs font-bold text-dark-400 uppercase tracking-wider">
-                      Đồ Thị KPI & Tiến Độ Dự Án
-                    </h3>
-                    <div className="space-y-4">
-                      {/* Bar graph representing multiple project burn rates */}
-                      <div className="space-y-3 pt-2">
-                        {currentUser.projectRoles.map((pr, index) => (
-                          <div key={pr.projectId} className="space-y-1">
-                            <div className="flex justify-between text-[10px] text-dark-300 font-mono">
-                              <span>{pr.projectCode}</span>
-                              <span>{index === 0 ? '78%' : '45%'}</span>
+                  {/* Column 1: My Task List */}
+                  <div className="bg-dark-900 p-5 rounded-2xl border border-dark-850 shadow-md flex flex-col justify-between space-y-4">
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                        <CheckSquare className="w-4 h-4 text-brand-500" />
+                        My Task List
+                      </h3>
+                      
+                      <div className="divide-y divide-dark-850">
+                        {[
+                          { name: 'Design User Login Module', project: 'Oracle HCM Implementation', date: 'Nov 12', completed: true },
+                          { name: 'Setup General Ledger Structure', project: 'Oracle ERP Upgrade', date: 'Nov 15', completed: false },
+                          { name: 'Configure Accounts Payable Flow', project: 'Oracle ERP Upgrade', date: 'Nov 18', completed: false },
+                          { name: 'Data Migration & Verification', project: 'Cloud Migration Project', date: 'Nov 20', completed: false }
+                        ].map((task, idx) => (
+                          <div key={idx} className="py-3 flex items-start gap-2.5">
+                            <input 
+                              type="checkbox" 
+                              checked={task.completed} 
+                              readOnly 
+                              className="mt-0.5 w-4 h-4 rounded border-dark-800 text-brand-500 bg-dark-950 focus:ring-brand-500/20"
+                            />
+                            <div className="flex-1 space-y-1">
+                              <p className={`text-xs font-semibold leading-tight ${task.completed ? 'text-dark-500 line-through' : 'text-white'}`}>{task.name}</p>
+                              <span className="inline-block text-[9px] font-bold text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded border border-brand-500/5">
+                                {task.project}
+                              </span>
                             </div>
-                            <div className="w-full bg-dark-950 h-3 rounded-full overflow-hidden border border-dark-850">
-                              <div 
-                                className={`h-full rounded-full ${index === 0 ? 'bg-brand-500' : 'bg-emerald-500'}`} 
-                                style={{ width: index === 0 ? '78%' : '45%' }}
-                              ></div>
+                            <div className="text-[10px] text-dark-400 font-mono text-right flex flex-col items-end gap-1">
+                              <span>{task.date}</span>
+                              <div className="flex gap-1">
+                                <span className={`w-1.5 h-1.5 rounded-full ${idx === 0 ? 'bg-emerald-500' : 'bg-brand-500'}`} />
+                                <span className="w-1.5 h-1.5 rounded-full bg-dark-700" />
+                              </div>
                             </div>
                           </div>
                         ))}
-                        {currentUser.projectRoles.length === 0 && (
-                          <div className="text-center text-dark-600 italic text-[11px] py-10">
-                            Chưa có dữ liệu đồ thị dự án
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Sub notes */}
-                      <div className="bg-dark-950/60 p-3 rounded-xl border border-dark-850 text-[10px] text-dark-500 leading-relaxed">
-                        ⚡ Đồ thị phân tích tiến độ thực tế (Gantt Task Slippage) và tỷ lệ hoàn thành RICEFW theo thời gian thực.
                       </div>
                     </div>
+                  </div>
+
+                  {/* Column 2: Project Progress (Stacked Bars & Details) */}
+                  <div className="bg-dark-900 p-5 rounded-2xl border border-dark-850 shadow-md flex flex-col justify-between space-y-4">
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                          <FileText className="w-4 h-4 text-amber-500" />
+                          Project Progress
+                        </h3>
+                        {/* Legend */}
+                        <div className="flex gap-2 text-[9px] text-dark-400 font-semibold">
+                          <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-dark-600" /> In Progress</span>
+                          <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Completed</span>
+                          <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-brand-500" /> At Risk</span>
+                        </div>
+                      </div>
+
+                      {/* Visual Stacked Bars */}
+                      <div className="h-32 flex items-end justify-around gap-4 pb-2 border-b border-dark-850 relative">
+                        {/* Y-axis labels */}
+                        <div className="absolute left-0 bottom-2 text-[8px] text-dark-500 font-mono space-y-4 text-right pr-2">
+                          <div>1000</div>
+                          <div>755</div>
+                          <div>500</div>
+                          <div>255</div>
+                          <div>0</div>
+                        </div>
+
+                        {[
+                          { name: 'In Progress', h1: '30%', h2: '50%', h3: '20%' },
+                          { name: 'Completed', h1: '20%', h2: '60%', h3: '20%' },
+                          { name: 'At Risk', h1: '15%', h2: '35%', h3: '50%' },
+                          { name: 'At Risk', h1: '40%', h2: '10%', h3: '50%' }
+                        ].map((col, idx) => (
+                          <div key={idx} className="flex flex-col items-center gap-1.5 w-10 z-10">
+                            <div className="w-full bg-dark-950 rounded overflow-hidden flex flex-col h-24">
+                              <div className="bg-brand-500 w-full" style={{ height: col.h3 }} />
+                              <div className="bg-amber-500 w-full" style={{ height: col.h2 }} />
+                              <div className="bg-dark-600 w-full flex-1" style={{ height: col.h1 }} />
+                            </div>
+                            <span className="text-[8px] text-dark-400 font-semibold">{col.name}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Project status table */}
+                      <div className="space-y-2 pt-1">
+                        <div className="flex justify-between items-center text-xs">
+                          <div>
+                            <p className="font-semibold text-white">Oracle ERP Upgrade</p>
+                            <p className="text-[9px] text-dark-500">Project: ERP Upgrade</p>
+                          </div>
+                          <span className="font-mono font-bold text-white">90</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <div>
+                            <p className="font-semibold text-white">Cloud Migration Project</p>
+                            <p className="text-[9px] text-dark-500">Project: ERP Upgrade</p>
+                          </div>
+                          <span className="font-mono font-bold text-white">99</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Column 3: Resource Utilization (Donut & Availability) */}
+                  <div className="bg-dark-900 p-5 rounded-2xl border border-dark-850 shadow-md flex flex-col justify-between space-y-4">
+                    <div className="space-y-4">
+                      <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                        <Users className="w-4 h-4 text-emerald-500" />
+                        Resource Utilization
+                      </h3>
+
+                      {/* Donut Chart SVG */}
+                      <div className="flex flex-col items-center py-2 relative">
+                        <svg className="w-24 h-24 transform -rotate-90">
+                          <circle cx="48" cy="48" r="38" strokeWidth="8" stroke="var(--color-dark-950)" fill="transparent" />
+                          <circle cx="48" cy="48" r="38" strokeWidth="8" stroke="var(--color-brand-500)" fill="transparent" strokeDasharray="238" strokeDashoffset="52" strokeLinecap="round" />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pt-2">
+                          <span className="text-lg font-extrabold text-white">78%</span>
+                          <span className="text-[8px] text-dark-400 font-semibold uppercase tracking-wide">Allocated</span>
+                        </div>
+                        <p className="text-[10px] text-dark-300 font-semibold mt-2">Resource Allocation</p>
+                      </div>
+
+                      {/* Availability by Role */}
+                      <div className="space-y-2 pt-1">
+                        <p className="text-[10px] text-dark-400 font-bold uppercase tracking-wider">Availability by Role</p>
+                        
+                        <div className="space-y-1.5">
+                          <div className="space-y-0.5">
+                            <div className="flex justify-between text-[9px] font-semibold text-dark-300">
+                              <span>Developers</span>
+                              <span>65%</span>
+                            </div>
+                            <div className="w-full bg-dark-950 h-1.5 rounded-full overflow-hidden border border-dark-850">
+                              <div className="bg-brand-500 h-full rounded-full" style={{ width: '65%' }} />
+                            </div>
+                          </div>
+
+                          <div className="space-y-0.5">
+                            <div className="flex justify-between text-[9px] font-semibold text-dark-300">
+                              <span>Analysts</span>
+                              <span>85%</span>
+                            </div>
+                            <div className="w-full bg-dark-950 h-1.5 rounded-full overflow-hidden border border-dark-850">
+                              <div className="bg-amber-500 h-full rounded-full" style={{ width: '85%' }} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* MY PROJECT ROLES & QUICK ACCESS LIST */}
+                <div className="space-y-4 pt-2">
+                  <h3 className="text-xs font-bold text-dark-400 uppercase tracking-wider">
+                    Danh sách dự án của bạn (Truy cập nhanh)
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {currentUser.projectRoles.map((pr) => (
+                      <div key={pr.projectId} className="bg-dark-900 p-5 rounded-2xl border border-dark-850 flex flex-col justify-between space-y-4 hover:border-brand-500/20 transition-all shadow-sm">
+                        <div className="space-y-2">
+                          <span className="text-[9px] font-bold font-mono text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded border border-brand-500/10">
+                            {pr.projectCode}
+                          </span>
+                          <h4 className="text-sm font-bold text-white mt-1 leading-snug">{pr.projectName}</h4>
+                          <p className="text-xs text-dark-400">Vai trò: <strong className="text-brand-400 capitalize">{pr.roleName}</strong></p>
+                          {pr.functionalTeamName && (
+                            <p className="text-[10px] text-dark-500">Team: {pr.functionalTeamName}</p>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            selectProject(pr.projectId);
+                            setActiveTab('gantt');
+                          }}
+                          className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                        >
+                          Truy Cập Dự Án <ArrowRight size={12} />
+                        </button>
+                      </div>
+                    ))}
+
+                    {currentUser.projectRoles.length === 0 && (
+                      <div className="col-span-3 text-center py-12 bg-dark-900/10 border border-dashed border-dark-850 rounded-2xl text-dark-500 text-xs">
+                        Bạn chưa được gán vào dự án nào. Vui lòng chuyển qua tab "Khởi Tạo & Quản Lý Dự Án" để tạo mới (nếu là Admin) hoặc liên hệ Admin để được phân quyền.
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
