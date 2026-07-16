@@ -122,7 +122,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
             </div>
           </td>
           <td className="py-3 px-4 text-xs text-dark-300 font-medium">
-            {task.taskLevel === 1 ? 'Phase' : task.taskLevel === 2 ? 'Module' : 'Task'}
+            {task.taskLevel === 1 ? 'Phase' : task.taskLevel === 2 ? 'Stream' : task.taskLevel === 3 ? 'Deliverable' : 'Action Task'}
           </td>
           <td className="py-3 px-4 text-xs text-dark-400">
             {task.assigneeName ? (
@@ -174,7 +174,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Calendar className="text-brand-500" /> Kế Hoạch Dự Án & Sơ Đồ Gán
           </h2>
-          <p className="text-xs text-dark-400 mt-1">Phân cấp công việc 3 cấp WBS liên kết động với tiến độ phân hệ</p>
+          <p className="text-xs text-dark-400 mt-1">Phân cấp công việc WBS 4 cấp (Phase, Stream, AIM Deliverable, Action Task) liên kết động với tiến độ phân hệ</p>
         </div>
         
         {(userRole === 'PM' || userRole === 'SYSTEM_ADMIN' || userRole === 'PC') && (

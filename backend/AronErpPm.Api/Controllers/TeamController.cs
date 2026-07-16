@@ -33,6 +33,10 @@ namespace AronErpPm.Api.Controllers
                 .Include(t => t.FunctionalTeams)
                 .ToListAsync();
 
+            var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == "GlobalRole")?.Value;
+            var projectRoleClaim = User.Claims.FirstOrDefault(c => c.Type == $"ProjectRole_{projectId}")?.Value;
+            var isAuthorizedCost = globalRoleClaim == "SYSTEM_ADMIN" || globalRoleClaim == "DIRECTOR" || globalRoleClaim == "PM" || projectRoleClaim == "PM" || projectRoleClaim == "PC";
+
             var members = await _context.ProjectMembers
                 .Where(pm => pm.ProjectId == projectId)
                 .Include(pm => pm.User)
@@ -53,7 +57,7 @@ namespace AronErpPm.Api.Controllers
                     Phone = pm.User != null ? pm.User.Phone : "",
                     Title = pm.User != null ? pm.User.Title : "",
                     AvatarPath = pm.User != null ? pm.User.AvatarPath : "",
-                    DailyRate = pm.DailyRate, // Returned for PM / Admin display checking
+                    DailyRate = isAuthorizedCost ? pm.DailyRate : null,
                     pm.IsActive
                 }).ToListAsync();
 

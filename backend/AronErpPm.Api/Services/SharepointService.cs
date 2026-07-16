@@ -10,6 +10,7 @@ namespace AronErpPm.Api.Services
     {
         Task<string?> CreateProjectFoldersAsync(string projectCode, string projectName, string siteId);
         Task<string?> CreateRicefwFolderAsync(string projectFolderId, string ricefwCode, string siteId);
+        Task<bool> SyncTripToOutlookCalendarAsync(string title, string destination, DateTime startDate, DateTime endDate, string userEmail);
     }
 
     public class SharepointService : ISharepointService
@@ -126,6 +127,50 @@ namespace AronErpPm.Api.Services
             {
                 _logger.LogError(ex, $"Failed to create SharePoint folder for RICEFW: {ricefwCode}");
                 return null;
+            }
+        }
+
+        public async Task<bool> SyncTripToOutlookCalendarAsync(string title, string destination, DateTime startDate, DateTime endDate, string userEmail)
+        {
+            if (_graphClient == null)
+            {
+                _logger.LogInformation($"[MOCK OUTLOOK] Syncing Trip '{title}' (Destination: {destination}) for user '{userEmail}' ({startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd})");
+                return true;
+            }
+
+            try
+            {
+                var @event = new Event
+                {
+                    Subject = $"Công tác: {title} ({destination})",
+                    Body = new ItemBody
+                    {
+                        ContentType = BodyType.Html,
+                        Content = $"Chi tiết lịch đi công tác onsite tại {destination} từ {startDate:dd/MM/yyyy} đến {endDate:dd/MM/yyyy}."
+                    },
+                    Start = new DateTimeTimeZone
+                    {
+                        DateTime = startDate.ToString("s"),
+                        TimeZone = "SE Asia Standard Time"
+                    },
+                    End = new DateTimeTimeZone
+                    {
+                        DateTime = endDate.ToString("s"),
+                        TimeZone = "SE Asia Standard Time"
+                    },
+                    Location = new Location
+                    {
+                        DisplayName = destination
+                    }
+                };
+
+                await _graphClient.Users[userEmail].Events.PostAsync(@event);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Failed to sync Outlook Calendar event for user: {userEmail}");
+                return false;
             }
         }
     }

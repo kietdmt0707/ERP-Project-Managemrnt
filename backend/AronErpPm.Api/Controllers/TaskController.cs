@@ -66,22 +66,41 @@ namespace AronErpPm.Api.Controllers
                 ProgressPercent = t.ProgressPercent,
                 Status = t.Status,
                 IsVisibleToAll = t.IsVisibleToAll,
+                VisibilityScope = t.VisibilityScope,
+                AIMCode = t.AIMCode,
                 PredecessorTaskIds = dependencies
                     .Where(d => d.SuccessorTaskId == t.TaskId)
                     .Select(d => d.PredecessorTaskId)
                     .ToList()
             }).ToList();
 
-            // Check Visibility constraints for the current user
+            // Check Visibility constraints for the current user (Cross-visibility security)
             var username = User.Identity?.Name;
             var userMember = await _context.ProjectMembers
                 .Include(pm => pm.Role)
-                .FirstOrDefaultAsync(pm => pm.ProjectId == projectId && pm.User!.Username == username);
+                .Include(pm => pm.FunctionalTeam).ThenInclude(ft => ft!.Team)
+                .FirstOrDefaultAsync(pm => pm.ProjectId == projectId && pm.User!.Username.ToLower() == username.ToLower());
 
-            // If normal member, filter out private tasks they are not assigned to
-            if (userMember != null && userMember.Role?.RoleCode == "MEMBER")
+            if (userMember != null)
             {
-                flatDtos = flatDtos.Where(t => t.IsVisibleToAll || t.AssigneeMemberId == userMember.ProjectMemberId).ToList();
+                var userTeamType = userMember.FunctionalTeam?.Team?.TeamType ?? "ARON";
+                
+                // If the user belongs to the Client Team (Khách hàng), they can only see PUBLIC tasks or tasks assigned to them
+                if (userTeamType == "CLIENT")
+                {
+                    // Retrieve task visibility scope from DB entities to check
+                    var visibleTaskIds = allTasks
+                        .Where(t => t.VisibilityScope == "PUBLIC" || t.AssigneeMemberId == userMember.ProjectMemberId)
+                        .Select(t => t.TaskId)
+                        .ToHashSet();
+
+                    flatDtos = flatDtos.Where(t => visibleTaskIds.Contains(t.TaskId)).ToList();
+                }
+                // If normal member, filter out private tasks they are not assigned to
+                else if (userMember.Role?.RoleCode == "MEMBER")
+                {
+                    flatDtos = flatDtos.Where(t => t.IsVisibleToAll || t.AssigneeMemberId == userMember.ProjectMemberId).ToList();
+                }
             }
 
             // Build Hierarchical Tree
@@ -169,7 +188,9 @@ namespace AronErpPm.Api.Controllers
                     DurationPlanned = dto.DurationPlanned,
                     ProgressPercent = dto.ProgressPercent,
                     Status = dto.Status,
-                    IsVisibleToAll = dto.IsVisibleToAll
+                    IsVisibleToAll = dto.IsVisibleToAll,
+                    VisibilityScope = dto.VisibilityScope ?? "PUBLIC",
+                    AIMCode = dto.AIMCode
                 };
 
                 _context.Tasks.Add(task);
@@ -211,6 +232,8 @@ namespace AronErpPm.Api.Controllers
                     task.ProgressPercent = dto.ProgressPercent;
                     task.Status = dto.Status;
                     task.IsVisibleToAll = dto.IsVisibleToAll;
+                    task.VisibilityScope = dto.VisibilityScope ?? "PUBLIC";
+                    task.AIMCode = dto.AIMCode;
                 }
                 
                 task.UpdatedDate = DateTime.UtcNow;

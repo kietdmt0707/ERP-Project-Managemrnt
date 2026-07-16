@@ -218,6 +218,9 @@ namespace AronErpPm.Api.Controllers
         [HttpGet("{id}/projects")]
         public async Task<IActionResult> GetUserProjects(int id)
         {
+            var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == "GlobalRole")?.Value;
+            var isAuthorizedCost = globalRoleClaim == "SYSTEM_ADMIN" || globalRoleClaim == "DIRECTOR" || globalRoleClaim == "PM";
+
             var memberships = await _context.ProjectMembers
                 .Where(pm => pm.UserId == id)
                 .Select(pm => new {
@@ -225,7 +228,7 @@ namespace AronErpPm.Api.Controllers
                     pm.ProjectId,
                     pm.RoleId,
                     pm.FunctionalTeamId,
-                    pm.DailyRate,
+                    DailyRate = isAuthorizedCost ? pm.DailyRate : null,
                     pm.IsActive
                 })
                 .ToListAsync();

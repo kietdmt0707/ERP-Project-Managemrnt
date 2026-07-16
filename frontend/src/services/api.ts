@@ -127,6 +127,8 @@ export interface TaskNode {
   progressPercent: number;
   status: string;
   isVisibleToAll: boolean;
+  visibilityScope: string | null;
+  aimCode: string | null;
   subTasks: TaskNode[];
   predecessorTaskIds: number[];
 }

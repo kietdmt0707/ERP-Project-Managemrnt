@@ -14,11 +14,13 @@ namespace AronErpPm.Api.Controllers
     {
         private readonly AronDbContext _context;
         private readonly IEmailService _emailService;
+        private readonly ISharepointService _sharepointService;
 
-        public ApprovalController(AronDbContext context, IEmailService emailService)
+        public ApprovalController(AronDbContext context, IEmailService emailService, ISharepointService sharepointService)
         {
             _context = context;
             _emailService = emailService;
+            _sharepointService = sharepointService;
         }
 
         // 1. Submit Request to trigger 3-Level Workflow
@@ -97,18 +99,24 @@ namespace AronErpPm.Api.Controllers
                 TokenExpiry = DateTime.UtcNow.AddHours(48)
             };
 
-            // Step 3 Record
-            var step3 = new ApprovalStep
+            if (request.TargetType.ToUpper() == "TIMESHEET")
             {
-                WorkflowId = workflow.WorkflowId,
-                StepNumber = 3,
-                ApproverMemberId = step3ApproverId,
-                StepStatus = "PENDING",
-                SecureToken = EmailService.GenerateSecureToken(),
-                TokenExpiry = DateTime.UtcNow.AddHours(72)
-            };
-
-            _context.ApprovalSteps.AddRange(step1, step2, step3);
+                _context.ApprovalSteps.AddRange(step1, step2);
+            }
+            else
+            {
+                // Step 3 Record (Only for financial Travel & Expenses)
+                var step3 = new ApprovalStep
+                {
+                    WorkflowId = workflow.WorkflowId,
+                    StepNumber = 3,
+                    ApproverMemberId = step3ApproverId,
+                    StepStatus = "PENDING",
+                    SecureToken = EmailService.GenerateSecureToken(),
+                    TokenExpiry = DateTime.UtcNow.AddHours(72)
+                };
+                _context.ApprovalSteps.AddRange(step1, step2, step3);
+            }
             await _context.SaveChangesAsync();
 
             // Trigger Email to Level 1 Approver
@@ -170,18 +178,17 @@ namespace AronErpPm.Api.Controllers
                 step.Comments = "Phê duyệt nhanh qua Email";
                 _context.ApprovalSteps.Update(step);
 
-                if (step.StepNumber < 3)
+                var nextStep = await _context.ApprovalSteps
+                    .Include(s => s.ApproverMember).ThenInclude(m => m!.User)
+                    .FirstOrDefaultAsync(s => s.WorkflowId == workflow.WorkflowId && s.StepNumber == step.StepNumber + 1);
+
+                if (nextStep != null)
                 {
                     // Move to Next Step
                     workflow.CurrentStepNumber = step.StepNumber + 1;
                     _context.ApprovalWorkflows.Update(workflow);
 
-                    // Send email to next approver
-                    var nextStep = await _context.ApprovalSteps
-                        .Include(s => s.ApproverMember).ThenInclude(m => m!.User)
-                        .FirstOrDefaultAsync(s => s.WorkflowId == workflow.WorkflowId && s.StepNumber == workflow.CurrentStepNumber);
-
-                    if (nextStep?.ApproverMember?.User != null)
+                    if (nextStep.ApproverMember?.User != null)
                     {
                         await _emailService.SendApprovalEmailAsync(
                             nextStep.ApproverMember.User.Email,
@@ -268,26 +275,79 @@ namespace AronErpPm.Api.Controllers
                     item.Status = status;
                     if (status == "APPROVED") item.ApprovalDate = DateTime.UtcNow;
                     _context.Timesheets.Update(item);
+                    await _context.SaveChangesAsync();
+                    if (status == "APPROVED")
+                    {
+                        await RecalculateProjectActualCostAsync(item.ProjectId);
+                    }
                 }
             }
             else if (targetType == "TRIP")
             {
-                var item = await _context.BusinessTrips.FindAsync(targetId);
+                var item = await _context.BusinessTrips
+                    .Include(t => t.CreatedByMember).ThenInclude(m => m!.User)
+                    .FirstOrDefaultAsync(t => t.TripId == targetId);
+
                 if (item != null)
                 {
                     item.Status = status;
                     _context.BusinessTrips.Update(item);
+                    await _context.SaveChangesAsync();
+
+                    if (status == "APPROVED" && item.CreatedByMember?.User != null)
+                    {
+                        await _sharepointService.SyncTripToOutlookCalendarAsync(
+                            item.Title,
+                            item.Destination,
+                            item.StartDate,
+                            item.EndDate,
+                            item.CreatedByMember.User.Email
+                        );
+                    }
                 }
             }
             else if (targetType == "EXPENSE")
             {
-                var item = await _context.Expenses.FindAsync(targetId);
+                var item = await _context.Expenses.Include(e => e.BusinessTrip).FirstOrDefaultAsync(e => e.ExpenseId == targetId);
                 if (item != null)
                 {
                     item.Status = status;
                     _context.Expenses.Update(item);
+                    await _context.SaveChangesAsync();
+                    if (status == "APPROVED" && item.BusinessTrip != null)
+                    {
+                        await RecalculateProjectActualCostAsync(item.BusinessTrip.ProjectId);
+                    }
                 }
             }
+        }
+
+        private async System.Threading.Tasks.Task RecalculateProjectActualCostAsync(int projectId)
+        {
+            var project = await _context.Projects.FindAsync(projectId);
+            if (project == null) return;
+
+            // 1. Sum of all approved expenses
+            var totalExpenses = await _context.Expenses
+                .Where(e => e.BusinessTrip!.ProjectId == projectId && e.Status == "APPROVED")
+                .SumAsync(e => e.AmountActual);
+
+            // 2. Sum of all approved timesheet costs
+            var totalTimesheets = await _context.Timesheets
+                .Include(t => t.Member)
+                .Where(t => t.ProjectId == projectId && t.Status == "APPROVED")
+                .ToListAsync();
+
+            decimal timesheetSum = 0;
+            foreach (var ts in totalTimesheets)
+            {
+                var rate = ts.Member?.DailyRate ?? 150.00m;
+                timesheetSum += (ts.HoursWorked / 8m) * rate;
+            }
+
+            project.ActualCost = totalExpenses + timesheetSum;
+            _context.Projects.Update(project);
+            await _context.SaveChangesAsync();
         }
 
         // HTML Renders

@@ -61,6 +61,8 @@ namespace AronErpPm.Api.DTOs
         public decimal ProgressPercent { get; set; }
         public string Status { get; set; } = string.Empty; // NOT_STARTED, IN_PROGRESS, PENDING_APPROVAL, COMPLETED, DELAYED
         public bool IsVisibleToAll { get; set; }
+        public string? VisibilityScope { get; set; }
+        public string? AIMCode { get; set; }
 
         public List<TaskTreeNodeDto> SubTasks { get; set; } = new List<TaskTreeNodeDto>();
         public List<int> PredecessorTaskIds { get; set; } = new List<int>();

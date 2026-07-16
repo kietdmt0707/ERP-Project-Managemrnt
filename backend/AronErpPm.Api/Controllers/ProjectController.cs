@@ -6,6 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AronErpPm.Api.Data;
 using AronErpPm.Api.Models;
+using AronErpPm.Api.Services;
+
+using Microsoft.Extensions.Configuration;
 
 namespace AronErpPm.Api.Controllers
 {
@@ -15,10 +18,14 @@ namespace AronErpPm.Api.Controllers
     public class ProjectController : ControllerBase
     {
         private readonly AronDbContext _context;
+        private readonly ISharepointService _sharepointService;
+        private readonly IConfiguration _configuration;
 
-        public ProjectController(AronDbContext context)
+        public ProjectController(AronDbContext context, ISharepointService sharepointService, IConfiguration configuration)
         {
             _context = context;
+            _sharepointService = sharepointService;
+            _configuration = configuration;
         }
 
         // GET: api/project/test-diagnostics
@@ -130,9 +137,16 @@ namespace AronErpPm.Api.Controllers
                 IsActive = true,
                 CreatedDate = DateTime.UtcNow
             };
-
             try
             {
+                // Auto-provision SharePoint Folder via Graph API
+                var siteId = _configuration["AzureAd:SharepointSiteId"] ?? "mock-site-id";
+                var sharepointLink = await _sharepointService.CreateProjectFoldersAsync(project.ProjectCode, project.ProjectName, siteId);
+                if (!string.IsNullOrEmpty(sharepointLink))
+                {
+                    project.SharepointFolderLink = sharepointLink;
+                }
+
                 _context.Projects.Add(project);
                 await _context.SaveChangesAsync();
 
@@ -316,6 +330,100 @@ namespace AronErpPm.Api.Controllers
             return Ok(new { Message = "Đã xóa dự án thành công!" });
         }
 
+        // POST: api/project/{targetProjectId}/clone-plan
+        [HttpPost("{targetProjectId}/clone-plan")]
+        public async Task<IActionResult> ClonePlan(int targetProjectId, [FromBody] ClonePlanRequest request)
+        {
+            var targetProject = await _context.Projects.FindAsync(targetProjectId);
+            if (targetProject == null) return NotFound("Không tìm thấy dự án đích.");
+
+            var sourceProject = await _context.Projects
+                .Include(p => p.Tasks)
+                .FirstOrDefaultAsync(p => p.ProjectId == request.SourceProjectId);
+            if (sourceProject == null) return NotFound("Không tìm thấy dự án nguồn.");
+
+            var sourceTasks = sourceProject.Tasks.ToList();
+            if (!sourceTasks.Any()) return BadRequest("Dự án nguồn không có tác vụ nào để nhân bản.");
+
+            var earliestSourceStart = sourceTasks.Min(t => t.StartDatePlanned);
+            var timeOffset = request.TargetStartDate - earliestSourceStart;
+
+            var oldToNewTaskMap = new Dictionary<int, Models.Task>();
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // First pass: clone tasks (resetting ID)
+                foreach (var sTask in sourceTasks)
+                {
+                    var nTask = new Models.Task
+                    {
+                        ProjectId = targetProjectId,
+                        TaskCode = sTask.TaskCode,
+                        TaskName = sTask.TaskName,
+                        Description = sTask.Description,
+                        TaskLevel = sTask.TaskLevel,
+                        StartDatePlanned = sTask.StartDatePlanned.Add(timeOffset),
+                        EndDatePlanned = sTask.EndDatePlanned.Add(timeOffset),
+                        DurationPlanned = sTask.DurationPlanned,
+                        ProgressPercent = 0.00m,
+                        Status = "NOT_STARTED",
+                        VisibilityScope = sTask.VisibilityScope,
+                        AIMCode = sTask.AIMCode,
+                        IsVisibleToAll = sTask.IsVisibleToAll,
+                        CreatedDate = DateTime.UtcNow
+                    };
+
+                    _context.Tasks.Add(nTask);
+                    oldToNewTaskMap[sTask.TaskId] = nTask;
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Second pass: map parent tasks
+                foreach (var sTask in sourceTasks)
+                {
+                    if (sTask.ParentTaskId.HasValue && oldToNewTaskMap.TryGetValue(sTask.ParentTaskId.Value, out var newParent))
+                    {
+                        oldToNewTaskMap[sTask.TaskId].ParentTaskId = newParent.TaskId;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Third pass: clone task dependencies
+                var sourceDependencies = await _context.TaskDependencies
+                    .Where(td => sourceTasks.Select(t => t.TaskId).Contains(td.PredecessorTaskId))
+                    .ToListAsync();
+
+                foreach (var dep in sourceDependencies)
+                {
+                    if (oldToNewTaskMap.TryGetValue(dep.PredecessorTaskId, out var newPred) &&
+                        oldToNewTaskMap.TryGetValue(dep.SuccessorTaskId, out var newSucc))
+                    {
+                        var newDep = new TaskDependency
+                        {
+                            PredecessorTaskId = newPred.TaskId,
+                            SuccessorTaskId = newSucc.TaskId,
+                            DependencyType = dep.DependencyType,
+                            LagDays = dep.LagDays
+                        };
+                        _context.TaskDependencies.Add(newDep);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return Ok(new { message = $"Đã nhân bản thành công {sourceTasks.Count} tác vụ chuẩn AIM sang dự án mới." });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, new { message = "Lỗi khi nhân bản kế hoạch dự án", details = ex.Message });
+            }
+        }
+
         private string HashPassword(string password)
         {
             using (var sha256 = System.Security.Cryptography.SHA256.Create())
@@ -332,5 +440,11 @@ namespace AronErpPm.Api.Controllers
         public string Username { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
+    }
+
+    public class ClonePlanRequest
+    {
+        public int SourceProjectId { get; set; }
+        public DateTime TargetStartDate { get; set; }
     }
 }

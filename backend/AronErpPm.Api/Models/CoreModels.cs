@@ -30,6 +30,13 @@ namespace AronErpPm.Api.Models
         public string? LogoPath { get; set; }
 
         public string? SharepointFolderLink { get; set; }
+        public string? SharepointFolderId { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal BaselineBudget { get; set; } = 0.00m;
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal ActualCost { get; set; } = 0.00m;
 
         public bool IsActive { get; set; } = true;
         
@@ -96,6 +103,10 @@ namespace AronErpPm.Api.Models
         [Required]
         [MaxLength(150)]
         public string TeamName { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(50)]
+        public string TeamType { get; set; } = "ARON"; // ARON, CLIENT, PARTNER
 
         public int? ParentTeamId { get; set; }
         [ForeignKey("ParentTeamId")]

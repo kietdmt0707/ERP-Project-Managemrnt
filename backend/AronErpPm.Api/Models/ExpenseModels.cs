@@ -75,6 +75,14 @@ namespace AronErpPm.Api.Models
         [ForeignKey("TripId")]
         public BusinessTrip? BusinessTrip { get; set; }
 
+        public int? TaskId { get; set; }
+        [ForeignKey("TaskId")]
+        public Task? Task { get; set; }
+
+        public int? SiteId { get; set; }
+        [ForeignKey("SiteId")]
+        public ProjectSite? ProjectSite { get; set; }
+
         public int ClaimantMemberId { get; set; }
         [ForeignKey("ClaimantMemberId")]
         public ProjectMember? ClaimantMember { get; set; }

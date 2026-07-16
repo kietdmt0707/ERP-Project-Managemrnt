@@ -25,7 +25,14 @@ namespace AronErpPm.Api.Models
 
         public string? Description { get; set; }
 
-        public int TaskLevel { get; set; } // 1, 2, or 3
+        public int TaskLevel { get; set; } // 1, 2, 3, or 4
+
+        [MaxLength(50)]
+        public string? AIMCode { get; set; } // e.g. RD.011, BP.080, BR.100, TE.040
+
+        [Required]
+        [MaxLength(30)]
+        public string VisibilityScope { get; set; } = "PUBLIC"; // PUBLIC, VENDOR_INTERNAL, PRIVATE_TEAM
 
         public int? ParentTaskId { get; set; }
         [ForeignKey("ParentTaskId")]
