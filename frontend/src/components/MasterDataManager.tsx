@@ -160,7 +160,7 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
   };
 
   const handlePermissionToggle = (featureKey: string, actionKey: string) => {
-    if (!isAdmin) return; // Chỉ admin mới có quyền sửa matrix
+    if (!isAdmin) return;
     setPermissions(prev => ({
       ...prev,
       [featureKey]: {
@@ -215,108 +215,102 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-800 pb-4">
+      {/* Header Panel */}
+      <div className="bg-dark-900/40 p-4 rounded-xl border border-dark-800 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent flex items-center gap-2">
-            <Database className="w-7 h-7 text-blue-500" />
-            Cấu hình Master Data & Phân Quyền (RBAC)
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <Database className="text-brand-500" /> Cấu hình Master Data & Phân Quyền (RBAC)
           </h2>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-xs text-dark-400 mt-1">
             Quản trị danh mục phạm vi Oracle ERP và thiết lập ma trận quyền hạn cho từng chức danh công tác.
           </p>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded-lg mt-4 md:mt-0">
+        <div className="flex items-center gap-1.5 bg-dark-950 p-1.5 rounded-xl border border-dark-800">
           <button
             onClick={() => setActiveTab('scopes')}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-lg transition-all ${
               activeTab === 'scopes'
-                ? 'bg-blue-600 text-white shadow-lg'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10'
+                : 'text-dark-400 hover:text-white hover:bg-dark-900'
             }`}
           >
-            <Database className="w-4 h-4" />
-            Phạm vi Dự án (Project Scopes)
+            <Database size={14} /> Phạm vi Dự án (Project Scopes)
           </button>
           <button
             onClick={() => setActiveTab('roles')}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-lg transition-all ${
               activeTab === 'roles'
-                ? 'bg-blue-600 text-white shadow-lg'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10'
+                : 'text-dark-400 hover:text-white hover:bg-dark-900'
             }`}
           >
-            <Shield className="w-4 h-4" />
-            Phân quyền Vai trò (RBAC Matrix)
+            <Shield size={14} /> Phân quyền Vai trò (RBAC Matrix)
           </button>
         </div>
       </div>
 
       {/* ==================== TAB 1: PROJECT SCOPES ==================== */}
       {activeTab === 'scopes' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+        <div className="glass-panel rounded-2xl border border-dark-800 p-6 space-y-6">
+          <div className="flex items-center justify-between border-b border-dark-850 pb-4">
+            <h3 className="text-md font-bold text-white flex items-center gap-2">
               Danh mục Phạm vi Dự án (Project Scopes)
             </h3>
             {isPmOrAdmin && (
               <button
                 onClick={handleOpenCreateScope}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg text-sm font-medium transition-all shadow-md"
+                className="flex items-center gap-1.5 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-brand-600/10"
               >
-                <Plus className="w-4 h-4" />
-                Thêm phạm vi
+                <Plus size={14} /> Thêm phạm vi
               </button>
             )}
           </div>
 
           {scopeLoading ? (
-            <div className="text-center py-12 text-slate-400">Đang tải danh mục phạm vi...</div>
+            <div className="text-center py-12 text-xs text-dark-400">Đang tải danh mục phạm vi...</div>
           ) : scopeError ? (
-            <div className="p-4 bg-red-950 border border-red-800 text-red-400 rounded-lg text-sm">{scopeError}</div>
+            <div className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs">{scopeError}</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 text-sm">
+                  <tr className="border-b border-dark-800 text-dark-400 font-semibold">
                     <th className="py-3 px-4">Mã Giá Trị (Value)</th>
                     <th className="py-3 px-4">Mô Tả (Description)</th>
                     <th className="py-3 px-4 text-center">Trạng Thái</th>
                     {isPmOrAdmin && <th className="py-3 px-4 text-right">Thao tác</th>}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-dark-850">
                   {scopes.map(s => (
-                    <tr key={s.optionId} className="border-b border-slate-850 hover:bg-slate-850/50 text-white transition-colors">
-                      <td className="py-4 px-4 font-mono text-blue-400 text-sm font-semibold">{s.value}</td>
-                      <td className="py-4 px-4 text-slate-350">{s.description}</td>
-                      <td className="py-4 px-4 text-center">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                          s.isActive ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                    <tr key={s.optionId} className="hover:bg-dark-900/30 text-white transition-colors">
+                      <td className="py-3.5 px-4 font-mono text-brand-400 font-semibold">{s.value}</td>
+                      <td className="py-3.5 px-4 text-dark-300">{s.description}</td>
+                      <td className="py-3.5 px-4 text-center">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          s.isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
                         }`}>
                           {s.isActive ? (
                             <>
-                              <CheckCircle className="w-3.5 h-3.5" />
-                              Active
+                              <CheckCircle size={11} /> Active
                             </>
                           ) : (
                             <>
-                              <XCircle className="w-3.5 h-3.5" />
-                              Inactive
+                              <XCircle size={11} /> Inactive
                             </>
                           )}
                         </span>
                       </td>
                       {isPmOrAdmin && (
-                        <td className="py-4 px-4 text-right">
+                        <td className="py-3.5 px-4 text-right">
                           <button
                             onClick={() => handleOpenEditScope(s)}
-                            className="p-2 text-slate-400 hover:text-white hover:bg-slate-850 rounded-lg transition-all"
+                            className="p-1.5 text-dark-400 hover:text-white hover:bg-dark-800 rounded-lg transition-all"
                             title="Chỉnh sửa"
                           >
-                            <Edit2 className="w-4 h-4" />
+                            <Edit2 size={13} />
                           </button>
                         </td>
                       )}
@@ -324,7 +318,7 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
                   ))}
                   {scopes.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="text-center py-8 text-slate-500">Chưa có phạm vi dự án nào được định nghĩa.</td>
+                      <td colSpan={4} className="text-center py-8 text-dark-500 italic">Chưa có phạm vi dự án nào được định nghĩa.</td>
                     </tr>
                   )}
                 </tbody>
@@ -338,23 +332,23 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
       {activeTab === 'roles' && (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Roles Selector Sidebar */}
-          <div className="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl space-y-3">
-            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider px-2">Danh sách chức danh</h4>
+          <div className="lg:col-span-1 glass-panel rounded-2xl border border-dark-800 p-4 space-y-3">
+            <h4 className="text-[10px] font-bold text-dark-400 uppercase tracking-wider px-2">Danh sách chức danh</h4>
             {roleError && (
-              <div className="p-2 bg-red-950/40 border border-red-800/30 text-red-400 text-[10px] rounded-lg">{roleError}</div>
+              <div className="p-2 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] rounded-lg">{roleError}</div>
             )}
             {roleLoading ? (
-              <div className="text-slate-500 text-center py-6 text-sm">Đang tải...</div>
+              <div className="text-dark-400 text-center py-6 text-xs">Đang tải...</div>
             ) : (
               <div className="space-y-1">
                 {roles.map(r => (
                   <button
                     key={r.roleId}
                     onClick={() => selectRole(r)}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-between ${
+                    className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-between ${
                       selectedRole?.roleId === r.roleId
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-850'
+                        ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10'
+                        : 'text-dark-300 hover:text-white hover:bg-dark-800'
                     }`}
                   >
                     <span>{r.roleName}</span>
@@ -366,35 +360,34 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
           </div>
 
           {/* Matrix & Configurations Detail */}
-          <div className="lg:col-span-3 bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl space-y-6">
+          <div className="lg:col-span-3 glass-panel rounded-2xl border border-dark-800 p-6 space-y-6">
             {selectedRole ? (
               <form onSubmit={handleRoleSubmit} className="space-y-6">
-                <div className="border-b border-slate-800 pb-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-blue-500" />
-                    Cấu hình vai trò: {selectedRole.roleName} ({selectedRole.roleCode})
+                <div className="border-b border-dark-850 pb-4">
+                  <h3 className="text-md font-bold text-white flex items-center gap-2">
+                    <Shield className="text-brand-500" /> Cấu hình vai trò: {selectedRole.roleName} ({selectedRole.roleCode})
                   </h3>
-                  <p className="text-slate-400 text-xs mt-1">
-                    Cấp bậc phân cấp: Level {selectedRole.hierarchyLevel} (Càng nhỏ quyền càng lớn).
+                  <p className="text-dark-400 text-xs mt-1">
+                    Cấp bậc phân cấp: Level {selectedRole.hierarchyLevel} (Càng nhỏ quyền hạn càng lớn).
                   </p>
                 </div>
 
                 {/* Metadata Settings */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Tên vai trò hiển thị</label>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-dark-300">Tên vai trò hiển thị:</label>
                     <input
                       type="text"
                       value={roleName}
                       onChange={e => setRoleName(e.target.value)}
                       disabled={!isAdmin}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                      className="w-full bg-dark-950 border border-dark-800 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-brand-500 disabled:opacity-50"
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Trạng thái vai trò</label>
-                    <div className="flex items-center mt-2.5">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-dark-300">Trạng thái vai trò:</label>
+                    <div className="flex items-center pt-2">
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
                           type="checkbox"
@@ -403,18 +396,18 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
                           disabled={!isAdmin}
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-800 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-500/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-slate-350 after:border-slate-300 after:border after:rounded-full after:height-5 after:width-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        <span className="ml-3 text-sm text-slate-350 font-medium">{roleActive ? 'Cho phép sử dụng (Active)' : 'Khóa vai trò (Inactive)'}</span>
+                        <div className="w-11 h-6 bg-dark-850 rounded-full peer peer-focus:ring-2 peer-focus:ring-brand-500/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-dark-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+                        <span className="ml-3 text-xs text-dark-300 font-medium">{roleActive ? 'Cho phép sử dụng (Active)' : 'Khóa vai trò (Inactive)'}</span>
                       </label>
                     </div>
                   </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Mô tả chi tiết vai trò</label>
+                  <div className="md:col-span-2 space-y-1">
+                    <label className="text-xs font-semibold text-dark-300">Mô tả chi tiết vai trò:</label>
                     <textarea
                       value={roleDesc}
                       onChange={e => setRoleDesc(e.target.value)}
                       disabled={!isAdmin}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500 disabled:opacity-50 h-20 resize-none"
+                      className="w-full bg-dark-950 border border-dark-800 rounded-xl p-3 text-white text-xs focus:outline-none focus:border-brand-500 disabled:opacity-50 h-20 resize-none"
                     />
                   </div>
                 </div>
@@ -422,48 +415,47 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
                 {/* RBAC MATRIX GRID */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-semibold text-white flex items-center gap-1.5">
-                      <ShieldAlert className="w-4 h-4 text-indigo-500" />
-                      Ma Trận Phân Quyền Tính Năng (Permission Matrix)
+                    <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <ShieldAlert size={14} className="text-amber-500" /> Ma Trận Phân Quyền Tính Năng (Permission Matrix)
                     </h4>
                     {isAdmin ? (
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={handleSelectAll}
-                          className="bg-blue-600/20 hover:bg-blue-600/35 text-blue-400 font-bold text-[10px] py-1.5 px-3 rounded-lg border border-blue-500/20 transition-all cursor-pointer"
+                          className="bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 font-bold text-[10px] py-1.5 px-3 rounded-lg border border-brand-500/20 transition-all cursor-pointer"
                         >
                           Chọn Tất Cả
                         </button>
                         <button
                           type="button"
                           onClick={handleClearAll}
-                          className="bg-slate-800 hover:bg-slate-750 text-slate-350 font-bold text-[10px] py-1.5 px-3 rounded-lg border border-slate-700 transition-all cursor-pointer"
+                          className="bg-dark-800 hover:bg-dark-750 text-dark-300 font-bold text-[10px] py-1.5 px-3 rounded-lg border border-dark-700 transition-all cursor-pointer"
                         >
                           Bỏ Chọn Tất Cả
                         </button>
                       </div>
                     ) : (
-                      <span className="text-amber-400 text-xs bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/20">
+                      <span className="text-amber-400 text-[10px] bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/20">
                         Chỉ Admin hệ thống mới được phép sửa đổi ma trận này.
                       </span>
                     )}
                   </div>
 
-                  <div className="overflow-x-auto border border-slate-850 rounded-lg bg-slate-950">
-                    <table className="w-full text-left border-collapse text-sm">
+                  <div className="overflow-x-auto border border-dark-800 rounded-xl bg-dark-950">
+                    <table className="w-full text-left border-collapse text-xs">
                       <thead>
-                        <tr className="bg-slate-900 border-b border-slate-800 text-slate-400 font-medium">
+                        <tr className="bg-dark-900/60 border-b border-dark-800 text-dark-400 font-semibold">
                           <th className="py-3 px-4">Tính năng hệ thống (System Feature)</th>
                           {actions.map(act => (
                             <th key={act.key} className="py-3 px-4 text-center">{act.name}</th>
                           ))}
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="divide-y divide-dark-850">
                         {systemFeatures.map(feat => (
-                          <tr key={feat.key} className="border-b border-slate-900 hover:bg-slate-900/40 text-white">
-                            <td className="py-3 px-4 font-semibold text-slate-300">{feat.name}</td>
+                          <tr key={feat.key} className="hover:bg-dark-900/30 text-white">
+                            <td className="py-3 px-4 font-semibold text-dark-200">{feat.name}</td>
                             {actions.map(act => {
                               const isChecked = permissions[feat.key]?.[act.key] || false;
                               return (
@@ -473,7 +465,7 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
                                     checked={isChecked}
                                     onChange={() => handlePermissionToggle(feat.key, act.key)}
                                     disabled={!isAdmin}
-                                    className="w-4.5 h-4.5 bg-slate-900 border-slate-850 text-blue-600 rounded focus:ring-blue-500/20 focus:ring-offset-slate-950 focus:ring-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-4 h-4 rounded border-dark-700 bg-dark-900 text-brand-600 focus:ring-brand-500/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                   />
                                 </td>
                               );
@@ -487,10 +479,10 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
 
                 {/* Save Role Button */}
                 {isAdmin && (
-                  <div className="flex justify-end pt-4 border-t border-slate-800">
+                  <div className="flex justify-end pt-4 border-t border-dark-850">
                     <button
                       type="submit"
-                      className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-semibold transition-all shadow-md"
+                      className="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-brand-600/10"
                     >
                       Lưu Thay Đổi Vai Trò & Phân Quyền
                     </button>
@@ -498,7 +490,7 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
                 )}
               </form>
             ) : (
-              <div className="text-center py-20 text-slate-500">Vui lòng chọn một vai trò bên trái để cấu hình.</div>
+              <div className="text-center py-20 text-dark-500 text-xs italic">Vui lòng chọn một vai trò bên trái để cấu hình.</div>
             )}
           </div>
         </div>
@@ -506,47 +498,49 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
 
       {/* ==================== CREATE/EDIT SCOPE MODAL ==================== */}
       {showScopeModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-xl p-6 shadow-2xl relative">
-            <button
-              onClick={() => setShowScopeModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white text-sm"
-            >
-              Đóng
-            </button>
-            <h3 className="text-lg font-bold text-white mb-4">
-              {editingScope ? 'Chỉnh Sửa Phạm Vi Dự Án' : 'Thêm Mới Phạm Vi Dự Án'}
-            </h3>
+        <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-slide-up">
+          <div className="glass-panel border border-dark-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative space-y-4">
+            <div className="flex justify-between items-center border-b border-dark-850 pb-3">
+              <h3 className="text-md font-bold text-white">
+                {editingScope ? 'Chỉnh Sửa Phạm Vi Dự Án' : 'Thêm Mới Phạm Vi Dự Án'}
+              </h3>
+              <button
+                onClick={() => setShowScopeModal(false)}
+                className="text-xs text-dark-400 hover:text-white"
+              >
+                Đóng
+              </button>
+            </div>
 
             <form onSubmit={handleScopeSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Mã Giá Trị (Value)</label>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-dark-300">Mã Giá Trị (Value):</label>
                 <input
                   type="text"
                   value={scopeValue}
                   onChange={e => setScopeValue(e.target.value)}
-                  disabled={!!editingScope} // Không cho sửa mã giá trị khi đã tạo
+                  disabled={!!editingScope}
                   placeholder="Ví dụ: EBS_FIN"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500 uppercase disabled:opacity-50"
+                  className="w-full bg-dark-950 border border-dark-800 rounded-xl px-3.5 py-2.5 text-white text-xs font-mono uppercase focus:outline-none focus:border-brand-500 disabled:opacity-50"
                   required
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Mô tả phạm vi (Description)</label>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-dark-300">Mô tả phạm vi (Description):</label>
                 <input
                   type="text"
                   value={scopeDesc}
                   onChange={e => setScopeDesc(e.target.value)}
                   placeholder="Ví dụ: Oracle EBS Financials Suite"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full bg-dark-950 border border-dark-800 rounded-xl px-3.5 py-2.5 text-white text-xs focus:outline-none focus:border-brand-500"
                   required
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Trạng thái hoạt động</label>
-                <div className="flex items-center mt-2">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-dark-300">Trạng thái hoạt động:</label>
+                <div className="flex items-center pt-1">
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -554,23 +548,23 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
                       onChange={e => setScopeActive(e.target.checked)}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-slate-800 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-500/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-slate-350 after:border-slate-300 after:border after:rounded-full after:height-5 after:width-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    <span className="ml-3 text-sm text-slate-350 font-medium">Kích hoạt (Active)</span>
+                    <div className="w-11 h-6 bg-dark-850 rounded-full peer peer-focus:ring-2 peer-focus:ring-brand-500/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-dark-700 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+                    <span className="ml-3 text-xs text-dark-300 font-medium">Kích hoạt (Active)</span>
                   </label>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+              <div className="flex justify-end gap-3 pt-4 border-t border-dark-850">
                 <button
                   type="button"
                   onClick={() => setShowScopeModal(false)}
-                  className="px-4 py-2 border border-slate-800 hover:bg-slate-850 text-slate-350 rounded-lg text-sm font-medium transition-all"
+                  className="px-4 py-2 border border-dark-800 hover:bg-dark-800 text-dark-300 rounded-xl text-xs font-semibold transition-all"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-semibold transition-all shadow-md"
+                  className="px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-brand-600/10"
                 >
                   Lưu
                 </button>

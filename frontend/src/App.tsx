@@ -12,6 +12,7 @@ import { MasterDataManager } from './components/MasterDataManager';
 import { ProjectDocuments } from './components/ProjectDocuments';
 import { LeaveManagement } from './components/LeaveManagement';
 import { TravelPolicyConfig } from './components/TravelPolicyConfig';
+import { OracleEnvironmentManager } from './components/OracleEnvironmentManager';
 import { Calendar, FileText, CheckSquare, DollarSign, LogOut, ArrowRight, Server, ShieldAlert, Users, Sliders, Briefcase, Plane, Folder, Eye, EyeOff, Clipboard } from 'lucide-react';
 
 function App() {
@@ -1092,41 +1093,7 @@ function App() {
 
                   {activeTab === 'approvals' && <ApprovalList projectId={activeProject.projectId} userRole={activeProject.roleCode} />}
                   
-                  {activeTab === 'environments' && (
-                    <div className="space-y-6">
-                      <div className="bg-dark-900/40 p-4 rounded-xl border border-dark-800">
-                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                          <Server className="text-brand-500" /> Quản Lý Phiên Bản & Môi Trường (Oracle Instances)
-                        </h2>
-                        <p className="text-xs text-dark-400 mt-1">Theo dõi các môi trường phát triển, kiểm thử tích hợp (CRP/SIT) và UAT</p>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-dark-900/60 p-5 rounded-xl border border-dark-800 space-y-2">
-                          <span className="text-[10px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold">HOẠT ĐỘNG (ACTIVE)</span>
-                          <h3 className="text-md font-bold text-white">Môi trường DEV1</h3>
-                          <p className="text-xs text-dark-400">Phiên bản: Fusion Cloud 24C</p>
-                          <p className="text-xs text-dark-400">Mô tả: Môi trường cấu hình & test nội bộ của ARON Tech Team</p>
-                          <p className="text-[10px] text-dark-500 pt-2 border-t border-dark-800">Cập nhật lúc: 14/07/2026</p>
-                        </div>
-
-                        <div className="bg-dark-900/60 p-5 rounded-xl border border-dark-800 space-y-2">
-                          <span className="text-[10px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold">HOẠT ĐỘNG (ACTIVE)</span>
-                          <h3 className="text-md font-bold text-white">Môi trường TEST1</h3>
-                          <p className="text-xs text-dark-400">Phiên bản: Fusion Cloud 24C</p>
-                          <p className="text-xs text-dark-400">Mô tả: Môi trường phục vụ các đợt kiểm thử tích hợp CRP & SIT</p>
-                          <p className="text-[10px] text-dark-500 pt-2 border-t border-dark-800">Cập nhật lúc: 14/07/2026</p>
-                        </div>
-
-                        <div className="bg-dark-900/60 p-5 rounded-xl border border-dark-800/80 border-dashed space-y-2 opacity-60">
-                          <span className="text-[10px] bg-dark-800 border border-dark-700 text-dark-400 px-2 py-0.5 rounded font-bold">CHƯA KHỞI TẠO</span>
-                          <h3 className="text-md font-bold text-dark-300">Môi trường UAT</h3>
-                          <p className="text-xs text-dark-400">Phiên bản: Fusion Cloud 24C</p>
-                          <p className="text-xs text-dark-400">Mô tả: Dành cho khách hàng kiểm thử chấp nhận (UAT) sau khi hoàn thành SIT</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  {activeTab === 'environments' && <OracleEnvironmentManager projectId={activeProject.projectId} userRole={activeProject.roleCode} />}
 
                   {activeTab === 'costs' && (
                     <div className="space-y-6">

@@ -33,6 +33,12 @@ namespace AronErpPm.Api.Models
         [Column("policy_id")]
         public int PolicyId { get; set; }
 
+        [Column("project_id")]
+        public int? ProjectId { get; set; } // Null = Mặc định toàn hệ thống, có ID = Ghi đè theo Dự án
+
+        [ForeignKey("ProjectId")]
+        public Project? Project { get; set; }
+
         [Required]
         [MaxLength(20)]
         [Column("region_code")]
@@ -49,10 +55,16 @@ namespace AronErpPm.Api.Models
         [Column("max_hotel_rate", TypeName = "decimal(12,2)")]
         public decimal MaxHotelRate { get; set; }
 
+        [Column("transport_allowance", TypeName = "decimal(12,2)")]
+        public decimal TransportAllowance { get; set; } = 0.00m;
+
+        [Column("pocket_allowance", TypeName = "decimal(12,2)")]
+        public decimal PocketAllowance { get; set; } = 0.00m;
+
         [Required]
-        [MaxLength(3)]
+        [MaxLength(10)]
         [Column("currency")]
-        public string Currency { get; set; } = "VND";
+        public string Currency { get; set; } = "VND"; // VND, USD, EUR, SGD, JPY...
 
         [Column("is_active")]
         public bool IsActive { get; set; } = true;

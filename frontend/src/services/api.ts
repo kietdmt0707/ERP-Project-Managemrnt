@@ -484,23 +484,59 @@ export const businessTripService = {
   }
 };
 
+export interface TravelRegion {
+  regionId?: number;
+  regionCode: string;
+  regionName: string;
+  provincesIncluded: string;
+}
+
 export interface TravelExpensePolicy {
   policyId: number;
+  projectId?: number;
   regionCode: string;
   roleCode: string;
   perDiemAllowance: number;
   maxHotelRate: number;
+  transportAllowance?: number;
+  pocketAllowance?: number;
   currency: string;
   isActive: boolean;
   updatedAt: string;
 }
 
 export const travelPolicyService = {
-  async getPolicies(): Promise<TravelExpensePolicy[]> {
-    const response = await fetch(`${API_BASE_URL}/travelpolicy`, {
+  async getPolicies(projectId?: number): Promise<TravelExpensePolicy[]> {
+    const url = projectId ? `${API_BASE_URL}/travelpolicy?projectId=${projectId}` : `${API_BASE_URL}/travelpolicy`;
+    const response = await fetch(url, {
       headers: getHeaders()
     });
     if (!response.ok) throw new Error('Không thể tải quy định công tác phí.');
+    return response.json();
+  },
+  async getRegions(): Promise<TravelRegion[]> {
+    const response = await fetch(`${API_BASE_URL}/travelpolicy/regions`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải danh sách vùng địa lý.');
+    return response.json();
+  },
+  async createRegion(region: TravelRegion): Promise<TravelRegion> {
+    const response = await fetch(`${API_BASE_URL}/travelpolicy/region`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(region)
+    });
+    if (!response.ok) throw new Error('Không thể lưu vùng địa lý.');
+    return response.json();
+  },
+  async createPolicy(policy: Partial<TravelExpensePolicy>): Promise<TravelExpensePolicy> {
+    const response = await fetch(`${API_BASE_URL}/travelpolicy`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(policy)
+    });
+    if (!response.ok) throw new Error('Không thể tạo quy định định mức.');
     return response.json();
   },
   async updatePolicy(id: number, policy: Partial<TravelExpensePolicy>): Promise<TravelExpensePolicy> {
@@ -510,6 +546,14 @@ export const travelPolicyService = {
       body: JSON.stringify(policy)
     });
     if (!response.ok) throw new Error('Không thể cập nhật quy định công tác phí.');
+    return response.json();
+  },
+  async deletePolicy(id: number): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/travelpolicy/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể xóa quy định định mức.');
     return response.json();
   },
   async clonePolicies(inflationPercentage: number): Promise<any> {
@@ -522,6 +566,53 @@ export const travelPolicyService = {
       const err = await response.json();
       throw new Error(err.message || 'Không thể nhân bản quy định.');
     }
+    return response.json();
+  }
+};
+
+export interface OracleInstanceDto {
+  instanceId?: number;
+  projectId: number;
+  instanceName: string;
+  oracleVersion: string;
+  instanceStatus: string;
+  lastRefreshDate?: string;
+  description?: string;
+  updatedDate?: string;
+}
+
+export const oracleInstanceService = {
+  async getInstances(projectId: number): Promise<OracleInstanceDto[]> {
+    const response = await fetch(`${API_BASE_URL}/oracleinstance?projectId=${projectId}`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải danh sách môi trường Oracle.');
+    return response.json();
+  },
+  async createInstance(data: Partial<OracleInstanceDto>): Promise<OracleInstanceDto> {
+    const response = await fetch(`${API_BASE_URL}/oracleinstance`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error('Thêm môi trường thất bại.');
+    return response.json();
+  },
+  async updateInstance(id: number, data: Partial<OracleInstanceDto>): Promise<OracleInstanceDto> {
+    const response = await fetch(`${API_BASE_URL}/oracleinstance/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error('Cập nhật môi trường thất bại.');
+    return response.json();
+  },
+  async deleteInstance(id: number): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/oracleinstance/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Xóa môi trường thất bại.');
     return response.json();
   }
 };

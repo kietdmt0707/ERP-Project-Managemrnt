@@ -241,9 +241,11 @@ namespace AronErpPm.Api.Controllers
             var regionCode = matchedRegion?.RegionCode ?? "TIERS_3";
             var roleCode = claimant.Role?.RoleCode ?? "MEMBER";
 
-            // Query policy
+            // Query policy: first check project-specific override policy, then fall back to global default policy
             var policy = await _context.TravelExpensePolicies
-                .FirstOrDefaultAsync(p => p.RegionCode == regionCode && p.RoleCode == roleCode && p.IsActive);
+                .FirstOrDefaultAsync(p => p.ProjectId == trip.ProjectId && p.RegionCode == regionCode && p.RoleCode == roleCode && p.IsActive)
+                ?? await _context.TravelExpensePolicies
+                .FirstOrDefaultAsync(p => p.ProjectId == null && p.RegionCode == regionCode && p.RoleCode == roleCode && p.IsActive);
 
             decimal limit = 0;
             if (request.ExpenseType == "HOTEL" && policy != null)
