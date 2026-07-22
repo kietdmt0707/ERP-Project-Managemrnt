@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -26,11 +27,14 @@ namespace AronErpPm.Api.Controllers
         public async Task<IActionResult> GetTrips([FromQuery] int projectId)
         {
             var username = User.Identity?.Name;
+            var globalRole = User.FindFirst("GlobalRole")?.Value ?? User.FindFirst(ClaimTypes.Role)?.Value;
+            var isSysAdmin = globalRole == "SYSTEM_ADMIN" || globalRole == "SYSADMIN" || (username != null && (username.ToLower() == "sysadmin" || username.ToLower() == "admin"));
+
             var member = await _context.ProjectMembers
                 .Include(pm => pm.User)
-                .FirstOrDefaultAsync(pm => pm.ProjectId == projectId && pm.User!.Username == username);
+                .FirstOrDefaultAsync(pm => pm.ProjectId == projectId && username != null && pm.User!.Username.ToLower() == username.ToLower());
 
-            if (member == null) return Forbid("Bạn không phải thành viên dự án này.");
+            if (!isSysAdmin && member == null) return Forbid("Bạn không phải thành viên dự án này.");
 
             var trips = await _context.BusinessTrips
                 .Where(t => t.ProjectId == projectId)
@@ -95,11 +99,34 @@ namespace AronErpPm.Api.Controllers
         public async Task<IActionResult> CreateTrip([FromBody] BusinessTrip request)
         {
             var username = User.Identity?.Name;
+            var globalRole = User.FindFirst("GlobalRole")?.Value ?? User.FindFirst(ClaimTypes.Role)?.Value;
+            var isSysAdmin = globalRole == "SYSTEM_ADMIN" || globalRole == "SYSADMIN" || (username != null && (username.ToLower() == "sysadmin" || username.ToLower() == "admin"));
+
             var member = await _context.ProjectMembers
                 .Include(pm => pm.User)
-                .FirstOrDefaultAsync(pm => pm.ProjectId == request.ProjectId && pm.User!.Username == username);
+                .FirstOrDefaultAsync(pm => pm.ProjectId == request.ProjectId && username != null && pm.User!.Username.ToLower() == username.ToLower());
 
-            if (member == null) return Forbid("Bạn không phải thành viên dự án này.");
+            if (!isSysAdmin && member == null) return Forbid("Bạn không phải thành viên dự án này.");
+
+            int creatorMemberId = member?.ProjectMemberId ?? 0;
+            if (creatorMemberId == 0)
+            {
+                var sysadminUser = await _context.Users.FirstOrDefaultAsync(u => username != null && u.Username.ToLower() == username.ToLower());
+                if (sysadminUser != null)
+                {
+                    var pmRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleCode == "PM") ?? await _context.Roles.FirstOrDefaultAsync();
+                    var newMember = new ProjectMember
+                    {
+                        ProjectId = request.ProjectId,
+                        UserId = sysadminUser.UserId,
+                        RoleId = pmRole?.RoleId ?? 1,
+                        IsActive = true
+                    };
+                    _context.ProjectMembers.Add(newMember);
+                    await _context.SaveChangesAsync();
+                    creatorMemberId = newMember.ProjectMemberId;
+                }
+            }
 
             var count = await _context.BusinessTrips.CountAsync(t => t.ProjectId == request.ProjectId);
             var project = await _context.Projects.FindAsync(request.ProjectId);
@@ -115,7 +142,7 @@ namespace AronErpPm.Api.Controllers
                 EndDate = request.EndDate.ToUniversalTime(),
                 AdvanceAmount = request.AdvanceAmount,
                 Status = "DRAFT",
-                CreatedByMemberId = member.ProjectMemberId,
+                CreatedByMemberId = creatorMemberId,
                 CreatedDate = DateTime.UtcNow
             };
 
@@ -166,13 +193,35 @@ namespace AronErpPm.Api.Controllers
             if (trip == null) return NotFound("Không tìm thấy chuyến công tác.");
 
             var username = User.Identity?.Name;
+            var globalRole = User.FindFirst("GlobalRole")?.Value ?? User.FindFirst(ClaimTypes.Role)?.Value;
+            var isSysAdmin = globalRole == "SYSTEM_ADMIN" || globalRole == "SYSADMIN" || (username != null && (username.ToLower() == "sysadmin" || username.ToLower() == "admin"));
+
             var member = await _context.ProjectMembers
                 .Include(pm => pm.User)
-                .FirstOrDefaultAsync(pm => pm.ProjectId == trip.ProjectId && pm.User!.Username == username);
+                .FirstOrDefaultAsync(pm => pm.ProjectId == trip.ProjectId && username != null && pm.User!.Username.ToLower() == username.ToLower());
 
-            if (member == null) return Forbid("Bạn không phải thành viên dự án này.");
+            if (!isSysAdmin && member == null) return Forbid("Bạn không phải thành viên dự án này.");
 
-            var claimantMemberId = request.ClaimantMemberId > 0 ? request.ClaimantMemberId : member.ProjectMemberId;
+            int defaultClaimantId = member?.ProjectMemberId ?? 0;
+            var claimantMemberId = request.ClaimantMemberId > 0 ? request.ClaimantMemberId : defaultClaimantId;
+            if (claimantMemberId == 0)
+            {
+                var sysadminUser = await _context.Users.FirstOrDefaultAsync(u => username != null && u.Username.ToLower() == username.ToLower());
+                if (sysadminUser != null)
+                {
+                    var pmRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleCode == "PM") ?? await _context.Roles.FirstOrDefaultAsync();
+                    var newMember = new ProjectMember
+                    {
+                        ProjectId = trip.ProjectId,
+                        UserId = sysadminUser.UserId,
+                        RoleId = pmRole?.RoleId ?? 1,
+                        IsActive = true
+                    };
+                    _context.ProjectMembers.Add(newMember);
+                    await _context.SaveChangesAsync();
+                    claimantMemberId = newMember.ProjectMemberId;
+                }
+            }
             var claimant = await _context.ProjectMembers
                 .Include(pm => pm.Role)
                 .Include(pm => pm.User)
