@@ -109,17 +109,19 @@ namespace AronErpPm.Api.Controllers
 
         // PUT: api/travelpolicy/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdatePolicy(int id, [FromBody] TravelExpensePolicy request)
+        public async Task<IActionResult> UpdatePolicy(int id, [FromBody] UpdateTravelPolicyDto request)
         {
             var policy = await _context.TravelExpensePolicies.FindAsync(id);
             if (policy == null) return NotFound("Không tìm thấy quy định chi phí.");
 
+            if (!string.IsNullOrEmpty(request.RegionCode)) policy.RegionCode = request.RegionCode;
+            if (!string.IsNullOrEmpty(request.RoleCode)) policy.RoleCode = request.RoleCode;
             policy.PerDiemAllowance = request.PerDiemAllowance;
             policy.MaxHotelRate = request.MaxHotelRate;
             policy.TransportAllowance = request.TransportAllowance;
             policy.PocketAllowance = request.PocketAllowance;
-            policy.Currency = string.IsNullOrEmpty(request.Currency) ? policy.Currency : request.Currency.ToUpper();
-            policy.FlightTicketClass = request.FlightTicketClass;
+            if (!string.IsNullOrEmpty(request.Currency)) policy.Currency = request.Currency.ToUpper();
+            if (!string.IsNullOrEmpty(request.FlightTicketClass)) policy.FlightTicketClass = request.FlightTicketClass;
             policy.IsActive = request.IsActive;
             policy.UpdatedAt = DateTime.UtcNow;
 

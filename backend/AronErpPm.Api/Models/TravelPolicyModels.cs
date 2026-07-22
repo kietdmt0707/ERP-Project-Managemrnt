@@ -39,12 +39,10 @@ namespace AronErpPm.Api.Models
         [ForeignKey("ProjectId")]
         public Project? Project { get; set; }
 
-        [Required]
         [MaxLength(20)]
         [Column("region_code")]
         public string RegionCode { get; set; } = string.Empty;
 
-        [Required]
         [MaxLength(20)]
         [Column("role_code")]
         public string RoleCode { get; set; } = string.Empty; // MEMBER, LEADER, PM
@@ -61,7 +59,6 @@ namespace AronErpPm.Api.Models
         [Column("pocket_allowance", TypeName = "decimal(12,2)")]
         public decimal PocketAllowance { get; set; } = 0.00m;
 
-        [Required]
         [MaxLength(10)]
         [Column("currency")]
         public string Currency { get; set; } = "VND"; // VND, USD, EUR, SGD, JPY...
@@ -75,5 +72,19 @@ namespace AronErpPm.Api.Models
 
         [Column("updated_at")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    public class UpdateTravelPolicyDto
+    {
+        public int? ProjectId { get; set; }
+        public string? RegionCode { get; set; }
+        public string? RoleCode { get; set; }
+        public decimal PerDiemAllowance { get; set; }
+        public decimal MaxHotelRate { get; set; }
+        public decimal TransportAllowance { get; set; }
+        public decimal PocketAllowance { get; set; }
+        public string? Currency { get; set; }
+        public string? FlightTicketClass { get; set; }
+        public bool IsActive { get; set; } = true;
     }
 }

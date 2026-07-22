@@ -199,6 +199,18 @@ namespace AronErpPm.Api.Controllers
             }
         }
 
+        // GET: api/project/{id}
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetProjectById(int id)
+        {
+            var project = await _context.Projects
+                .Include(p => p.ProjectSites)
+                .FirstOrDefaultAsync(p => p.ProjectId == id);
+
+            if (project == null) return NotFound("Không tìm thấy thông tin dự án.");
+            return Ok(project);
+        }
+
         // PUT: api/project/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProject(int id, [FromBody] Project request)

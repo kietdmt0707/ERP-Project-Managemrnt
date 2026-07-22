@@ -73,10 +73,11 @@ export const TravelPolicyConfig: React.FC = () => {
     setEditFlightTicketClass(p.flightTicketClass || 'ECONOMY');
   };
 
-  const handleSaveEdit = async (policyId: number) => {
+  const handleSaveEdit = async (p: TravelExpensePolicy) => {
     try {
       setSaving(true);
-      await travelPolicyService.updatePolicy(policyId, {
+      await travelPolicyService.updatePolicy(p.policyId, {
+        ...p,
         perDiemAllowance: editPerDiem,
         maxHotelRate: editHotelLimit,
         currency: editCurrency,
@@ -84,8 +85,8 @@ export const TravelPolicyConfig: React.FC = () => {
       });
       setEditingId(null);
       loadData();
-    } catch (err) {
-      alert("Cập nhật quy định thất bại.");
+    } catch (err: any) {
+      alert(err.message || "Cập nhật quy định thất bại.");
     } finally {
       setSaving(false);
     }
@@ -339,7 +340,7 @@ export const TravelPolicyConfig: React.FC = () => {
                           <div className="flex items-center justify-center gap-1.5">
                             {editingId === p.policyId ? (
                               <button
-                                onClick={() => handleSaveEdit(p.policyId)}
+                                onClick={() => handleSaveEdit(p)}
                                 disabled={saving}
                                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2 py-1 rounded text-[10px] flex items-center gap-0.5 transition-colors disabled:opacity-50"
                               >
