@@ -16,6 +16,7 @@ export const TravelPolicyConfig: React.FC = () => {
   const [editPerDiem, setEditPerDiem] = useState(0);
   const [editHotelLimit, setEditHotelLimit] = useState(0);
   const [editCurrency, setEditCurrency] = useState('VND');
+  const [editFlightTicketClass, setEditFlightTicketClass] = useState('ECONOMY');
   const [saving, setSaving] = useState(false);
 
   // New Policy Modal state
@@ -27,6 +28,7 @@ export const TravelPolicyConfig: React.FC = () => {
   const [newHotelLimit, setNewHotelLimit] = useState(400000);
   const [newTransportLimit, setNewTransportLimit] = useState(100000);
   const [newCurrency, setNewCurrency] = useState('VND');
+  const [newFlightTicketClass, setNewFlightTicketClass] = useState('ECONOMY');
   const [submittingPolicy, setSubmittingPolicy] = useState(false);
 
   // New Region Modal state
@@ -68,6 +70,7 @@ export const TravelPolicyConfig: React.FC = () => {
     setEditPerDiem(p.perDiemAllowance);
     setEditHotelLimit(p.maxHotelRate);
     setEditCurrency(p.currency || 'VND');
+    setEditFlightTicketClass(p.flightTicketClass || 'ECONOMY');
   };
 
   const handleSaveEdit = async (policyId: number) => {
@@ -76,7 +79,8 @@ export const TravelPolicyConfig: React.FC = () => {
       await travelPolicyService.updatePolicy(policyId, {
         perDiemAllowance: editPerDiem,
         maxHotelRate: editHotelLimit,
-        currency: editCurrency
+        currency: editCurrency,
+        flightTicketClass: editFlightTicketClass
       });
       setEditingId(null);
       loadData();
@@ -108,7 +112,8 @@ export const TravelPolicyConfig: React.FC = () => {
         perDiemAllowance: newPerDiem,
         maxHotelRate: newHotelLimit,
         transportAllowance: newTransportLimit,
-        currency: newCurrency
+        currency: newCurrency,
+        flightTicketClass: newFlightTicketClass
       });
       setShowPolicyModal(false);
       loadData();
@@ -175,7 +180,7 @@ export const TravelPolicyConfig: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header Panel */}
-      <div className="bg-dark-900/40 p-4 rounded-xl border border-dark-800 flex flex-wrap justify-between items-center gap-4">
+      <div className="bg-dark-900-40 p-4 rounded-xl border border-dark-800 flex flex-wrap justify-between items-center gap-4">
         <div>
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Clipboard className="text-brand-500" /> Cấu Hình Định Mức Công Tác Phí & Khách Sạn
@@ -195,7 +200,7 @@ export const TravelPolicyConfig: React.FC = () => {
 
           <button
             onClick={() => setShowPolicyModal(true)}
-            className="bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center gap-1.5 transition-all shadow-lg shadow-brand-600/10"
+            className="bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center gap-1.5 transition-all shadow-lg shadow-brand-600-10"
           >
             <Plus size={14} /> + Khai Báo Định Mức Mới
           </button>
@@ -251,17 +256,18 @@ export const TravelPolicyConfig: React.FC = () => {
                       <th className="pb-3 px-2 text-right">Per-diem / Ngày</th>
                       <th className="pb-3 px-2 text-right">Khách Sạn / Đêm</th>
                       <th className="pb-3 px-2 text-center">Tiền Tệ</th>
+                      <th className="pb-3 px-2 text-center">Vé Máy Bay</th>
                       <th className="pb-3 pl-2 text-center w-28">Hành động</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-dark-850">
                     {filteredPolicies.map(p => (
-                      <tr key={p.policyId} className="hover:bg-dark-900/30 transition-colors">
+                      <tr key={p.policyId} className="hover:bg-dark-900-30 transition-colors">
                         <td className="py-3.5 pr-2">
                           <div className="space-y-0.5">
                             <p className="font-medium text-white">{getRegionName(p.regionCode)}</p>
                             {p.projectId ? (
-                              <span className="text-[9px] bg-brand-500/10 border border-brand-500/20 text-brand-400 px-1.5 py-0.5 rounded font-mono">
+                              <span className="text-[9px] bg-brand-500-10 border border-brand-500-20 text-brand-400 px-1.5 py-0.5 rounded font-mono">
                                 Override Dự án #{p.projectId}
                               </span>
                             ) : (
@@ -310,6 +316,23 @@ export const TravelPolicyConfig: React.FC = () => {
                             />
                           ) : (
                             <span className="px-1.5 py-0.5 rounded bg-dark-850 text-dark-300 text-[10px]">{p.currency || 'VND'}</span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-2 text-center font-mono font-bold text-dark-300">
+                          {editingId === p.policyId ? (
+                            <select
+                              value={editFlightTicketClass}
+                              onChange={e => setEditFlightTicketClass(e.target.value)}
+                              className="w-24 bg-dark-950 border border-dark-700 text-xs px-1 py-1 rounded text-center text-white focus:outline-none"
+                            >
+                              <option value="ECONOMY">Phổ thông</option>
+                              <option value="BUSINESS">Thương gia</option>
+                              <option value="FIRST">Hạng nhất</option>
+                            </select>
+                          ) : (
+                            <span style={{ backgroundColor: 'color-mix(in srgb, var(--color-brand-500) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--color-brand-500) 20%, transparent)' }} className="px-1.5 py-0.5 rounded text-brand-400 border text-[10px]">
+                              {p.flightTicketClass || 'ECONOMY'}
+                            </span>
                           )}
                         </td>
                         <td className="py-3.5 pl-2 text-center">
@@ -363,7 +386,7 @@ export const TravelPolicyConfig: React.FC = () => {
             </h3>
 
             <div className="space-y-4 text-xs text-dark-300 leading-relaxed">
-              <div className="p-3 bg-brand-500/10 border border-brand-500/20 rounded-xl space-y-1">
+              <div className="p-3 bg-brand-500-10 border border-brand-500-20 rounded-xl space-y-1">
                 <p className="font-bold text-brand-400 flex items-center gap-1">🌐 Mặc Định Toàn Hệ Thống (Global Policy)</p>
                 <p className="text-dark-400">
                   Áp dụng làm khung tiêu chuẩn chung cho toàn bộ công ty. Mọi dự án mới tạo tự động kế thừa bộ khung này.
@@ -390,7 +413,7 @@ export const TravelPolicyConfig: React.FC = () => {
 
       {/* New Policy Modal */}
       {showPolicyModal && (
-        <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-dark-950-80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-md glass-panel p-6 rounded-2xl border border-dark-800 shadow-2xl space-y-4 animate-slide-up">
             <div className="flex justify-between items-center border-b border-dark-850 pb-3">
               <h3 className="text-md font-bold text-white flex items-center gap-2">
@@ -496,6 +519,21 @@ export const TravelPolicyConfig: React.FC = () => {
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs text-dark-300 font-semibold">Hạng Vé Máy Bay:</label>
+                  <select
+                    value={newFlightTicketClass}
+                    onChange={e => setNewFlightTicketClass(e.target.value)}
+                    className="w-full bg-dark-950 border border-dark-800 text-xs p-3 rounded-xl text-white font-mono font-bold focus:outline-none focus:border-brand-500"
+                  >
+                    <option value="ECONOMY">Phổ thông (Economy)</option>
+                    <option value="BUSINESS">Thương gia (Business)</option>
+                    <option value="FIRST">Hạng nhất (First)</option>
+                  </select>
+                </div>
+              </div>
+
               <button
                 type="submit"
                 disabled={submittingPolicy}
@@ -510,7 +548,7 @@ export const TravelPolicyConfig: React.FC = () => {
 
       {/* New Region Modal */}
       {showRegionModal && (
-        <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-dark-950-80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-md glass-panel p-6 rounded-2xl border border-dark-800 shadow-2xl space-y-4 animate-slide-up">
             <div className="flex justify-between items-center border-b border-dark-850 pb-3">
               <h3 className="text-md font-bold text-white flex items-center gap-2">
@@ -570,7 +608,7 @@ export const TravelPolicyConfig: React.FC = () => {
 
       {/* Clone Policy Modal */}
       {showCloneModal && (
-        <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-dark-950-80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-sm glass-panel p-6 rounded-2xl border border-dark-800 shadow-2xl space-y-4 animate-slide-up">
             <div className="flex justify-between items-center border-b border-dark-850 pb-3">
               <h3 className="text-md font-bold text-white flex items-center gap-1.5">

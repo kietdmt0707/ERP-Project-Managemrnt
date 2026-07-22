@@ -66,6 +66,10 @@ namespace AronErpPm.Api.Models
         [Column("currency")]
         public string Currency { get; set; } = "VND"; // VND, USD, EUR, SGD, JPY...
 
+        [MaxLength(50)]
+        [Column("flight_ticket_class")]
+        public string? FlightTicketClass { get; set; }
+
         [Column("is_active")]
         public bool IsActive { get; set; } = true;
 

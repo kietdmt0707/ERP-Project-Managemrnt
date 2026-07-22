@@ -382,6 +382,18 @@ export const projectService = {
     }
     return response.json();
   },
+  async updateSharepointLink(projectId: number, link: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/project/${projectId}/sharepoint-link`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ link })
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Cập nhật liên kết dự án thất bại.');
+    }
+    return response.json();
+  },
   async assignPm(req: { projectId: number, username: string, fullName: string, email: string }): Promise<any> {
     const response = await fetch(`${API_BASE_URL}/project/assign-pm`, {
       method: 'POST',
@@ -508,6 +520,7 @@ export interface TravelExpensePolicy {
   transportAllowance?: number;
   pocketAllowance?: number;
   currency: string;
+  flightTicketClass?: string;
   isActive: boolean;
   updatedAt: string;
 }

@@ -216,7 +216,7 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
   return (
     <div className="space-y-6">
       {/* Header Panel */}
-      <div className="bg-dark-900/40 p-4 rounded-xl border border-dark-800 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="bg-dark-900-40 p-4 rounded-xl border border-dark-800 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Database className="text-brand-500" /> Cấu hình Master Data & Phân Quyền (RBAC)
@@ -232,7 +232,7 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
             onClick={() => setActiveTab('scopes')}
             className={`flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-lg transition-all ${
               activeTab === 'scopes'
-                ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10'
+                ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10'
                 : 'text-dark-400 hover:text-white hover:bg-dark-900'
             }`}
           >
@@ -242,7 +242,7 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
             onClick={() => setActiveTab('roles')}
             className={`flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-lg transition-all ${
               activeTab === 'roles'
-                ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10'
+                ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10'
                 : 'text-dark-400 hover:text-white hover:bg-dark-900'
             }`}
           >
@@ -261,7 +261,7 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
             {isPmOrAdmin && (
               <button
                 onClick={handleOpenCreateScope}
-                className="flex items-center gap-1.5 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-brand-600/10"
+                className="flex items-center gap-1.5 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-brand-600-10"
               >
                 <Plus size={14} /> Thêm phạm vi
               </button>
@@ -285,7 +285,7 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
                 </thead>
                 <tbody className="divide-y divide-dark-850">
                   {scopes.map(s => (
-                    <tr key={s.optionId} className="hover:bg-dark-900/30 text-white transition-colors">
+                    <tr key={s.optionId} className="hover:bg-dark-900-30 text-white transition-colors">
                       <td className="py-3.5 px-4 font-mono text-brand-400 font-semibold">{s.value}</td>
                       <td className="py-3.5 px-4 text-dark-300">{s.description}</td>
                       <td className="py-3.5 px-4 text-center">
@@ -347,7 +347,7 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
                     onClick={() => selectRole(r)}
                     className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-between ${
                       selectedRole?.roleId === r.roleId
-                        ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10'
+                        ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10'
                         : 'text-dark-300 hover:text-white hover:bg-dark-800'
                     }`}
                   >
@@ -423,7 +423,7 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
                         <button
                           type="button"
                           onClick={handleSelectAll}
-                          className="bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 font-bold text-[10px] py-1.5 px-3 rounded-lg border border-brand-500/20 transition-all cursor-pointer"
+                          className="bg-brand-500-10 hover:bg-brand-500-20 text-brand-400 font-bold text-[10px] py-1.5 px-3 rounded-lg border border-brand-500-20 transition-all cursor-pointer"
                         >
                           Chọn Tất Cả
                         </button>
@@ -445,7 +445,7 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
                   <div className="overflow-x-auto border border-dark-800 rounded-xl bg-dark-950">
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
-                        <tr className="bg-dark-900/60 border-b border-dark-800 text-dark-400 font-semibold">
+                        <tr className="bg-dark-900-60 border-b border-dark-800 text-dark-400 font-semibold">
                           <th className="py-3 px-4">Tính năng hệ thống (System Feature)</th>
                           {actions.map(act => (
                             <th key={act.key} className="py-3 px-4 text-center">{act.name}</th>
@@ -454,7 +454,7 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
                       </thead>
                       <tbody className="divide-y divide-dark-850">
                         {systemFeatures.map(feat => (
-                          <tr key={feat.key} className="hover:bg-dark-900/30 text-white">
+                          <tr key={feat.key} className="hover:bg-dark-900-30 text-white">
                             <td className="py-3 px-4 font-semibold text-dark-200">{feat.name}</td>
                             {actions.map(act => {
                               const isChecked = permissions[feat.key]?.[act.key] || false;
@@ -482,7 +482,7 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
                   <div className="flex justify-end pt-4 border-t border-dark-850">
                     <button
                       type="submit"
-                      className="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-brand-600/10"
+                      className="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-brand-600-10"
                     >
                       Lưu Thay Đổi Vai Trò & Phân Quyền
                     </button>
@@ -498,7 +498,7 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
 
       {/* ==================== CREATE/EDIT SCOPE MODAL ==================== */}
       {showScopeModal && (
-        <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-slide-up">
+        <div className="fixed inset-0 bg-dark-950-80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-slide-up">
           <div className="glass-panel border border-dark-800 w-full max-w-md rounded-2xl p-6 shadow-2xl relative space-y-4">
             <div className="flex justify-between items-center border-b border-dark-850 pb-3">
               <h3 className="text-md font-bold text-white">
@@ -564,7 +564,7 @@ export const MasterDataManager: React.FC<MasterDataManagerProps> = ({ currentUse
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-brand-600/10"
+                  className="px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-brand-600-10"
                 >
                   Lưu
                 </button>

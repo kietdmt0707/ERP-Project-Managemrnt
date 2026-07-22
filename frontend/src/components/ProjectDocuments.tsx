@@ -17,7 +17,7 @@ export const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({ projectId, u
 
   // Mock document explorer states
   const [currentPath, setCurrentPath] = useState<string[]>([]);
-  const [mockFiles] = useState([
+  const [mockFiles, setMockFiles] = useState([
     { name: 'MD050_Functional_Design_FIN.docx', size: '2.4 MB', updated: '15/07/2026', folder: 'Functional Specs' },
     { name: 'MD070_Technical_Design_Custom_RICEFW.docx', size: '4.1 MB', updated: '16/07/2026', folder: 'Technical Specs' },
     { name: 'UAT_Signoff_Phase1_Signed.pdf', size: '1.8 MB', updated: '18/07/2026', folder: 'UAT Sign-off' },
@@ -72,16 +72,11 @@ export const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({ projectId, u
     return <div className="text-center py-10 text-xs text-dark-400">Đang tải cấu hình tài liệu dự án...</div>;
   }
 
-  // Generate safe embed URL from OneDrive link if needed
-  const getEmbedUrl = (url: string) => {
-    if (!url) return '';
-    // Standard OneDrive share link might need redirect or embed conversion, but standard shared directories work in iframe
-    return url;
-  };
+
 
   return (
     <div className="space-y-6">
-      <div className="bg-dark-900/40 p-4 rounded-xl border border-dark-800 flex justify-between items-center">
+      <div className="bg-dark-900-40 p-4 rounded-xl border border-dark-800 flex justify-between items-center">
         <div>
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Folder className="text-brand-500" /> Hồ Sơ & Tài Liệu Dự Án (SharePoint / OneDrive Hub)
@@ -133,9 +128,9 @@ export const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({ projectId, u
       {project?.sharepointFolderLink ? (
         /* Real OneDrive / SharePoint Live Embed View */
         <div className="space-y-4">
-          <div className="bg-dark-900/60 p-4 rounded-2xl border border-dark-800 flex flex-wrap justify-between items-center gap-4">
+          <div className="bg-dark-900-60 p-4 rounded-2xl border border-dark-800 flex flex-wrap justify-between items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-brand-500/10 border border-brand-500/20 rounded-xl text-brand-400">
+              <div className="p-2.5 bg-brand-500-10 border border-brand-500-20 rounded-xl text-brand-400">
                 <ShieldCheck size={20} />
               </div>
               <div>
@@ -157,7 +152,7 @@ export const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({ projectId, u
                 href={project.sharepointFolderLink} 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center gap-1.5 transition-all shadow-lg shadow-brand-600/10"
+                className="bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center gap-1.5 transition-all shadow-lg shadow-brand-600-10"
               >
                 Mở Trực Tiếp Trên SharePoint Web <ExternalLink size={13} />
               </a>
@@ -185,7 +180,7 @@ export const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({ projectId, u
             </div>
           ) : (
             <div className="glass-panel rounded-2xl border border-dark-800 overflow-hidden flex flex-col h-[480px]">
-              <div className="bg-dark-900/60 p-4 border-b border-dark-800 flex justify-between items-center text-xs">
+              <div className="bg-dark-900-60 p-4 border-b border-dark-800 flex justify-between items-center text-xs">
                 <div className="flex items-center gap-2 font-mono">
                   <span className="text-dark-500">Root</span>
                   {currentPath.map((p, idx) => (
@@ -212,7 +207,7 @@ export const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({ projectId, u
                       <div 
                         key={folder}
                         onClick={() => navigateToFolder(folder)}
-                        className="p-4 bg-dark-900/40 hover:bg-dark-900/80 border border-dark-850 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:scale-102 hover:border-brand-500/30"
+                        className="p-4 bg-dark-900-40 hover:bg-dark-900/80 border border-dark-850 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:scale-102 hover:border-brand-500/30"
                       >
                         <Folder size={32} className="text-brand-500" />
                         <span className="text-xs font-semibold text-white text-center">{folder}</span>
@@ -227,7 +222,7 @@ export const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({ projectId, u
                       .map((file) => (
                         <div 
                           key={file.name}
-                          className="p-3 bg-dark-900/30 border border-dark-850 hover:border-dark-800 rounded-xl flex justify-between items-center text-xs"
+                          className="p-3 bg-dark-900-30 border border-dark-850 hover:border-dark-800 rounded-xl flex justify-between items-center text-xs"
                         >
                           <div className="flex items-center gap-2.5">
                             <File size={16} className="text-brand-400" />
@@ -270,7 +265,7 @@ export const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({ projectId, u
 
           <div className="glass-panel rounded-2xl border border-dark-800 overflow-hidden flex flex-col h-[480px]">
             {/* File manager header */}
-            <div className="bg-dark-900/60 p-4 border-b border-dark-800 flex justify-between items-center text-xs">
+            <div className="bg-dark-900-60 p-4 border-b border-dark-800 flex justify-between items-center text-xs">
               <div className="flex items-center gap-2 font-mono">
                 <span className="text-dark-500">Root</span>
                 {currentPath.map((p, idx) => (
@@ -299,7 +294,7 @@ export const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({ projectId, u
                     <div 
                       key={folder}
                       onClick={() => navigateToFolder(folder)}
-                      className="p-4 bg-dark-900/40 hover:bg-dark-900/80 border border-dark-850 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:scale-102 hover:border-brand-500/30"
+                      className="p-4 bg-dark-900-40 hover:bg-dark-900/80 border border-dark-850 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:scale-102 hover:border-brand-500/30"
                     >
                       <Folder size={32} className="text-brand-500" />
                       <span className="text-xs font-semibold text-white text-center">{folder}</span>
@@ -315,7 +310,7 @@ export const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({ projectId, u
                     .map((file) => (
                       <div 
                         key={file.name}
-                        className="p-3 bg-dark-900/30 border border-dark-850 hover:border-dark-800 rounded-xl flex justify-between items-center text-xs"
+                        className="p-3 bg-dark-900-30 border border-dark-850 hover:border-dark-800 rounded-xl flex justify-between items-center text-xs"
                       >
                         <div className="flex items-center gap-2.5">
                           <File size={16} className="text-brand-400" />
@@ -348,7 +343,7 @@ export const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({ projectId, u
 
             {/* Folder Footer upload simulation */}
             {canConfigure && (
-              <div className="bg-dark-900/40 p-4 border-t border-dark-850 flex justify-between items-center text-xs">
+              <div className="bg-dark-900-40 p-4 border-t border-dark-850 flex justify-between items-center text-xs">
                 <p className="text-dark-500 font-mono text-[10px]">📁 Dung lượng sử dụng: 10.2 MB / 100 GB</p>
                 <button
                   onClick={() => {

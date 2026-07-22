@@ -120,7 +120,7 @@ export const OracleEnvironmentManager: React.FC<OracleEnvironmentManagerProps> =
   return (
     <div className="space-y-6">
       {/* Header Bar */}
-      <div className="bg-dark-900/40 p-4 rounded-xl border border-dark-800 flex justify-between items-center">
+      <div className="bg-dark-900-40 p-4 rounded-xl border border-dark-800 flex justify-between items-center">
         <div>
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Server className="text-brand-500" /> Quản Lý Phiên Bản & Môi Trường (Oracle Instances)
@@ -130,7 +130,7 @@ export const OracleEnvironmentManager: React.FC<OracleEnvironmentManagerProps> =
         {canManage && (
           <button
             onClick={handleOpenCreateModal}
-            className="bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center gap-1.5 transition-all shadow-lg shadow-brand-600/10"
+            className="bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center gap-1.5 transition-all shadow-lg shadow-brand-600-10"
           >
             <Plus size={14} /> Khai Báo Môi Trường Mới
           </button>
@@ -147,8 +147,8 @@ export const OracleEnvironmentManager: React.FC<OracleEnvironmentManagerProps> =
               key={inst.instanceId}
               className={`p-5 rounded-xl border space-y-3 transition-all ${
                 inst.instanceStatus === 'ACTIVE'
-                  ? 'bg-dark-900/60 border-dark-800 hover:border-dark-750'
-                  : 'bg-dark-900/40 border-dark-800/80 border-dashed opacity-75'
+                  ? 'bg-dark-900-60 border-dark-800 hover:border-dark-750'
+                  : 'bg-dark-900-40 border-dark-800/80 border-dashed opacity-75'
               }`}
             >
               <div className="flex justify-between items-start">
@@ -195,7 +195,7 @@ export const OracleEnvironmentManager: React.FC<OracleEnvironmentManagerProps> =
 
       {/* Form Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-dark-950-80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-md glass-panel p-6 rounded-2xl border border-dark-800 shadow-2xl space-y-4 animate-slide-up">
             <div className="flex justify-between items-center border-b border-dark-850 pb-3">
               <h3 className="text-md font-bold text-white flex items-center gap-2">

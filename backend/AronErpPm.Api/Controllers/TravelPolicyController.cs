@@ -97,6 +97,7 @@ namespace AronErpPm.Api.Controllers
                 TransportAllowance = request.TransportAllowance,
                 PocketAllowance = request.PocketAllowance,
                 Currency = string.IsNullOrEmpty(request.Currency) ? "VND" : request.Currency.ToUpper(),
+                FlightTicketClass = request.FlightTicketClass,
                 IsActive = true,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -118,6 +119,7 @@ namespace AronErpPm.Api.Controllers
             policy.TransportAllowance = request.TransportAllowance;
             policy.PocketAllowance = request.PocketAllowance;
             policy.Currency = string.IsNullOrEmpty(request.Currency) ? policy.Currency : request.Currency.ToUpper();
+            policy.FlightTicketClass = request.FlightTicketClass;
             policy.IsActive = request.IsActive;
             policy.UpdatedAt = DateTime.UtcNow;
 

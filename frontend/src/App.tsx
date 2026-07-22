@@ -310,7 +310,7 @@ function App() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-dark-950 px-4 relative overflow-hidden">
         {/* Background gradient lights */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-500-10 rounded-full blur-[100px] pointer-events-none"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none"></div>
 
         <div className="w-full max-w-md space-y-8 glass-panel p-8 rounded-3xl border border-dark-800 shadow-2xl relative z-10 animate-slide-up">
@@ -529,7 +529,7 @@ function App() {
   return (
     <div className="min-h-screen bg-dark-950 flex flex-col">
       {/* Top Navigation */}
-      <header className="border-b border-dark-850 bg-dark-900/60 backdrop-blur-md sticky top-0 z-30 px-6 py-4 flex justify-between items-center">
+      <header className="border-b border-dark-850 bg-dark-900-60 backdrop-blur-md sticky top-0 z-30 px-6 py-4 flex justify-between items-center">
         <div 
           onClick={() => { setActiveProject(null); setActiveTab('dashboard'); }}
           className="flex items-center gap-3 cursor-pointer hover:opacity-85 transition-opacity"
@@ -621,7 +621,7 @@ function App() {
           <button 
             onClick={() => { setActiveProject(null); setActiveTab('dashboard'); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-              activeTab === 'dashboard' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+              activeTab === 'dashboard' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
             }`}
           >
             <Sliders size={16} /> Dashboard & Dự Án
@@ -633,7 +633,7 @@ function App() {
                 <button 
                   onClick={() => setActiveTab('gantt')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                    activeTab === 'gantt' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                    activeTab === 'gantt' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                   }`}
                 >
                   <Calendar size={16} /> Kế hoạch & Sơ đồ Gán
@@ -644,7 +644,7 @@ function App() {
                 <button 
                   onClick={() => setActiveTab('ricefw')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                    activeTab === 'ricefw' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                    activeTab === 'ricefw' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                   }`}
                 >
                   <FileText size={16} /> Quản lý RICEFW (Oracle)
@@ -655,7 +655,7 @@ function App() {
                 <button 
                   onClick={() => setActiveTab('team')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                    activeTab === 'team' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                    activeTab === 'team' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                   }`}
                 >
                   <Users size={16} /> Đội Ngũ Dự Án
@@ -666,7 +666,7 @@ function App() {
                 <button 
                   onClick={() => setActiveTab('trips')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                    activeTab === 'trips' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                    activeTab === 'trips' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                   }`}
                 >
                   <Plane size={16} /> Công Tác & Tạm Ứng
@@ -676,7 +676,7 @@ function App() {
               <button 
                 onClick={() => setActiveTab('leaves')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'leaves' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                  activeTab === 'leaves' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                 }`}
               >
                 <Calendar size={16} /> Quản Lý Nghỉ Phép
@@ -686,7 +686,7 @@ function App() {
                 <button 
                   onClick={() => setActiveTab('approvals')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                    activeTab === 'approvals' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                    activeTab === 'approvals' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                   }`}
                 >
                   <CheckSquare size={16} /> Timesheets & Phê Duyệt
@@ -697,7 +697,7 @@ function App() {
                 <button 
                   onClick={() => setActiveTab('environments')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                    activeTab === 'environments' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                    activeTab === 'environments' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                   }`}
                 >
                   <Server size={16} /> Môi trường Oracle Instance
@@ -708,7 +708,7 @@ function App() {
                 <button 
                   onClick={() => setActiveTab('documents')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                    activeTab === 'documents' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                    activeTab === 'documents' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                   }`}
                 >
                   <Folder size={16} /> Tài Liệu OneDrive/SharePoint
@@ -720,7 +720,7 @@ function App() {
                   <button 
                     onClick={() => setActiveTab('costs')}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                      activeTab === 'costs' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                      activeTab === 'costs' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                     }`}
                   >
                     <DollarSign size={16} /> Dashboard Chi Phí & Giá Cost
@@ -738,7 +738,7 @@ function App() {
             <button 
               onClick={() => setActiveTab('projects')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                activeTab === 'projects' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                activeTab === 'projects' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
               }`}
             >
               <Briefcase size={16} /> Khởi Tạo & Quản Lý Dự Án
@@ -748,7 +748,7 @@ function App() {
               <button 
                 onClick={() => setActiveTab('users')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'users' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                  activeTab === 'users' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                 }`}
               >
                 <Users size={16} /> Quản Lý Người Dùng
@@ -759,7 +759,7 @@ function App() {
               <button 
                 onClick={() => setActiveTab('masterdata')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'masterdata' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                  activeTab === 'masterdata' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                 }`}
               >
                 <Server size={16} /> Master Data & RBAC
@@ -770,7 +770,7 @@ function App() {
               <button 
                 onClick={() => setActiveTab('settings')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'settings' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                  activeTab === 'settings' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                 }`}
               >
                 <Sliders size={16} /> Thiết Lập Hệ Thống
@@ -781,7 +781,7 @@ function App() {
               <button 
                 onClick={() => setActiveTab('travelpolicy')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'travelpolicy' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                  activeTab === 'travelpolicy' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                 }`}
               >
                 <ClipboardIcon size={16} /> Định Mức Công Tác Phí
@@ -885,7 +885,7 @@ function App() {
                             />
                             <div className="flex-1 space-y-1">
                               <p className={`text-xs font-semibold leading-tight ${task.completed ? 'text-dark-500 line-through' : 'text-white'}`}>{task.name}</p>
-                              <span className="inline-block text-[9px] font-bold text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded border border-brand-500/5">
+                              <span className="inline-block text-[9px] font-bold text-brand-400 bg-brand-500-10 px-2 py-0.5 rounded border border-brand-500/5">
                                 {task.project}
                               </span>
                             </div>
@@ -1024,9 +1024,9 @@ function App() {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {currentUser.projectRoles.map((pr) => (
-                      <div key={pr.projectId} className="bg-dark-900 p-5 rounded-2xl border border-dark-850 flex flex-col justify-between space-y-4 hover:border-brand-500/20 transition-all shadow-sm">
+                      <div key={pr.projectId} className="bg-dark-900 p-5 rounded-2xl border border-dark-850 flex flex-col justify-between space-y-4 hover:border-brand-500-20 transition-all shadow-sm">
                         <div className="space-y-2">
-                          <span className="text-[9px] font-bold font-mono text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded border border-brand-500/10">
+                          <span className="text-[9px] font-bold font-mono text-brand-400 bg-brand-500-10 px-2 py-0.5 rounded border border-brand-500/10">
                             {pr.projectCode}
                           </span>
                           <h4 className="text-sm font-bold text-white mt-1 leading-snug">{pr.projectName}</h4>
@@ -1097,7 +1097,7 @@ function App() {
 
                   {activeTab === 'costs' && (
                     <div className="space-y-6">
-                      <div className="bg-dark-900/40 p-4 rounded-xl border border-dark-800">
+                      <div className="bg-dark-900-40 p-4 rounded-xl border border-dark-800">
                         <h2 className="text-lg font-bold text-white flex items-center gap-2">
                           <DollarSign className="text-emerald-500" /> Dashboard Quản Lý Giá Cost & Tài Chính Dự Án
                         </h2>
@@ -1108,15 +1108,15 @@ function App() {
                       {activeProject.roleCode === 'PM' || activeProject.roleCode === 'DIRECTOR' || currentUser.globalRole === 'SYSTEM_ADMIN' ? (
                         <div className="space-y-6">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-dark-900/60 p-5 rounded-xl border border-dark-800 text-xs">
+                            <div className="bg-dark-900-60 p-5 rounded-xl border border-dark-800 text-xs">
                               <p className="text-dark-400">Tổng Chi Phí Nhân Sự Ghi Nhận (Actual Cost)</p>
                               <p className="text-xl font-bold text-white mt-1">45,800,000 VNĐ</p>
                             </div>
-                            <div className="bg-dark-900/60 p-5 rounded-xl border border-dark-800 text-xs">
+                            <div className="bg-dark-900-60 p-5 rounded-xl border border-dark-800 text-xs">
                               <p className="text-dark-400">Chi Phí Tạm Ứng Công Tác (Advance Claims)</p>
                               <p className="text-xl font-bold text-emerald-400 mt-1">2,000,000 VNĐ</p>
                             </div>
-                            <div className="bg-dark-900/60 p-5 rounded-xl border border-dark-800 text-xs">
+                            <div className="bg-dark-900-60 p-5 rounded-xl border border-dark-800 text-xs">
                               <p className="text-dark-400">Ngân Sách Dự Kiến Dự Án (Planned Budget)</p>
                               <p className="text-xl font-bold text-brand-400 mt-1">1,200,000,000 VNĐ</p>
                             </div>
@@ -1182,7 +1182,7 @@ function App() {
           </div>
         </main>
       {showProfileModal && (
-        <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-dark-950-80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-2xl bg-dark-900 border border-dark-800 p-6 rounded-2xl shadow-2xl space-y-6 animate-slide-up text-left">
             <div className="flex justify-between items-center border-b border-dark-850 pb-3">
               <h3 className="text-md font-bold text-white flex items-center gap-2">
@@ -1336,7 +1336,7 @@ function App() {
                           onClick={() => setActiveTheme(t.id)}
                           className={`p-3 rounded-xl border text-left flex items-center gap-2.5 transition-all ${
                             activeTheme === t.id 
-                              ? 'bg-brand-500/10 border-brand-500' 
+                              ? 'bg-brand-500-10 border-brand-500' 
                               : 'bg-dark-950 border-dark-850 hover:border-dark-700'
                           }`}
                         >
@@ -1364,7 +1364,7 @@ function App() {
                           onClick={() => setActiveMode(m.id)}
                           className={`p-3 rounded-xl border text-center font-semibold text-xs transition-all ${
                             activeMode === m.id 
-                              ? 'bg-brand-500/10 border-brand-500' 
+                              ? 'bg-brand-500-10 border-brand-500' 
                               : 'bg-dark-950 border-dark-850 hover:border-dark-700'
                           }`}
                         >

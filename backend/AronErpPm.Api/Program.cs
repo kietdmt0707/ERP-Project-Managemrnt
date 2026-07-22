@@ -198,6 +198,8 @@ using (var scope = app.Services.CreateScope())
         ("ALTER TABLE travel_expense_policies ADD COLUMN IF NOT EXISTS project_id INT;", "Add project_id to travel_expense_policies"),
         ("ALTER TABLE travel_expense_policies ADD COLUMN IF NOT EXISTS transport_allowance DECIMAL(12,2) DEFAULT 0.00;", "Add transport_allowance to travel_expense_policies"),
         ("ALTER TABLE travel_expense_policies ADD COLUMN IF NOT EXISTS pocket_allowance DECIMAL(12,2) DEFAULT 0.00;", "Add pocket_allowance to travel_expense_policies"),
+        ("ALTER TABLE travel_expense_policies ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'VND';", "Add currency to travel_expense_policies"),
+        ("ALTER TABLE travel_expense_policies ADD COLUMN IF NOT EXISTS flight_ticket_class VARCHAR(50);", "Add flight_ticket_class to travel_expense_policies"),
         (@"
             CREATE TABLE IF NOT EXISTS travel_regions (
                 region_id SERIAL PRIMARY KEY,
@@ -217,6 +219,7 @@ using (var scope = app.Services.CreateScope())
                 transport_allowance DECIMAL(12,2) DEFAULT 0.00,
                 pocket_allowance DECIMAL(12,2) DEFAULT 0.00,
                 currency VARCHAR(10) DEFAULT 'VND',
+                flight_ticket_class VARCHAR(50),
                 is_active BOOLEAN DEFAULT TRUE,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
