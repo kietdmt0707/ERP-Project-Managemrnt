@@ -13,7 +13,7 @@ import { ProjectDocuments } from './components/ProjectDocuments';
 import { LeaveManagement } from './components/LeaveManagement';
 import { TravelPolicyConfig } from './components/TravelPolicyConfig';
 import { OracleEnvironmentManager } from './components/OracleEnvironmentManager';
-import { Calendar, FileText, CheckSquare, DollarSign, LogOut, ArrowRight, Server, ShieldAlert, Users, Sliders, Briefcase, Plane, Folder, Eye, EyeOff, Clipboard } from 'lucide-react';
+import { Calendar, FileText, CheckSquare, DollarSign, LogOut, ArrowRight, Server, ShieldAlert, Users, Sliders, Briefcase, Plane, Folder, Eye, EyeOff, Clipboard as ClipboardIcon } from 'lucide-react';
 
 function App() {
   const [currentUser, setCurrentUser] = useState<AuthResponse | null>(null);
@@ -784,7 +784,7 @@ function App() {
                   activeTab === 'travelpolicy' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
                 }`}
               >
-                <Clipboard size={16} /> Định Mức Công Tác Phí
+                <ClipboardIcon size={16} /> Định Mức Công Tác Phí
               </button>
             )}
           </div>

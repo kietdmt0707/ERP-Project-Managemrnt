@@ -363,6 +363,13 @@ export const projectService = {
     }
     return response.json();
   },
+  async getProjectById(projectId: number): Promise<ProjectDto> {
+    const response = await fetch(`${API_BASE_URL}/project/${projectId}`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải thông tin dự án.');
+    return response.json();
+  },
   async updateProject(projectId: number, project: ProjectDto): Promise<ProjectDto> {
     const response = await fetch(`${API_BASE_URL}/project/${projectId}`, {
       method: 'PUT',
