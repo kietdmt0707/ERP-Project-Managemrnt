@@ -359,7 +359,6 @@ export const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({ projectId, u
                           name,
                           size: '1.5 MB',
                           updated: new Date().toLocaleDateString('vi-VN'),
-                          type: name.split('.').pop() || 'pdf',
                           folder: currentPath[currentPath.length - 1]
                         }
                       ]);
