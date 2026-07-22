@@ -96,7 +96,7 @@ namespace AronErpPm.Api.Controllers
 
         // POST: api/businesstrip
         [HttpPost]
-        public async Task<IActionResult> CreateTrip([FromBody] BusinessTrip request)
+        public async Task<IActionResult> CreateTrip([FromBody] CreateBusinessTripDto request)
         {
             var username = User.Identity?.Name;
             var globalRole = User.FindFirst("GlobalRole")?.Value ?? User.FindFirst(ClaimTypes.Role)?.Value;

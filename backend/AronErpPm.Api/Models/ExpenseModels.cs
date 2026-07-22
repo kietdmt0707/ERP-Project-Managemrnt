@@ -14,7 +14,6 @@ namespace AronErpPm.Api.Models
         [ForeignKey("ProjectId")]
         public Project? Project { get; set; }
 
-        [Required]
         [MaxLength(50)]
         public string TripCode { get; set; } = string.Empty;
 
@@ -35,7 +34,6 @@ namespace AronErpPm.Api.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal AdvanceAmount { get; set; } = 0.00m;
 
-        [Required]
         [MaxLength(20)]
         public string Status { get; set; } = "DRAFT"; // DRAFT, SUBMITTED, APPROVED, REJECTED
 
@@ -102,7 +100,6 @@ namespace AronErpPm.Api.Models
         [MaxLength(500)]
         public string? ReceiptPath { get; set; } // Path/URL to invoice upload
 
-        [Required]
         [MaxLength(20)]
         public string Status { get; set; } = "DRAFT"; // DRAFT, SUBMITTED, APPROVED, REJECTED
 
@@ -122,5 +119,15 @@ namespace AronErpPm.Api.Models
         public decimal OverLimitAmount { get; set; } = 0.00m;
 
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+    }
+
+    public class CreateBusinessTripDto
+    {
+        public int ProjectId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Destination { get; set; } = string.Empty;
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public decimal AdvanceAmount { get; set; }
     }
 }
