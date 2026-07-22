@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { oracleInstanceService, OracleInstanceDto } from '../services/api';
+import { oracleInstanceService, OracleInstanceDto, authService } from '../services/api';
 import { Server, Plus, Edit, Trash2, CheckCircle2, Clock, RefreshCw } from 'lucide-react';
 
 interface OracleEnvironmentManagerProps {
@@ -20,7 +20,11 @@ export const OracleEnvironmentManager: React.FC<OracleEnvironmentManagerProps> =
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const canManage = userRole === 'PM' || userRole === 'DIRECTOR' || userRole === 'PC';
+  const currentUser = authService.getCurrentUser();
+  const globalRole = (currentUser?.globalRole || '').toUpperCase();
+  const isSysAdmin = globalRole === 'SYSTEM_ADMIN' || globalRole === 'SYSADMIN' || globalRole === 'ADMIN';
+  const roleUpper = (userRole || '').toUpperCase();
+  const canManage = isSysAdmin || roleUpper === 'PM' || roleUpper === 'DIRECTOR' || roleUpper === 'PC' || roleUpper === 'ADMIN' || roleUpper === 'LEADER' || roleUpper === 'MEMBER';
 
   useEffect(() => {
     loadInstances();
