@@ -534,6 +534,8 @@ export interface UserDto {
   email: string;
   phone?: string;
   avatarPath?: string;
+  annualLeaveDays?: number;
+  carryOverDays?: number;
   isActive: boolean;
   expiryDate?: string;
   globalRoleId?: number;

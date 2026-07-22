@@ -12,7 +12,7 @@ import { MasterDataManager } from './components/MasterDataManager';
 import { ProjectDocuments } from './components/ProjectDocuments';
 import { LeaveManagement } from './components/LeaveManagement';
 import { TravelPolicyConfig } from './components/TravelPolicyConfig';
-import { Calendar, FileText, CheckSquare, DollarSign, LogOut, ArrowRight, Server, ShieldAlert, Users, Sliders, Briefcase, Plane, Folder, Eye, EyeOff } from 'lucide-react';
+import { Calendar, FileText, CheckSquare, DollarSign, LogOut, ArrowRight, Server, ShieldAlert, Users, Sliders, Briefcase, Plane, Folder, Eye, EyeOff, Clipboard } from 'lucide-react';
 
 function App() {
   const [currentUser, setCurrentUser] = useState<AuthResponse | null>(null);
