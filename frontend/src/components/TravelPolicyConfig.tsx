@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { travelPolicyService, TravelExpensePolicy, TravelRegion, projectService, ProjectDto } from '../services/api';
-import { Clipboard, ShieldAlert, Edit, Save, Copy, Percent, Sparkles, HelpCircle, Plus, Trash2, Globe, DollarSign, Layers } from 'lucide-react';
+import { Clipboard, ShieldAlert, Edit, Save, Copy, Percent, Sparkles, Plus, Trash2, Globe, Layers } from 'lucide-react';
 
 export const TravelPolicyConfig: React.FC = () => {
   const [policies, setPolicies] = useState<TravelExpensePolicy[]>([]);

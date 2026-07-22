@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { projectService, ProjectDto } from '../services/api';
-import { Folder, Settings, Upload, Eye, File, ArrowRight, ShieldCheck, ExternalLink, Info } from 'lucide-react';
+import { Folder, Settings, Upload, Eye, File, ShieldCheck, ExternalLink, Info } from 'lucide-react';
 
 interface ProjectDocumentsProps {
   projectId: number;
@@ -17,30 +17,27 @@ export const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({ projectId, u
 
   // Mock document explorer states
   const [currentPath, setCurrentPath] = useState<string[]>([]);
-  const [mockFiles, setMockFiles] = useState([
-    { name: 'MD050_Functional_Spec_GL_v1.0.docx', size: '1.2 MB', updated: '12/07/2026', type: 'docx', folder: 'Functional Specs' },
-    { name: 'MD070_Technical_Spec_AP_v2.1.pdf', size: '2.4 MB', updated: '14/07/2026', type: 'pdf', folder: 'Technical Specs' },
-    { name: 'UAT_Signoff_Aron_Corp_Signed.pdf', size: '850 KB', updated: '10/07/2026', type: 'pdf', folder: 'UAT Sign-off' },
-    { name: 'Oracle_Fusion_Cloud_24C_Guide.pdf', size: '5.8 MB', updated: '01/06/2026', type: 'pdf', folder: 'Templates & Guidelines' },
+  const [mockFiles] = useState([
+    { name: 'MD050_Functional_Design_FIN.docx', size: '2.4 MB', updated: '15/07/2026', folder: 'Functional Specs' },
+    { name: 'MD070_Technical_Design_Custom_RICEFW.docx', size: '4.1 MB', updated: '16/07/2026', folder: 'Technical Specs' },
+    { name: 'UAT_Signoff_Phase1_Signed.pdf', size: '1.8 MB', updated: '18/07/2026', folder: 'UAT Sign-off' },
+    { name: 'Oracle_AIM_Template_MD050.dotx', size: '850 KB', updated: '10/07/2026', folder: 'Templates & Guidelines' }
   ]);
 
   const canConfigure = userRole === 'PM' || userRole === 'DIRECTOR' || userRole === 'PC';
 
   useEffect(() => {
-    loadProjectDetails();
+    loadProject();
   }, [projectId]);
 
-  const loadProjectDetails = async () => {
+  const loadProject = async () => {
     try {
       setLoading(true);
-      const list = await projectService.getProjects();
-      const found = list.find(p => p.projectId === projectId);
-      if (found) {
-        setProject(found);
-        setLinkInput(found.sharepointFolderLink || '');
-      }
+      const data = await projectService.getProjectById(projectId);
+      setProject(data);
+      setLinkInput(data.sharepointFolderLink || '');
     } catch (err) {
-      console.error(err);
+      console.error('Lỗi khi tải thông tin dự án:', err);
     } finally {
       setLoading(false);
     }
@@ -48,23 +45,16 @@ export const ProjectDocuments: React.FC<ProjectDocumentsProps> = ({ projectId, u
 
   const handleSaveLink = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!project) return;
-    setSaving(true);
     try {
-      const updated = await projectService.updateProject(projectId, {
-        projectCode: project.projectCode,
-        projectName: project.projectName,
-        sitesCount: project.sitesCount,
-        address: project.address,
-        contactInfo: project.contactInfo,
-        logoPath: project.logoPath,
-        sharepointFolderLink: linkInput
-      });
-      setProject(updated);
+      setSaving(true);
+      await projectService.updateSharepointLink(projectId, linkInput);
+      if (project) {
+        setProject({ ...project, sharepointFolderLink: linkInput });
+      }
       setShowConfig(false);
-      alert('Đã cập nhật liên kết OneDrive / SharePoint thành công!');
+      alert('Cập nhật liên kết thư mục dự án thành công!');
     } catch (err: any) {
-      alert(err.message || 'Cập nhật liên kết thất bại.');
+      alert(err.message || 'Cập nhật thất bại');
     } finally {
       setSaving(false);
     }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { oracleInstanceService, OracleInstanceDto } from '../services/api';
-import { Server, Plus, Edit, Trash2, CheckCircle2, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Server, Plus, Edit, Trash2, CheckCircle2, Clock, RefreshCw } from 'lucide-react';
 
 interface OracleEnvironmentManagerProps {
   projectId: number;
