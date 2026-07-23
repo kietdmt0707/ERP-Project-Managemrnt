@@ -67,6 +67,7 @@ namespace AronErpPm.Api.Models
 
         public bool IsVisibleToAll { get; set; } = true; // Visibility option to hide tasks from others
 
+        [Column("is_manual_progress")]
         public bool IsManualProgress { get; set; } = false;
 
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
@@ -77,68 +78,93 @@ namespace AronErpPm.Api.Models
     }
 
     // 5. Sub-Task Management (SharePoint Task Model linked to Activity Task)
+    [Table("sub_tasks")]
     public class SubTask
     {
         [Key]
+        [Column("sub_task_id")]
         public int SubTaskId { get; set; }
 
+        [Column("project_id")]
         public int ProjectId { get; set; }
         [ForeignKey("ProjectId")]
         public Project? Project { get; set; }
 
+        [Column("activity_id")]
         public int ActivityId { get; set; }
         [ForeignKey("ActivityId")]
         public Task? Activity { get; set; }
 
+        [Column("created_by_user_id")]
         public int CreatedByUserId { get; set; }
         [ForeignKey("CreatedByUserId")]
         public User? CreatedByUser { get; set; }
 
+        [Column("category")]
         [MaxLength(50)]
-        public string? Category { get; set; } // Thảo luận/Meeting, Tài liệu/Doc, Cấu hình/Setup, Dev/Custom, Testing...
+        public string? Category { get; set; }
 
+        [Column("module")]
         [MaxLength(50)]
-        public string? Module { get; set; } // GL, AP, AR, PO, INV, OM, HCM, Custom...
+        public string? Module { get; set; }
 
+        [Column("doc_code")]
         [MaxLength(50)]
-        public string? DocCode { get; set; } // BR150, BP080, MD050, MD070, TE040...
+        public string? DocCode { get; set; }
 
+        [Column("task_name")]
         [Required]
         [MaxLength(250)]
         public string TaskName { get; set; } = string.Empty;
 
+        [Column("description")]
         public string? Description { get; set; }
 
+        [Column("assignee_member_id")]
         public int? AssigneeMemberId { get; set; }
         [ForeignKey("AssigneeMemberId")]
         public ProjectMember? AssigneeMember { get; set; }
 
+        [Column("reviewer_member_id")]
         public int? ReviewerMemberId { get; set; }
         [ForeignKey("ReviewerMemberId")]
         public ProjectMember? ReviewerMember { get; set; }
 
+        [Column("key_user")]
         [MaxLength(100)]
         public string? KeyUser { get; set; }
 
+        [Column("party")]
         [MaxLength(50)]
-        public string? Party { get; set; } // Partner, Client, Third Party
+        public string? Party { get; set; }
 
+        [Column("start_date")]
         public DateTime? StartDate { get; set; }
+
+        [Column("end_date")]
         public DateTime? EndDate { get; set; }
+
+        [Column("deadline")]
         public DateTime? Deadline { get; set; }
 
+        [Column("status")]
         [MaxLength(50)]
-        public string Status { get; set; } = "1. Mới tạo"; // 1. Mới tạo, 2. Đang xử lý, 3. Nghiệm thu/Review, 4. Hoàn thành, 5. Hủy
+        public string Status { get; set; } = "1. Mới tạo";
 
-        [Column(TypeName = "decimal(5,2)")]
+        [Column("progress_percent", TypeName = "decimal(5,2)")]
         public decimal ProgressPercent { get; set; } = 0.00m;
 
-        public int Weight { get; set; } = 1; // 1 = Bình thường, 2 = Quan trọng, 3 = Gấp
+        [Column("weight")]
+        public int Weight { get; set; } = 1;
 
+        [Column("attachment_url")]
         [MaxLength(500)]
         public string? AttachmentUrl { get; set; }
 
+        [Column("created_date")]
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+
+        [Column("updated_date")]
         public DateTime? UpdatedDate { get; set; }
     }
 

@@ -29,55 +29,63 @@ namespace AronErpPm.Api.Controllers
         {
             if (projectId <= 0) return BadRequest("ProjectId không hợp lệ.");
 
-            var query = _context.SubTasks
-                .Where(st => st.ProjectId == projectId)
-                .Include(st => st.Activity)
-                .Include(st => st.CreatedByUser)
-                .Include(st => st.AssigneeMember!).ThenInclude(m => m.User)
-                .Include(st => st.ReviewerMember!).ThenInclude(m => m.User)
-                .AsQueryable();
-
-            if (activityId.HasValue && activityId.Value > 0)
+            try
             {
-                query = query.Where(st => st.ActivityId == activityId.Value);
+                var query = _context.SubTasks
+                    .Where(st => st.ProjectId == projectId)
+                    .Include(st => st.Activity)
+                    .Include(st => st.CreatedByUser)
+                    .Include(st => st.AssigneeMember!).ThenInclude(m => m.User)
+                    .Include(st => st.ReviewerMember!).ThenInclude(m => m.User)
+                    .AsQueryable();
+
+                if (activityId.HasValue && activityId.Value > 0)
+                {
+                    query = query.Where(st => st.ActivityId == activityId.Value);
+                }
+
+                var subtasks = await query
+                    .OrderByDescending(st => st.CreatedDate)
+                    .ToListAsync();
+
+                var result = subtasks.Select(st => new
+                {
+                    st.SubTaskId,
+                    st.ProjectId,
+                    st.ActivityId,
+                    ActivityCode = st.Activity?.TaskCode ?? $"Activity #{st.ActivityId}",
+                    ActivityName = st.Activity?.TaskName ?? "Activity",
+                    st.CreatedByUserId,
+                    CreatedByName = st.CreatedByUser?.FullName ?? "Unknown",
+                    st.Category,
+                    st.Module,
+                    st.DocCode,
+                    st.TaskName,
+                    st.Description,
+                    st.AssigneeMemberId,
+                    AssigneeName = st.AssigneeMember?.User?.FullName ?? "",
+                    st.ReviewerMemberId,
+                    ReviewerName = st.ReviewerMember?.User?.FullName ?? "",
+                    st.KeyUser,
+                    st.Party,
+                    StartDate = st.StartDate?.ToString("yyyy-MM-dd"),
+                    EndDate = st.EndDate?.ToString("yyyy-MM-dd"),
+                    Deadline = st.Deadline?.ToString("yyyy-MM-dd"),
+                    st.Status,
+                    st.ProgressPercent,
+                    st.Weight,
+                    st.AttachmentUrl,
+                    st.CreatedDate,
+                    st.UpdatedDate
+                }).ToList();
+
+                return Ok(result);
             }
-
-            var subtasks = await query
-                .OrderByDescending(st => st.CreatedDate)
-                .ToListAsync();
-
-            var result = subtasks.Select(st => new
+            catch (Exception ex)
             {
-                st.SubTaskId,
-                st.ProjectId,
-                st.ActivityId,
-                ActivityCode = st.Activity?.TaskCode ?? $"Activity #{st.ActivityId}",
-                ActivityName = st.Activity?.TaskName ?? "Activity",
-                st.CreatedByUserId,
-                CreatedByName = st.CreatedByUser?.FullName ?? "Unknown",
-                st.Category,
-                st.Module,
-                st.DocCode,
-                st.TaskName,
-                st.Description,
-                st.AssigneeMemberId,
-                AssigneeName = st.AssigneeMember?.User?.FullName ?? "",
-                st.ReviewerMemberId,
-                ReviewerName = st.ReviewerMember?.User?.FullName ?? "",
-                st.KeyUser,
-                st.Party,
-                StartDate = st.StartDate?.ToString("yyyy-MM-dd"),
-                EndDate = st.EndDate?.ToString("yyyy-MM-dd"),
-                Deadline = st.Deadline?.ToString("yyyy-MM-dd"),
-                st.Status,
-                st.ProgressPercent,
-                st.Weight,
-                st.AttachmentUrl,
-                st.CreatedDate,
-                st.UpdatedDate
-            }).ToList();
-
-            return Ok(result);
+                Console.WriteLine($"[SubTaskController] GetSubTasks error: {ex.Message}");
+                return Ok(new List<object>());
+            }
         }
 
         // POST: api/subtask

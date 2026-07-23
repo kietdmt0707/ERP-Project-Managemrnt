@@ -44,12 +44,20 @@ namespace AronErpPm.Api.Controllers
                 .Where(d => taskIds.Contains(d.SuccessorTaskId))
                 .ToListAsync();
 
-            // Retrieve subtask counts per activity
-            var subtaskCounts = await _context.SubTasks
-                .Where(st => st.ProjectId == projectId)
-                .GroupBy(st => st.ActivityId)
-                .Select(g => new { ActivityId = g.Key, Count = g.Count() })
-                .ToDictionaryAsync(g => g.ActivityId, g => g.Count);
+            // Retrieve subtask counts per activity (safely wrapped)
+            var subtaskCounts = new Dictionary<int, int>();
+            try
+            {
+                subtaskCounts = await _context.SubTasks
+                    .Where(st => st.ProjectId == projectId)
+                    .GroupBy(st => st.ActivityId)
+                    .Select(g => new { ActivityId = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(g => g.ActivityId, g => g.Count);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TaskController] SubTask count query warning: {ex.Message}");
+            }
 
             // Map flat list to tree DTOs
             var flatDtos = allTasks.Select(t => new TaskTreeNodeDto

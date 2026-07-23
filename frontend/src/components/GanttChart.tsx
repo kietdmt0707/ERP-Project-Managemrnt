@@ -191,7 +191,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
       <div className="flex justify-between items-center bg-dark-900/40 p-4 rounded-xl border border-dark-800">
         <div>
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Calendar className="text-brand-500" /> Kế Hoạch Dự Án & Sơ Đồ Gán
+            <Calendar className="text-brand-500" /> Kế hoạch dự án - Master Plan
           </h2>
           <p className="text-xs text-dark-400 mt-1">Phân cấp công việc WBS 4 cấp (Phase, Stream, AIM Deliverable, Action Task) liên kết động với tiến độ phân hệ</p>
         </div>

@@ -637,7 +637,7 @@ function App() {
                     activeTab === 'gantt' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                   }`}
                 >
-                  <Calendar size={16} /> Kế hoạch & Sơ đồ Gán
+                  <Calendar size={16} /> Kế hoạch dự án - Master Plan
                 </button>
               )}
 
