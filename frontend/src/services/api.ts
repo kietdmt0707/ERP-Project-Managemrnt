@@ -132,6 +132,9 @@ export interface TaskNode {
   isVisibleToAll: boolean;
   visibilityScope: string | null;
   aimCode: string | null;
+  module?: string | null;
+  keyUser?: string | null;
+  party?: string | null;
   isManualProgress?: boolean;
   subTaskCount?: number;
   subTasks: TaskNode[];
@@ -516,8 +519,34 @@ export const projectService = {
       throw new Error(errText || 'Xóa dự án thất bại.');
     }
     return response.json();
+  },
+  async getCalendarSettings(projectId: number): Promise<ProjectCalendarSettings> {
+    const response = await fetch(`${API_BASE_URL}/project/${projectId}/calendar`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải cấu hình lịch dự án.');
+    return response.json();
+  },
+  async saveCalendarSettings(settings: ProjectCalendarSettings): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/project/${settings.projectId}/calendar`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(settings)
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Cập nhật lịch làm việc dự án thất bại.');
+    }
+    return response.json();
   }
 };
+
+export interface ProjectCalendarSettings {
+  projectId: number;
+  workDaysOfWeek: string; // e.g. "MON,TUE,WED,THU,FRI"
+  standardHoursPerDay: number;
+  holidaysJson: string; // JSON string array e.g. '["2026-01-01","2026-04-30"]'
+}
 
 export const teamService = {
   async getTeams(projectId: number): Promise<{ teams: any[], members: TeamMemberDto[], roles: any[], functionalTeams: any[] }> {

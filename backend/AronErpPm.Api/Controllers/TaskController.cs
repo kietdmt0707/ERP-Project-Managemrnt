@@ -84,6 +84,9 @@ namespace AronErpPm.Api.Controllers
                 IsVisibleToAll = t.IsVisibleToAll,
                 VisibilityScope = t.VisibilityScope,
                 AIMCode = t.AIMCode,
+                Module = t.Module,
+                KeyUser = t.KeyUser,
+                Party = t.Party,
                 IsManualProgress = t.IsManualProgress,
                 SubTaskCount = subtaskCounts.ContainsKey(t.TaskId) ? subtaskCounts[t.TaskId] : 0,
                 PredecessorTaskIds = dependencies
@@ -204,7 +207,10 @@ namespace AronErpPm.Api.Controllers
                     Status = dto.Status,
                     IsVisibleToAll = dto.IsVisibleToAll,
                     VisibilityScope = dto.VisibilityScope ?? "PUBLIC",
-                    AIMCode = dto.AIMCode
+                    AIMCode = dto.AIMCode,
+                    Module = dto.Module,
+                    KeyUser = dto.KeyUser,
+                    Party = dto.Party
                 };
 
                 _context.Tasks.Add(task);
@@ -248,6 +254,9 @@ namespace AronErpPm.Api.Controllers
                     task.IsVisibleToAll = dto.IsVisibleToAll;
                     task.VisibilityScope = dto.VisibilityScope ?? "PUBLIC";
                     task.AIMCode = dto.AIMCode;
+                    task.Module = dto.Module;
+                    task.KeyUser = dto.KeyUser;
+                    task.Party = dto.Party;
                 }
                 
                 task.UpdatedDate = DateTime.UtcNow;

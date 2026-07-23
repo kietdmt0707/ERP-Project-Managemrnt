@@ -30,6 +30,15 @@ namespace AronErpPm.Api.Models
         [MaxLength(50)]
         public string? AIMCode { get; set; } // e.g. RD.011, BP.080, BR.100, TE.040
 
+        [MaxLength(50)]
+        public string? Module { get; set; } // e.g. PO, AP, GL, AR, INV, OM, RICEFW
+
+        [MaxLength(100)]
+        public string? KeyUser { get; set; }
+
+        [MaxLength(50)]
+        public string? Party { get; set; }
+
         [Required]
         [MaxLength(30)]
         public string VisibilityScope { get; set; } = "PUBLIC"; // PUBLIC, VENDOR_INTERNAL, PRIVATE_TEAM

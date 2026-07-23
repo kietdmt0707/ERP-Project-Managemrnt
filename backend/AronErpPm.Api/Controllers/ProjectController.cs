@@ -468,6 +468,38 @@ namespace AronErpPm.Api.Controllers
             }
         }
 
+        // GET: api/project/{id}/calendar
+        [HttpGet("{id}/calendar")]
+        public async Task<IActionResult> GetProjectCalendar(int id)
+        {
+            var project = await _context.Projects.FindAsync(id);
+            if (project == null) return NotFound("Không tìm thấy dự án.");
+
+            return Ok(new ProjectCalendarSettingsDto
+            {
+                ProjectId = project.ProjectId,
+                WorkDaysOfWeek = string.IsNullOrEmpty(project.WorkDaysOfWeek) ? "MON,TUE,WED,THU,FRI" : project.WorkDaysOfWeek,
+                StandardHoursPerDay = project.StandardHoursPerDay <= 0 ? 8 : project.StandardHoursPerDay,
+                HolidaysJson = string.IsNullOrEmpty(project.HolidaysJson) ? "[]" : project.HolidaysJson
+            });
+        }
+
+        // PUT: api/project/{id}/calendar
+        [HttpPut("{id}/calendar")]
+        public async Task<IActionResult> SaveProjectCalendar(int id, [FromBody] ProjectCalendarSettingsDto dto)
+        {
+            var project = await _context.Projects.FindAsync(id);
+            if (project == null) return NotFound("Không tìm thấy dự án.");
+
+            project.WorkDaysOfWeek = string.IsNullOrEmpty(dto.WorkDaysOfWeek) ? "MON,TUE,WED,THU,FRI" : dto.WorkDaysOfWeek;
+            project.StandardHoursPerDay = dto.StandardHoursPerDay <= 0 ? 8 : dto.StandardHoursPerDay;
+            project.HolidaysJson = string.IsNullOrEmpty(dto.HolidaysJson) ? "[]" : dto.HolidaysJson;
+            project.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Cập nhật lịch làm việc dự án thành công!" });
+        }
+
         private string HashPassword(string password)
         {
             using (var sha256 = System.Security.Cryptography.SHA256.Create())

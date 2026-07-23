@@ -186,6 +186,12 @@ using (var scope = app.Services.CreateScope())
         ("ALTER TABLE travel_expense_policies ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'VND';", "Add currency to travel_expense_policies"),
         ("ALTER TABLE travel_expense_policies ADD COLUMN IF NOT EXISTS flight_ticket_class VARCHAR(50);", "Add flight_ticket_class to travel_expense_policies"),
         ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS is_manual_progress BOOLEAN DEFAULT FALSE;", "Add is_manual_progress to tasks"),
+        ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS workdaysofweek VARCHAR(100) DEFAULT 'MON,TUE,WED,THU,FRI';", "Add workdaysofweek to projects"),
+        ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS standardhoursperday INT DEFAULT 8;", "Add standardhoursperday to projects"),
+        ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS holidaysjson TEXT DEFAULT '[]';", "Add holidaysjson to projects"),
+        ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS module VARCHAR(50);", "Add module to tasks"),
+        ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS keyuser VARCHAR(100);", "Add keyuser to tasks"),
+        ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS party VARCHAR(50);", "Add party to tasks"),
         (@"
             CREATE TABLE IF NOT EXISTS sub_tasks (
                 sub_task_id SERIAL PRIMARY KEY,

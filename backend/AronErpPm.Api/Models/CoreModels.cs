@@ -50,6 +50,13 @@ namespace AronErpPm.Api.Models
         
         public string? ModulesScope { get; set; } // GL, AP, AR, FA, PO, INV, OM
 
+        [MaxLength(100)]
+        public string WorkDaysOfWeek { get; set; } = "MON,TUE,WED,THU,FRI";
+
+        public int StandardHoursPerDay { get; set; } = 8;
+
+        public string HolidaysJson { get; set; } = "[]";
+
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
         public DateTime? UpdatedDate { get; set; }
