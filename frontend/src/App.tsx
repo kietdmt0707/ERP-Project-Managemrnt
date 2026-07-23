@@ -50,7 +50,8 @@ function App() {
   const [resetError, setResetError] = useState<string | null>(null);
   const [resetLoading, setResetLoading] = useState(false);
 
-  // Theme & Mode States
+  // Theme & Mode & Layout States
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [activeTheme, setActiveTheme] = useState<string>(() => {
     return localStorage.getItem('aron-app-theme') || 'default';
   });
@@ -615,17 +616,28 @@ function App() {
       </header>
 
       {/* Main Container */}
-      <div className="flex-1 flex px-6 py-6 gap-6 max-w-7xl w-full mx-auto">
+      <div className={`flex-1 flex px-4 md:px-6 py-6 gap-4 w-full transition-all duration-300 ${activeTab === 'gantt' || isSidebarCollapsed ? 'max-w-none' : 'max-w-7xl mx-auto'}`}>
         {/* Left Sidebar Menu */}
-        <aside className="w-60 shrink-0 space-y-2">
+        <aside className={`${isSidebarCollapsed ? 'w-14' : 'w-60'} shrink-0 space-y-2 transition-all duration-300 relative`}>
+          {/* Toggle Sidebar Collapse Button */}
+          <button
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-[11px] font-semibold text-dark-400 hover:text-white hover:bg-dark-900/60 transition-all border border-dark-800/50 mb-2"
+            title={isSidebarCollapsed ? 'Mở rộng Sidebar' : 'Thu gọn Sidebar'}
+          >
+            <span>{isSidebarCollapsed ? '▶' : '◀ Thu Gọn Menu'}</span>
+            {!isSidebarCollapsed && <span className="text-[10px] text-brand-400 font-mono">Full Width Mode</span>}
+          </button>
+
           {/* Home Dashboard Link (Always available) */}
           <button 
             onClick={() => { setActiveProject(null); setActiveTab('dashboard'); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+            className={`w-full flex items-center gap-3 ${isSidebarCollapsed ? 'justify-center px-2' : 'px-4'} py-3 rounded-xl text-xs font-semibold transition-all ${
               activeTab === 'dashboard' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
             }`}
+            title="Dashboard & Dự Án"
           >
-            <Sliders size={16} /> Dashboard & Dự Án
+            <Sliders size={16} /> {!isSidebarCollapsed && 'Dashboard & Dự Án'}
           </button>
 
           {activeProject ? (

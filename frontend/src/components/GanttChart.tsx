@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { taskService, projectService, teamService, TaskNode, ProjectCalendarSettings, TeamMemberDto } from '../services/api';
-import { Calendar, ChevronRight, ChevronDown, CheckCircle2, AlertTriangle, Play, HelpCircle, Plus, EyeOff, Settings, Users, Clock, FileText } from 'lucide-react';
+import { Calendar, ChevronRight, ChevronDown, CheckCircle2, AlertTriangle, Play, HelpCircle, Plus, EyeOff, Settings, Users, Clock, FileText, Maximize2, Minimize2, Edit3 } from 'lucide-react';
 
 interface GanttChartProps {
   projectId: number;
@@ -13,10 +13,13 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
   const [allExpanded, setAllExpanded] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedTask, setSelectedTask] = useState<TaskNode | null>(null);
 
-  // Edit Mode state
-  const [isEditing, setIsEditing] = useState<boolean>(false);
+  // Layout Fullview State
+  const [isWideView, setIsWideView] = useState<boolean>(false);
+
+  // Edit Progress Only Mode State
+  const [selectedTask, setSelectedTask] = useState<TaskNode | null>(null);
+  const [isEditingProgressOnly, setIsEditingProgressOnly] = useState<boolean>(false);
   const [editProgress, setEditProgress] = useState<number>(0);
   const [editStatus, setEditStatus] = useState<string>('NOT_STARTED');
   const [editIsManualProgress, setEditIsManualProgress] = useState<boolean>(false);
@@ -33,8 +36,9 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
   });
   const [showCalendarModal, setShowCalendarModal] = useState<boolean>(false);
 
-  // Task Creation & Form Modal State (3-Tab Primavera P6 Style)
+  // Task Creation & Full Editing Modal State (3-Tab Primavera P6 Style)
   const [isCreatingTask, setIsCreatingTask] = useState<boolean>(false);
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [activeTabModal, setActiveTabModal] = useState<'info' | 'schedule' | 'resource'>('info');
 
   // Form Fields
@@ -52,6 +56,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
   const [createKeyUser, setCreateKeyUser] = useState<string>('');
   const [createParty, setCreateParty] = useState<string>('');
   const [createStatus, setCreateStatus] = useState<string>('NOT_STARTED');
+  const [createProgressPercent, setCreateProgressPercent] = useState<number>(0);
   const [createPredecessorId, setCreatePredecessorId] = useState<number | undefined>(undefined);
   const [createSubmitting, setCreateSubmitting] = useState<boolean>(false);
 
@@ -225,7 +230,9 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
     }));
   };
 
+  // Open Modal for NEW Task Creation
   const handleOpenCreateTaskModal = (level: number, parentTask?: TaskNode) => {
+    setEditingTaskId(null);
     setCreateLevel(level);
     setCreateParentTaskId(parentTask ? parentTask.taskId : null);
     setCreateTaskCode(parentTask ? `${parentTask.taskCode}.${(parentTask.subTasks?.length || 0) + 1}` : `${tasks.length + 1}`);
@@ -244,7 +251,36 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
     setCreateKeyUser('');
     setCreateParty('');
     setCreateStatus('NOT_STARTED');
+    setCreateProgressPercent(0);
     setCreatePredecessorId(undefined);
+    setActiveTabModal('info');
+    setIsCreatingTask(true);
+  };
+
+  // Open Modal for FULL Task Editing (PM, PC, Leader, Admin)
+  const handleOpenEditTaskModal = (task: TaskNode) => {
+    setEditingTaskId(task.taskId);
+    setCreateLevel(task.taskLevel);
+    setCreateParentTaskId(task.parentTaskId || null);
+    setCreateTaskCode(task.taskCode);
+    setCreateTaskName(task.taskName);
+    setCreateDescription(task.description || '');
+    setCreateAimCode(task.aimCode || 'BR150');
+    setCreateModule(task.module || 'PO');
+
+    const sDate = task.startDatePlanned ? task.startDatePlanned.split('T')[0] : new Date().toISOString().split('T')[0];
+    const eDate = task.endDatePlanned ? task.endDatePlanned.split('T')[0] : new Date().toISOString().split('T')[0];
+    const dur = (sDate && eDate) ? calculateWorkingDays(sDate, eDate) : (task.durationPlanned || 5);
+
+    setCreateStartDate(sDate);
+    setCreateEndDate(eDate);
+    setCreateDuration(dur);
+    setCreateAssigneeMemberId(task.assigneeMemberId);
+    setCreateKeyUser(task.keyUser || '');
+    setCreateParty(task.party || '');
+    setCreateStatus(task.status || 'NOT_STARTED');
+    setCreateProgressPercent(task.progressPercent || 0);
+    setCreatePredecessorId(task.predecessorTaskIds && task.predecessorTaskIds.length > 0 ? task.predecessorTaskIds[0] : undefined);
     setActiveTabModal('info');
     setIsCreatingTask(true);
   };
@@ -259,7 +295,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
     setCreateSubmitting(true);
     try {
       await taskService.saveTask({
-        taskId: 0,
+        taskId: editingTaskId || 0,
         projectId,
         taskCode: createTaskCode.trim(),
         taskName: createTaskName.trim(),
@@ -269,7 +305,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
         startDatePlanned: createStartDate ? new Date(createStartDate).toISOString() : new Date().toISOString(),
         endDatePlanned: createEndDate ? new Date(createEndDate).toISOString() : new Date().toISOString(),
         durationPlanned: createDuration,
-        progressPercent: 0,
+        progressPercent: createProgressPercent,
         status: createStatus,
         isVisibleToAll: true,
         visibilityScope: 'PUBLIC',
@@ -282,9 +318,10 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
       });
 
       setIsCreatingTask(false);
+      setEditingTaskId(null);
       loadTasks();
     } catch (err: any) {
-      alert(err.message || 'Lỗi khi tạo công việc mới.');
+      alert(err.message || 'Lỗi khi lưu thông tin công việc.');
     } finally {
       setCreateSubmitting(false);
     }
@@ -300,39 +337,6 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
       loadTasks();
     } catch (err: any) {
       alert(err.message || 'Lỗi khi xóa công việc.');
-    }
-  };
-
-  const selectTaskForUpdate = (task: TaskNode) => {
-    setSelectedTask(task);
-    setEditProgress(task.progressPercent);
-    setEditStatus(task.status);
-    setEditIsManualProgress(!!task.isManualProgress);
-    setIsEditing(true);
-  };
-
-  const handleUpdateTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedTask) return;
-
-    try {
-      if (editIsManualProgress !== selectedTask.isManualProgress || editIsManualProgress) {
-        await taskService.toggleProgressMode(selectedTask.taskId, editIsManualProgress, Number(editProgress));
-      }
-
-      await taskService.saveTask({
-        ...selectedTask,
-        projectId,
-        progressPercent: Number(editProgress),
-        status: editStatus,
-        isManualProgress: editIsManualProgress
-      });
-
-      setIsEditing(false);
-      setSelectedTask(null);
-      loadTasks();
-    } catch (err: any) {
-      alert(err.message || 'Lỗi cập nhật tiến độ.');
     }
   };
 
@@ -382,9 +386,12 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
     return (
       <React.Fragment key={task.taskId}>
         {/* Row detail */}
-        <tr className={`border-b border-dark-800 hover:bg-dark-800/40 transition-colors ${
-          task.taskLevel === 1 ? 'bg-dark-900/50 font-bold text-white' : task.taskLevel === 2 ? 'bg-dark-900/25 font-semibold text-dark-100' : 'text-dark-200'
-        }`}>
+        <tr 
+          onDoubleClick={() => (userRole === 'PM' || userRole === 'LEADER' || userRole === 'PC' || userRole === 'SYSTEM_ADMIN' || task.assigneeName) && handleOpenEditTaskModal(task)}
+          className={`border-b border-dark-800 hover:bg-dark-800/40 transition-colors cursor-pointer ${
+            task.taskLevel === 1 ? 'bg-dark-900/50 font-bold text-white' : task.taskLevel === 2 ? 'bg-dark-900/25 font-semibold text-dark-100' : 'text-dark-200'
+          }`}
+        >
           {/* ID / Code */}
           <td className="py-3 px-3 text-center border-r border-dark-800 text-xs font-mono font-bold text-dark-300">
             {task.taskCode}
@@ -394,7 +401,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
           <td className="py-3 px-4 border-r border-dark-800" style={{ paddingLeft: `${depth * 20 + 16}px` }}>
             <div className="flex items-center gap-2">
               {hasSubtasks ? (
-                <button onClick={() => toggleExpand(task.taskId)} className="text-dark-400 hover:text-white p-0.5 rounded hover:bg-dark-750 transition-colors">
+                <button onClick={(e) => { e.stopPropagation(); toggleExpand(task.taskId); }} className="text-dark-400 hover:text-white p-0.5 rounded hover:bg-dark-750 transition-colors">
                   {isExpanded ? <ChevronDown size={16} className="text-brand-400" /> : <ChevronRight size={16} className="text-dark-400" />}
                 </button>
               ) : (
@@ -483,7 +490,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
           <td className="py-3 px-3 border-r border-dark-800">{renderStatus(task.status)}</td>
 
           {/* Thao tác */}
-          <td className="py-3 px-4 text-right space-x-2 whitespace-nowrap">
+          <td className="py-3 px-4 text-right space-x-2 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
             {(userRole === 'PM' || userRole === 'LEADER' || userRole === 'PC' || userRole === 'SYSTEM_ADMIN') && task.taskLevel < 4 && (
               <button 
                 onClick={() => handleOpenCreateTaskModal(task.taskLevel + 1, task)}
@@ -492,12 +499,12 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
                 + Task Con
               </button>
             )}
-            {(userRole === 'PM' || userRole === 'LEADER' || userRole === 'PC' || task.assigneeName) && (
+            {(userRole === 'PM' || userRole === 'LEADER' || userRole === 'PC' || userRole === 'SYSTEM_ADMIN' || task.assigneeName) && (
               <button 
-                onClick={() => selectTaskForUpdate(task)}
-                className="text-xs text-brand-400 hover:text-brand-300 font-medium hover:underline"
+                onClick={() => handleOpenEditTaskModal(task)}
+                className="text-xs text-brand-400 hover:text-brand-300 font-medium hover:underline flex-inline items-center gap-0.5"
               >
-                Cập nhật
+                <Edit3 size={11} className="inline mr-0.5" /> Chỉnh Sửa
               </button>
             )}
             {(userRole === 'PM' || userRole === 'PC' || userRole === 'SYSTEM_ADMIN') && (
@@ -526,11 +533,24 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
             <Calendar className="text-brand-500" /> Kế hoạch dự án - Master Plan
           </h2>
           <p className="text-xs text-dark-400 mt-1">
-            Phân cấp công việc WBS 4 cấp (Phase, Stream, AIM Deliverable, Action Task) liên kết động với Workday Calendar Engine
+            Phân cấp WBS 4 cấp liên kết Workday Calendar Engine. Chế độ Xem Rộng (Wide Screen) & Chỉnh sửa Task cho PM/PC
           </p>
         </div>
         
         <div className="flex items-center gap-2.5">
+          <button 
+            onClick={() => setIsWideView(!isWideView)}
+            className={`text-xs px-3 py-2 rounded-lg font-semibold flex items-center gap-1.5 border transition-all ${
+              isWideView 
+                ? 'bg-brand-600/20 text-brand-300 border-brand-500/40' 
+                : 'bg-dark-800 hover:bg-dark-700 text-dark-200 border-dark-700'
+            }`}
+            title="Bật/Tắt Chế độ Màn hình rộng Full-Width"
+          >
+            {isWideView ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            {isWideView ? 'Màn Hình Chuẩn' : 'Mở Rộng Wide View'}
+          </button>
+
           <button 
             onClick={toggleExpandAll}
             className="bg-dark-800 hover:bg-dark-700 text-dark-200 text-xs px-3 py-2 rounded-lg font-semibold flex items-center gap-1.5 border border-dark-700 transition-all"
@@ -570,7 +590,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
         </div>
       ) : (
         /* EXPANDED MASTER PLAN TREE GRID TABLE WITH HORIZONTAL & VERTICAL SCROLLBARS */
-        <div className="overflow-x-auto overflow-y-auto max-h-[75vh] bg-dark-900/20 rounded-xl border border-dark-800 custom-scrollbar">
+        <div className={`overflow-x-auto overflow-y-auto ${isWideView ? 'max-h-[85vh]' : 'max-h-[75vh]'} bg-dark-900/20 rounded-xl border border-dark-800 custom-scrollbar`}>
           <table className="min-w-[1600px] w-full text-left border-collapse">
             <thead>
               <tr className="bg-dark-900 border-b border-dark-800 text-dark-300 text-xs font-bold uppercase sticky top-0 z-10 shadow-sm">
@@ -607,92 +627,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
         </div>
       )}
 
-      {/* Task Update Progress Modal */}
-      {isEditing && selectedTask && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <form onSubmit={handleUpdateTask} className="bg-dark-900 border border-dark-800 max-w-md w-full p-6 rounded-2xl shadow-2xl space-y-4 animate-slide-up">
-            <h3 className="text-md font-bold text-white border-b border-dark-800 pb-2">
-              Cập Nhật Tiến Độ Công Việc
-            </h3>
-            
-            <div>
-              <p className="text-xs text-dark-400 font-mono">{selectedTask.taskCode}</p>
-              <p className="text-sm font-semibold text-brand-300 mt-0.5">{selectedTask.taskName}</p>
-            </div>
-
-            {/* PM Progress Engine Toggle */}
-            {(userRole === 'PM' || userRole === 'SYSTEM_ADMIN') && (
-              <div className="bg-dark-950 p-3 rounded-xl border border-dark-800 space-y-2">
-                <label className="flex items-center justify-between text-xs text-dark-200 font-semibold cursor-pointer">
-                  <span>Chế độ Tiến độ (PM Manual Override):</span>
-                  <input 
-                    type="checkbox"
-                    checked={editIsManualProgress}
-                    onChange={(e) => setEditIsManualProgress(e.target.checked)}
-                    className="accent-brand-500 h-4 w-4 rounded cursor-pointer"
-                  />
-                </label>
-                <p className="text-[10px] text-dark-400">
-                  {editIsManualProgress 
-                    ? 'Bật chế độ Nhập đè Thủ công (Hiển thị nhãn [Thủ công bởi PM]).' 
-                    : 'Bật chế độ Tự động (Tự động tổng hợp % từ các Sub-Task thuộc Activity).'}
-                </p>
-              </div>
-            )}
-
-            {/* Slider for Progress */}
-            <div className="space-y-2">
-              <label className="text-xs text-dark-300 flex justify-between font-semibold">
-                <span>Tiến độ hoàn thành:</span>
-                <span className="font-mono text-brand-400">{editProgress}%</span>
-              </label>
-              <input 
-                type="range" 
-                min="0" 
-                max="100" 
-                value={editProgress}
-                onChange={(e) => setEditProgress(Number(e.target.value))}
-                className="w-full h-1.5 bg-dark-800 rounded-lg appearance-none cursor-pointer accent-brand-500"
-              />
-            </div>
-
-            {/* Status dropdown */}
-            <div className="space-y-1">
-              <label className="text-xs text-dark-300 font-semibold">Trạng thái công việc:</label>
-              <select 
-                value={editStatus}
-                onChange={(e) => setEditStatus(e.target.value)}
-                className="w-full bg-dark-800 border border-dark-700 text-xs p-2 rounded-lg text-dark-100 focus:outline-none focus:border-brand-500"
-              >
-                <option value="NOT_STARTED">Chưa chạy (Not Started)</option>
-                <option value="IN_PROGRESS">Đang triển khai (In Progress)</option>
-                <option value="PENDING_APPROVAL">Chờ duyệt (Pending Approval)</option>
-                <option value="COMPLETED">Hoàn thành (Completed)</option>
-                <option value="DELAYED">Trễ tiến độ (Delayed)</option>
-              </select>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-2 justify-end pt-4 border-t border-dark-800">
-              <button 
-                type="button" 
-                onClick={() => setIsEditing(false)}
-                className="bg-dark-800 hover:bg-dark-700 text-xs px-4 py-2 rounded-lg font-semibold text-white"
-              >
-                Đóng
-              </button>
-              <button 
-                type="submit" 
-                className="bg-brand-600 hover:bg-brand-500 text-white text-xs px-4 py-2 rounded-lg font-semibold"
-              >
-                Lưu Thay Đổi
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* 3-TAB PRIMAVERA P6 STYLE TASK CREATION MODAL */}
+      {/* 3-TAB PRIMAVERA P6 STYLE TASK CREATION & FULL EDIT MODAL */}
       {isCreatingTask && (
         <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
           <form onSubmit={handleCreateTask} className="bg-dark-900 border border-dark-800 max-w-2xl w-full p-6 rounded-2xl shadow-2xl space-y-5 animate-slide-up">
@@ -701,16 +636,16 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
             <div className="flex justify-between items-center border-b border-dark-800 pb-3">
               <div>
                 <h3 className="text-md font-bold text-white flex items-center gap-2">
-                  <Plus className="text-brand-500" size={18} />
-                  Khởi Tạo Task
+                  {editingTaskId ? <Edit3 className="text-brand-500" size={18} /> : <Plus className="text-brand-500" size={18} />}
+                  {editingTaskId ? `Chỉnh Sửa Task: ${createTaskCode} - ${createTaskName}` : 'Khởi Tạo Task Mới'}
                 </h3>
                 <p className="text-[11px] text-dark-400 mt-0.5">
-                  {createLevel === 1 ? 'Task Cấp 1 (Phase)' : createLevel === 2 ? 'Sub-Stream (Cấp 2)' : createLevel === 3 ? 'Deliverable (Cấp 3)' : 'Action Task (Cấp 4)'} - Chuẩn quản trị Master Plan ERP tích hợp Lịch làm việc & Nguồn lực
+                  {createLevel === 1 ? 'Task Cấp 1 (Phase)' : createLevel === 2 ? 'Sub-Stream (Cấp 2)' : createLevel === 3 ? 'Deliverable (Cấp 3)' : 'Action Task (Cấp 4)'} - Chuẩn quản trị Master Plan ERP
                 </p>
               </div>
               <button 
                 type="button" 
-                onClick={() => setIsCreatingTask(false)}
+                onClick={() => { setIsCreatingTask(false); setEditingTaskId(null); }}
                 className="text-xs text-dark-400 hover:text-white"
               >
                 Đóng
@@ -884,6 +819,23 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
                   </div>
                 </div>
 
+                {editingTaskId && (
+                  <div className="space-y-2 bg-dark-950 p-3 rounded-xl border border-dark-800">
+                    <label className="text-xs text-dark-300 flex justify-between font-semibold">
+                      <span>Tiến Độ Hoàn Thành (%):</span>
+                      <span className="font-mono text-brand-400">{createProgressPercent}%</span>
+                    </label>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="100" 
+                      value={createProgressPercent}
+                      onChange={(e) => setCreateProgressPercent(Number(e.target.value))}
+                      className="w-full h-1.5 bg-dark-800 rounded-lg appearance-none cursor-pointer accent-brand-500"
+                    />
+                  </div>
+                )}
+
                 <div className="space-y-1">
                   <label className="text-xs text-dark-300 font-semibold">Công Việc Phụ Thuộc (Predecessor):</label>
                   <select
@@ -901,7 +853,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-dark-300 font-semibold">Trạng Thái Công Việc Initial:</label>
+                  <label className="text-xs text-dark-300 font-semibold">Trạng Thái Công Việc:</label>
                   <select
                     value={createStatus}
                     onChange={(e) => setCreateStatus(e.target.value)}
@@ -910,6 +862,8 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
                     <option value="NOT_STARTED">Chưa chạy (Not Started)</option>
                     <option value="IN_PROGRESS">Đang triển khai (In Progress)</option>
                     <option value="PENDING_APPROVAL">Chờ duyệt (Pending Approval)</option>
+                    <option value="COMPLETED">Hoàn thành (Completed)</option>
+                    <option value="DELAYED">Trễ tiến độ (Delayed)</option>
                   </select>
                 </div>
               </div>
@@ -1008,7 +962,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
               <div className="flex gap-2">
                 <button 
                   type="button" 
-                  onClick={() => setIsCreatingTask(false)}
+                  onClick={() => { setIsCreatingTask(false); setEditingTaskId(null); }}
                   className="bg-dark-800 hover:bg-dark-700 text-xs px-4 py-2 rounded-lg font-semibold text-white"
                 >
                   Hủy Bỏ
@@ -1018,7 +972,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
                   disabled={createSubmitting}
                   className="bg-brand-600 hover:bg-brand-500 text-white text-xs px-4 py-2 rounded-lg font-semibold disabled:opacity-50 shadow-lg shadow-brand-600/20"
                 >
-                  {createSubmitting ? 'Đang khởi tạo...' : 'Lưu & Khởi Tạo Task'}
+                  {createSubmitting ? 'Đang lưu...' : (editingTaskId ? 'Lưu Thay Đổi Task' : 'Lưu & Khởi Tạo Task')}
                 </button>
               </div>
             </div>
