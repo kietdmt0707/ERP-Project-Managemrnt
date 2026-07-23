@@ -17,13 +17,6 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
   // Layout Fullview State
   const [isWideView, setIsWideView] = useState<boolean>(false);
 
-  // Edit Progress Only Mode State
-  const [selectedTask, setSelectedTask] = useState<TaskNode | null>(null);
-  const [isEditingProgressOnly, setIsEditingProgressOnly] = useState<boolean>(false);
-  const [editProgress, setEditProgress] = useState<number>(0);
-  const [editStatus, setEditStatus] = useState<string>('NOT_STARTED');
-  const [editIsManualProgress, setEditIsManualProgress] = useState<boolean>(false);
-
   // Project Members for Resource Assignment dropdown
   const [projectMembers, setProjectMembers] = useState<TeamMemberDto[]>([]);
 
@@ -275,7 +268,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
     setCreateStartDate(sDate);
     setCreateEndDate(eDate);
     setCreateDuration(dur);
-    setCreateAssigneeMemberId(task.assigneeMemberId);
+    setCreateAssigneeMemberId(task.assigneeMemberId || undefined);
     setCreateKeyUser(task.keyUser || '');
     setCreateParty(task.party || '');
     setCreateStatus(task.status || 'NOT_STARTED');
