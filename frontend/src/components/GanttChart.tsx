@@ -10,6 +10,7 @@ interface GanttChartProps {
 export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) => {
   const [tasks, setTasks] = useState<TaskNode[]>([]);
   const [expandedNodes, setExpandedNodes] = useState<Record<number, boolean>>({});
+  const [allExpanded, setAllExpanded] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<TaskNode | null>(null);
@@ -71,6 +72,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
         initialExpanded[t.taskId] = true;
       });
       setExpandedNodes(initialExpanded);
+      setAllExpanded(true);
       setError(null);
     } catch (err: any) {
       setError(err.message || 'Lỗi tải danh sách công việc.');
@@ -99,11 +101,34 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
     }
   };
 
+  // Helper to flatten tasks for Predecessor Selector & Collapse All
+  const flattenTasks = (nodes: TaskNode[]): TaskNode[] => {
+    let result: TaskNode[] = [];
+    nodes.forEach(n => {
+      result.push(n);
+      if (n.subTasks && n.subTasks.length > 0) {
+        result = result.concat(flattenTasks(n.subTasks));
+      }
+    });
+    return result;
+  };
+
+  const allFlatTasks = flattenTasks(tasks);
+
+  const toggleExpandAll = () => {
+    const nextState = !allExpanded;
+    setAllExpanded(nextState);
+    const newExpanded: Record<number, boolean> = {};
+    allFlatTasks.forEach(t => {
+      newExpanded[t.taskId] = nextState;
+    });
+    setExpandedNodes(newExpanded);
+  };
+
   // -------------------------------------------------------------
   // WORKDAY & CALENDAR CALCULATION ENGINE
   // -------------------------------------------------------------
   const parseWorkDays = (workDaysStr: string): number[] => {
-    // Returns array of JS Day indices (0 = Sun, 1 = Mon, ..., 6 = Sat)
     const list: number[] = [];
     if (workDaysStr.includes('SUN')) list.push(0);
     if (workDaysStr.includes('MON')) list.push(1);
@@ -210,7 +235,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
     setCreateModule('PO');
     
     const today = new Date().toISOString().split('T')[0];
-    const initialDuration = 10;
+    const initialDuration = 5;
     setCreateStartDate(today);
     setCreateDuration(initialDuration);
     setCreateEndDate(addWorkingDays(today, initialDuration));
@@ -331,39 +356,30 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
     }
   };
 
-  // Helper to flatten tasks for Predecessor Selector
-  const flattenTasks = (nodes: TaskNode[]): TaskNode[] => {
-    let result: TaskNode[] = [];
-    nodes.forEach(n => {
-      result.push(n);
-      if (n.subTasks && n.subTasks.length > 0) {
-        result = result.concat(flattenTasks(n.subTasks));
-      }
-    });
-    return result;
-  };
-
-  const allFlatTasks = flattenTasks(tasks);
-
   // Render a task node in the Tree Grid recursively
   const renderTaskRow = (task: TaskNode, depth: number = 0): React.ReactNode => {
     const isExpanded = !!expandedNodes[task.taskId];
     const hasSubtasks = task.subTasks && task.subTasks.length > 0;
 
+    // Dynamically calculate working days based on actual start/end dates
+    const displayWorkingDays = (task.startDatePlanned && task.endDatePlanned)
+      ? calculateWorkingDays(task.startDatePlanned, task.endDatePlanned)
+      : (task.durationPlanned || 1);
+
     return (
       <React.Fragment key={task.taskId}>
         {/* Row detail */}
-        <tr className={`border-b border-dark-800 hover:bg-dark-800/40 transition-colors ${task.taskLevel === 1 ? 'bg-dark-900/30 font-semibold' : ''}`}>
+        <tr className={`border-b border-dark-800 hover:bg-dark-800/40 transition-colors ${task.taskLevel === 1 ? 'bg-dark-900/40 font-bold text-white' : task.taskLevel === 2 ? 'bg-dark-900/20 font-semibold text-dark-100' : 'text-dark-200'}`}>
           <td className="py-3 px-4" style={{ paddingLeft: `${depth * 20 + 16}px` }}>
             <div className="flex items-center gap-2">
               {hasSubtasks ? (
-                <button onClick={() => toggleExpand(task.taskId)} className="text-dark-400 hover:text-white">
-                  {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                <button onClick={() => toggleExpand(task.taskId)} className="text-dark-400 hover:text-white p-0.5 rounded hover:bg-dark-750 transition-colors">
+                  {isExpanded ? <ChevronDown size={16} className="text-brand-400" /> : <ChevronRight size={16} className="text-dark-400" />}
                 </button>
               ) : (
                 <span className="w-4"></span>
               )}
-              <span className="text-xs text-dark-500 font-mono w-12">{task.taskCode}</span>
+              <span className="text-xs text-dark-400 font-mono font-semibold w-12">{task.taskCode}</span>
               <span className="truncate max-w-xs">{task.taskName}</span>
               {!task.isVisibleToAll && <span title="Chỉ mình tôi thấy"><EyeOff size={14} className="text-rose-400" /></span>}
             </div>
@@ -381,7 +397,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
           </td>
           <td className="py-3 px-4 text-xs font-mono text-dark-300">
             {formatDate(task.startDatePlanned)} - {formatDate(task.endDatePlanned)}
-            <span className="block text-[10px] text-dark-500">{task.durationPlanned || 1} ngày làm việc</span>
+            <span className="block text-[10px] text-brand-400 font-semibold">{displayWorkingDays} ngày làm việc</span>
           </td>
           <td className="py-3 px-4">
             <div className="space-y-1">
@@ -445,7 +461,15 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
           </p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <button 
+            onClick={toggleExpandAll}
+            className="bg-dark-800 hover:bg-dark-700 text-dark-200 text-xs px-3 py-2 rounded-lg font-semibold flex items-center gap-1.5 border border-dark-700 transition-all"
+          >
+            {allExpanded ? <ChevronDown size={14} className="text-amber-400" /> : <ChevronRight size={14} className="text-emerald-400" />}
+            {allExpanded ? 'Thu Gọn Cây WBS' : 'Mở Rộng Cây WBS'}
+          </button>
+
           {(userRole === 'PM' || userRole === 'SYSTEM_ADMIN' || userRole === 'PC') && (
             <button 
               onClick={() => setShowCalendarModal(true)}
@@ -818,7 +842,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
                 <div className="space-y-1">
                   <label className="text-xs text-dark-300 font-semibold flex items-center justify-between">
                     <span>PIC / Người Phụ Trách Trực Tiếp (Responsible):</span>
-                    <span className="text-[10px] text-brand-400">Được lấy từ menu [Đội Ngũ Dự Án]</span>
+                    <span className="text-[10px] text-brand-400">Từ [Đội Ngũ Dự Án]</span>
                   </label>
                   <select
                     value={createAssigneeMemberId || ''}
@@ -836,25 +860,44 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-xs text-dark-300 font-semibold">Đại Diện Khách Hàng (Client Key User):</label>
-                    <input 
-                      type="text"
+                    <label className="text-xs text-dark-300 font-semibold flex items-center justify-between">
+                      <span>Đại Diện Khách Hàng (Client Key User):</span>
+                      <span className="text-[10px] text-brand-400">Từ [Đội Ngũ Dự Án]</span>
+                    </label>
+                    <select
                       value={createKeyUser}
                       onChange={(e) => setCreateKeyUser(e.target.value)}
-                      placeholder="VD: Anh Minh - Kế Toán Trưởng S.I.S..."
                       className="w-full bg-dark-950 border border-dark-750 text-xs p-2.5 rounded-xl text-white focus:outline-none focus:border-brand-500"
-                    />
+                    >
+                      <option value="">-- Chọn Key User đại diện S.I.S --</option>
+                      {projectMembers.map(m => (
+                        <option key={`keyuser-${m.projectMemberId}`} value={m.fullName || m.username}>
+                          {m.fullName || m.username} ({m.roleName || 'Key User'}) - {m.functionalTeamName || 'Client Team'}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs text-dark-300 font-semibold">Đơn Vị Thứ 3 (Third Party / Partner):</label>
-                    <input 
-                      type="text"
+                    <label className="text-xs text-dark-300 font-semibold flex items-center justify-between">
+                      <span>Đơn Vị / Nhóm Thực Thi (Third Party / Partner):</span>
+                      <span className="text-[10px] text-brand-400">Từ [Đội Ngũ Dự Án]</span>
+                    </label>
+                    <select
                       value={createParty}
                       onChange={(e) => setCreateParty(e.target.value)}
-                      placeholder="VD: Đối tác hạ tầng / Chuyển đổi dữ liệu..."
                       className="w-full bg-dark-950 border border-dark-750 text-xs p-2.5 rounded-xl text-white focus:outline-none focus:border-brand-500"
-                    />
+                    >
+                      <option value="">-- Chọn Nhóm Đơn Vị Phụ Trách --</option>
+                      <option value="Client (S.I.S)">Khách Hàng (Client S.I.S)</option>
+                      <option value="Partner (ARON)">Đơn Vị Triển Khai (Partner ARON)</option>
+                      <option value="Third Party (Hạ tầng / Data)">Bên Thứ 3 (Third Party Hạ Tầng / Data)</option>
+                      {projectMembers.map(m => (
+                        <option key={`party-${m.projectMemberId}`} value={`${m.fullName || m.username} (${m.functionalTeamName || 'Team'})`}>
+                          {m.fullName || m.username} - {m.functionalTeamName || 'Team'}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
