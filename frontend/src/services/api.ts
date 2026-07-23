@@ -132,8 +132,40 @@ export interface TaskNode {
   isVisibleToAll: boolean;
   visibilityScope: string | null;
   aimCode: string | null;
+  isManualProgress?: boolean;
+  subTaskCount?: number;
   subTasks: TaskNode[];
   predecessorTaskIds: number[];
+}
+
+export interface SubTaskDto {
+  subTaskId?: number;
+  projectId: number;
+  activityId: number;
+  activityCode?: string;
+  activityName?: string;
+  createdByUserId?: number;
+  createdByName?: string;
+  category?: string;
+  module?: string;
+  docCode?: string;
+  taskName: string;
+  description?: string;
+  assigneeMemberId?: number;
+  assigneeName?: string;
+  reviewerMemberId?: number;
+  reviewerName?: string;
+  keyUser?: string;
+  party?: string;
+  startDate?: string;
+  endDate?: string;
+  deadline?: string;
+  status?: string;
+  progressPercent?: number;
+  weight?: number;
+  attachmentUrl?: string;
+  createdDate?: string;
+  updatedDate?: string;
 }
 
 export const taskService = {
@@ -158,6 +190,74 @@ export const taskService = {
       throw new Error(errText || 'Lưu task thất bại.');
     }
     return response.json();
+  },
+
+  async toggleProgressMode(taskId: number, isManualProgress: boolean, manualProgressPercent?: number): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/task/${taskId}/progress-mode`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ isManualProgress, manualProgressPercent })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Lỗi khi thay đổi chế độ tiến độ.');
+    }
+    return response.json();
+  }
+};
+
+export const subTaskService = {
+  async getSubTasks(projectId: number, activityId?: number): Promise<SubTaskDto[]> {
+    let url = `${API_BASE_URL}/subtask?projectId=${projectId}`;
+    if (activityId) url += `&activityId=${activityId}`;
+
+    const response = await fetch(url, {
+      headers: getHeaders()
+    });
+
+    if (!response.ok) throw new Error('Không thể tải danh sách Sub-Tasks.');
+    return response.json();
+  },
+
+  async createSubTask(dto: Partial<SubTaskDto>): Promise<SubTaskDto> {
+    const response = await fetch(`${API_BASE_URL}/subtask`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(dto)
+    });
+
+    if (!response.ok) {
+      const errObj = await response.json().catch(() => null);
+      throw new Error(errObj?.message || 'Tạo Sub-Task thất bại.');
+    }
+    return response.json();
+  },
+
+  async updateSubTask(subTaskId: number, dto: Partial<SubTaskDto>): Promise<SubTaskDto> {
+    const response = await fetch(`${API_BASE_URL}/subtask/${subTaskId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(dto)
+    });
+
+    if (!response.ok) {
+      const errObj = await response.json().catch(() => null);
+      throw new Error(errObj?.message || 'Cập nhật Sub-Task thất bại.');
+    }
+    return response.json();
+  },
+
+  async deleteSubTask(subTaskId: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/subtask/${subTaskId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+
+    if (!response.ok) {
+      const errObj = await response.json().catch(() => null);
+      throw new Error(errObj?.message || 'Xóa Sub-Task thất bại.');
+    }
   }
 };
 

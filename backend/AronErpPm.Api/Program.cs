@@ -200,6 +200,33 @@ using (var scope = app.Services.CreateScope())
         ("ALTER TABLE travel_expense_policies ADD COLUMN IF NOT EXISTS pocket_allowance DECIMAL(12,2) DEFAULT 0.00;", "Add pocket_allowance to travel_expense_policies"),
         ("ALTER TABLE travel_expense_policies ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'VND';", "Add currency to travel_expense_policies"),
         ("ALTER TABLE travel_expense_policies ADD COLUMN IF NOT EXISTS flight_ticket_class VARCHAR(50);", "Add flight_ticket_class to travel_expense_policies"),
+        ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS is_manual_progress BOOLEAN DEFAULT FALSE;", "Add is_manual_progress to tasks"),
+        (@"
+            CREATE TABLE IF NOT EXISTS sub_tasks (
+                sub_task_id SERIAL PRIMARY KEY,
+                project_id INT NOT NULL,
+                activity_id INT NOT NULL,
+                created_by_user_id INT NOT NULL,
+                category VARCHAR(50),
+                module VARCHAR(50),
+                doc_code VARCHAR(50),
+                task_name VARCHAR(250) NOT NULL,
+                description TEXT,
+                assignee_member_id INT,
+                reviewer_member_id INT,
+                key_user VARCHAR(100),
+                party VARCHAR(50),
+                start_date TIMESTAMP,
+                end_date TIMESTAMP,
+                deadline TIMESTAMP,
+                status VARCHAR(50) DEFAULT '1. Mới tạo',
+                progress_percent DECIMAL(5,2) DEFAULT 0.00,
+                weight INT DEFAULT 1,
+                attachment_url VARCHAR(500),
+                created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_date TIMESTAMP
+            );
+        ", "Create sub_tasks table"),
         (@"
             CREATE TABLE IF NOT EXISTS travel_regions (
                 region_id SERIAL PRIMARY KEY,

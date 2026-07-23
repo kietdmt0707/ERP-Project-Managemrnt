@@ -44,6 +44,13 @@ namespace AronErpPm.Api.Controllers
                 .Where(d => taskIds.Contains(d.SuccessorTaskId))
                 .ToListAsync();
 
+            // Retrieve subtask counts per activity
+            var subtaskCounts = await _context.SubTasks
+                .Where(st => st.ProjectId == projectId)
+                .GroupBy(st => st.ActivityId)
+                .Select(g => new { ActivityId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(g => g.ActivityId, g => g.Count);
+
             // Map flat list to tree DTOs
             var flatDtos = allTasks.Select(t => new TaskTreeNodeDto
             {
@@ -68,6 +75,8 @@ namespace AronErpPm.Api.Controllers
                 IsVisibleToAll = t.IsVisibleToAll,
                 VisibilityScope = t.VisibilityScope,
                 AIMCode = t.AIMCode,
+                IsManualProgress = t.IsManualProgress,
+                SubTaskCount = subtaskCounts.ContainsKey(t.TaskId) ? subtaskCounts[t.TaskId] : 0,
                 PredecessorTaskIds = dependencies
                     .Where(d => d.SuccessorTaskId == t.TaskId)
                     .Select(d => d.PredecessorTaskId)
@@ -267,5 +276,29 @@ namespace AronErpPm.Api.Controllers
 
             return Ok(new { message = "Lưu Task thành công!", taskId = task.TaskId });
         }
+
+        // PUT: api/task/{id}/progress-mode
+        [HttpPut("{id}/progress-mode")]
+        public async Task<IActionResult> ToggleProgressMode(int id, [FromBody] ToggleProgressModeDto dto)
+        {
+            var task = await _context.Tasks.FindAsync(id);
+            if (task == null) return NotFound("Không tìm thấy Task.");
+
+            task.IsManualProgress = dto.IsManualProgress;
+            if (dto.IsManualProgress && dto.ManualProgressPercent.HasValue)
+            {
+                task.ProgressPercent = Math.Clamp(dto.ManualProgressPercent.Value, 0, 100);
+            }
+            task.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Đã cập nhật chế độ tiến độ thành công!", isManualProgress = task.IsManualProgress, progressPercent = task.ProgressPercent });
+        }
+    }
+
+    public class ToggleProgressModeDto
+    {
+        public bool IsManualProgress { get; set; }
+        public decimal? ManualProgressPercent { get; set; }
     }
 }

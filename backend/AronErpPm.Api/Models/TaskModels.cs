@@ -67,12 +67,81 @@ namespace AronErpPm.Api.Models
 
         public bool IsVisibleToAll { get; set; } = true; // Visibility option to hide tasks from others
 
+        public bool IsManualProgress { get; set; } = false;
+
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
         public DateTime? UpdatedDate { get; set; }
 
         public ICollection<Task> SubTasks { get; set; } = new List<Task>();
     }
+
+    // 5. Sub-Task Management (SharePoint Task Model linked to Activity Task)
+    public class SubTask
+    {
+        [Key]
+        public int SubTaskId { get; set; }
+
+        public int ProjectId { get; set; }
+        [ForeignKey("ProjectId")]
+        public Project? Project { get; set; }
+
+        public int ActivityId { get; set; }
+        [ForeignKey("ActivityId")]
+        public Task? Activity { get; set; }
+
+        public int CreatedByUserId { get; set; }
+        [ForeignKey("CreatedByUserId")]
+        public User? CreatedByUser { get; set; }
+
+        [MaxLength(50)]
+        public string? Category { get; set; } // Thảo luận/Meeting, Tài liệu/Doc, Cấu hình/Setup, Dev/Custom, Testing...
+
+        [MaxLength(50)]
+        public string? Module { get; set; } // GL, AP, AR, PO, INV, OM, HCM, Custom...
+
+        [MaxLength(50)]
+        public string? DocCode { get; set; } // BR150, BP080, MD050, MD070, TE040...
+
+        [Required]
+        [MaxLength(250)]
+        public string TaskName { get; set; } = string.Empty;
+
+        public string? Description { get; set; }
+
+        public int? AssigneeMemberId { get; set; }
+        [ForeignKey("AssigneeMemberId")]
+        public ProjectMember? AssigneeMember { get; set; }
+
+        public int? ReviewerMemberId { get; set; }
+        [ForeignKey("ReviewerMemberId")]
+        public ProjectMember? ReviewerMember { get; set; }
+
+        [MaxLength(100)]
+        public string? KeyUser { get; set; }
+
+        [MaxLength(50)]
+        public string? Party { get; set; } // Partner, Client, Third Party
+
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public DateTime? Deadline { get; set; }
+
+        [MaxLength(50)]
+        public string Status { get; set; } = "1. Mới tạo"; // 1. Mới tạo, 2. Đang xử lý, 3. Nghiệm thu/Review, 4. Hoàn thành, 5. Hủy
+
+        [Column(TypeName = "decimal(5,2)")]
+        public decimal ProgressPercent { get; set; } = 0.00m;
+
+        public int Weight { get; set; } = 1; // 1 = Bình thường, 2 = Quan trọng, 3 = Gấp
+
+        [MaxLength(500)]
+        public string? AttachmentUrl { get; set; }
+
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedDate { get; set; }
+    }
+}
 
     // 2. Task Dependencies (Predecessors & Successors)
     public class TaskDependency

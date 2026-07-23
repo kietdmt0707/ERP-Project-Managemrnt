@@ -13,6 +13,7 @@ import { ProjectDocuments } from './components/ProjectDocuments';
 import { LeaveManagement } from './components/LeaveManagement';
 import { TravelPolicyConfig } from './components/TravelPolicyConfig';
 import { OracleEnvironmentManager } from './components/OracleEnvironmentManager';
+import { SubTaskManager } from './components/SubTaskManager';
 import { Calendar, FileText, CheckSquare, DollarSign, LogOut, ArrowRight, Server, ShieldAlert, Users, Sliders, Briefcase, Plane, Folder, Eye, EyeOff, Clipboard as ClipboardIcon } from 'lucide-react';
 
 function App() {
@@ -210,7 +211,7 @@ function App() {
   };
 
   // Tab selections
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'gantt' | 'ricefw' | 'approvals' | 'costs' | 'environments' | 'team' | 'trips' | 'projects' | 'settings' | 'users' | 'documents' | 'masterdata' | 'leaves' | 'travelpolicy'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'gantt' | 'subtasks' | 'ricefw' | 'approvals' | 'costs' | 'environments' | 'team' | 'trips' | 'projects' | 'settings' | 'users' | 'documents' | 'masterdata' | 'leaves' | 'travelpolicy'>('dashboard');
 
   useEffect(() => {
     loadSystemSettings();
@@ -639,6 +640,15 @@ function App() {
                   <Calendar size={16} /> Kế hoạch & Sơ đồ Gán
                 </button>
               )}
+
+              <button 
+                onClick={() => setActiveTab('subtasks')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                  activeTab === 'subtasks' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
+                }`}
+              >
+                <CheckSquare size={16} /> Nhiệm Vụ Sub-Tasks
+              </button>
               
               {hasPermission(currentUser, 'RICEFW') && (
                 <button 
@@ -1083,6 +1093,8 @@ function App() {
                 <>
                   {activeTab === 'gantt' && <GanttChart projectId={activeProject.projectId} userRole={activeProject.roleCode} />}
                   
+                  {activeTab === 'subtasks' && <SubTaskManager projectId={activeProject.projectId} userRole={activeProject.roleCode} currentUser={currentUser} />}
+
                   {activeTab === 'ricefw' && <RicefwTracker projectId={activeProject.projectId} userRole={activeProject.roleCode} />}
                   
                   {activeTab === 'team' && <TeamConfigurator projectId={activeProject.projectId} userRole={activeProject.roleCode} />}

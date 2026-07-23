@@ -18,6 +18,7 @@ namespace AronErpPm.Api.Data
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<ProjectMember> ProjectMembers { get; set; } = null!;
         public DbSet<Task> Tasks { get; set; } = null!;
+        public DbSet<SubTask> SubTasks { get; set; } = null!;
         public DbSet<TaskDependency> TaskDependencies { get; set; } = null!;
         public DbSet<Issue> Issues { get; set; } = null!;
         public DbSet<Timesheet> Timesheets { get; set; } = null!;

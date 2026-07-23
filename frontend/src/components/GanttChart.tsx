@@ -18,6 +18,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editProgress, setEditProgress] = useState<number>(0);
   const [editStatus, setEditStatus] = useState<string>('NOT_STARTED');
+  const [editIsManualProgress, setEditIsManualProgress] = useState<boolean>(false);
 
   useEffect(() => {
     loadTasks();
@@ -54,6 +55,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
     setSelectedTask(task);
     setEditProgress(task.progressPercent);
     setEditStatus(task.status);
+    setEditIsManualProgress(!!task.isManualProgress);
     setIsEditing(true);
   };
 
@@ -62,12 +64,18 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
     if (!selectedTask) return;
 
     try {
+      if (editIsManualProgress !== selectedTask.isManualProgress || editIsManualProgress) {
+        await taskService.toggleProgressMode(selectedTask.taskId, editIsManualProgress, Number(editProgress));
+      }
+
       await taskService.saveTask({
         ...selectedTask,
         projectId,
         progressPercent: Number(editProgress),
-        status: editStatus
+        status: editStatus,
+        isManualProgress: editIsManualProgress
       });
+
       setIsEditing(false);
       setSelectedTask(null);
       loadTasks();
@@ -136,14 +144,25 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
             {formatDate(task.startDatePlanned)} - {formatDate(task.endDatePlanned)}
           </td>
           <td className="py-3 px-4">
-            <div className="flex items-center gap-2">
-              <div className="w-20 bg-dark-800 rounded-full h-1.5 overflow-hidden">
-                <div 
-                  className={`h-full ${task.status === 'DELAYED' ? 'bg-rose-500' : 'bg-brand-500'}`} 
-                  style={{ width: `${task.progressPercent}%` }}
-                ></div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="w-20 bg-dark-800 rounded-full h-1.5 overflow-hidden">
+                  <div 
+                    className={`h-full ${task.status === 'DELAYED' ? 'bg-rose-500' : 'bg-brand-500'}`} 
+                    style={{ width: `${task.progressPercent}%` }}
+                  ></div>
+                </div>
+                <span className="text-xs font-mono font-semibold">{task.progressPercent}%</span>
               </div>
-              <span className="text-xs font-mono font-semibold">{task.progressPercent}%</span>
+              {task.isManualProgress ? (
+                <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 block w-fit">
+                  [Thủ công bởi PM]
+                </span>
+              ) : task.subTaskCount ? (
+                <span className="text-[9px] font-bold text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 block w-fit">
+                  [Auto: {task.subTaskCount} Sub-Tasks]
+                </span>
+              ) : null}
             </div>
           </td>
           <td className="py-3 px-4">{renderStatus(task.status)}</td>
@@ -234,6 +253,26 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
               <p className="text-xs text-dark-400 font-mono">{selectedTask.taskCode}</p>
               <p className="text-sm font-semibold text-brand-300 mt-0.5">{selectedTask.taskName}</p>
             </div>
+
+            {/* PM Progress Engine Toggle */}
+            {(userRole === 'PM' || userRole === 'SYSTEM_ADMIN') && (
+              <div className="bg-dark-950 p-3 rounded-xl border border-dark-800 space-y-2">
+                <label className="flex items-center justify-between text-xs text-dark-200 font-semibold cursor-pointer">
+                  <span>Chế độ Tiến độ (PM Manual Override):</span>
+                  <input 
+                    type="checkbox"
+                    checked={editIsManualProgress}
+                    onChange={(e) => setEditIsManualProgress(e.target.checked)}
+                    className="accent-brand-500 h-4 w-4 rounded cursor-pointer"
+                  />
+                </label>
+                <p className="text-[10px] text-dark-400">
+                  {editIsManualProgress 
+                    ? 'Bật chế độ Nhập đè Thủ công (Hiển thị nhãn [Thủ công bởi PM]).' 
+                    : 'Bật chế độ Tự động (Tự động tổng hợp % từ các Sub-Task thuộc Activity).'}
+                </p>
+              </div>
+            )}
 
             {/* Slider for Progress */}
             <div className="space-y-2">

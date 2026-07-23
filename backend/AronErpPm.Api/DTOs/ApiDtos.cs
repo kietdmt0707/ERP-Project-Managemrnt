@@ -66,6 +66,8 @@ namespace AronErpPm.Api.DTOs
         public bool IsVisibleToAll { get; set; }
         public string? VisibilityScope { get; set; }
         public string? AIMCode { get; set; }
+        public bool IsManualProgress { get; set; }
+        public int SubTaskCount { get; set; }
 
         public List<TaskTreeNodeDto> SubTasks { get; set; } = new List<TaskTreeNodeDto>();
         public List<int> PredecessorTaskIds { get; set; } = new List<int>();
