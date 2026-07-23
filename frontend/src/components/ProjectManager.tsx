@@ -85,13 +85,15 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUser, onP
     }
   };
 
-  // Check if current user is PM or PC or Admin for editing
+  const globalRoleUpper = (currentUser?.globalRole || '').toUpperCase();
+  const canCreateProject = globalRoleUpper === 'SYSTEM_ADMIN' || globalRoleUpper === 'PM' || currentUser?.projectRoles?.some((r: any) => (r.roleCode || '').toUpperCase() === 'PM');
+
+  // Check if current user is PM or Admin for editing
   const checkUserAccess = (projectId: number) => {
     if (!currentUser) return false;
-    if (currentUser.globalRole === 'SYSTEM_ADMIN') return true;
-    if (!hasPermission(currentUser, 'Projects', 'Edit')) return false;
+    if (globalRoleUpper === 'SYSTEM_ADMIN' || globalRoleUpper === 'PM') return true;
     const projectRole = currentUser.projectRoles?.find((r: any) => r.projectId === projectId);
-    return projectRole?.roleCode === 'PM' || projectRole?.roleCode === 'PC';
+    return (projectRole?.roleCode || '').toUpperCase() === 'PM';
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
@@ -286,12 +288,14 @@ export const ProjectManager: React.FC<ProjectManagerProps> = ({ currentUser, onP
           </h2>
           <p className="text-xs text-dark-400 mt-1">Cấu hình nhiều dự án cùng lúc, thiết lập thông tin liên hệ, logo và số lượng site</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center gap-1.5 transition-all shadow-lg shadow-brand-600/10"
-        >
-          <Plus size={14} /> Thêm Dự Án Mới
-        </button>
+        {canCreateProject && (
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center gap-1.5 transition-all shadow-lg shadow-brand-600/10"
+          >
+            <Plus size={14} /> Thêm Dự Án Mới
+          </button>
+        )}
       </div>
 
       {error && (

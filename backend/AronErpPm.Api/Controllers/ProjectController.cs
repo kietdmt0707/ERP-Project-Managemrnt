@@ -61,22 +61,29 @@ namespace AronErpPm.Api.Controllers
             try
             {
                 var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == "GlobalRole")?.Value;
-                var isSysAdmin = globalRoleClaim == "SYSTEM_ADMIN";
+                var isSysAdminOrDirector = globalRoleClaim == "SYSTEM_ADMIN" || globalRoleClaim == "DIRECTOR";
                 var username = User.Identity?.Name;
 
                 IQueryable<Project> query = _context.Projects.Include(p => p.ProjectSites);
 
-                if (!isSysAdmin && username != null)
+                if (!isSysAdminOrDirector && username != null)
                 {
                     var userObj = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
                     if (userObj != null)
                     {
-                        var assignedProjectIds = await _context.ProjectMembers
-                            .Where(pm => pm.UserId == userObj.UserId)
-                            .Select(pm => pm.ProjectId)
-                            .ToListAsync();
+                        var isDirectorMember = await _context.ProjectMembers
+                            .Include(pm => pm.Role)
+                            .AnyAsync(pm => pm.UserId == userObj.UserId && pm.Role!.RoleCode == "DIRECTOR");
 
-                        query = query.Where(p => assignedProjectIds.Contains(p.ProjectId));
+                        if (!isDirectorMember)
+                        {
+                            var assignedProjectIds = await _context.ProjectMembers
+                                .Where(pm => pm.UserId == userObj.UserId)
+                                .Select(pm => pm.ProjectId)
+                                .ToListAsync();
+
+                            query = query.Where(p => assignedProjectIds.Contains(p.ProjectId));
+                        }
                     }
                     else
                     {
@@ -106,9 +113,22 @@ namespace AronErpPm.Api.Controllers
         public async Task<IActionResult> CreateProject([FromBody] Project request)
         {
             var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == "GlobalRole")?.Value;
-            if (globalRoleClaim != "SYSTEM_ADMIN" && globalRoleClaim != "PM")
+            var username = User.Identity?.Name;
+            var isPm = false;
+            if (username != null)
             {
-                return Forbid("Chỉ có Admin hệ thống hoặc PM mới có quyền tạo dự án mới.");
+                var userObj = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
+                if (userObj != null)
+                {
+                    isPm = await _context.ProjectMembers
+                        .Include(pm => pm.Role)
+                        .AnyAsync(pm => pm.UserId == userObj.UserId && pm.Role!.RoleCode == "PM");
+                }
+            }
+
+            if (globalRoleClaim != "SYSTEM_ADMIN" && globalRoleClaim != "PM" && !isPm)
+            {
+                return StatusCode(403, new { message = "Chỉ có Admin hệ thống hoặc PM mới có quyền khởi tạo dự án mới." });
             }
 
             if (string.IsNullOrEmpty(request.ProjectCode) || string.IsNullOrEmpty(request.ProjectName))
@@ -217,11 +237,23 @@ namespace AronErpPm.Api.Controllers
         {
             var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == "GlobalRole")?.Value;
             var projectRoleClaim = User.Claims.FirstOrDefault(c => c.Type == $"ProjectRole_{id}")?.Value;
+            var username = User.Identity?.Name;
+            var isPmForProject = projectRoleClaim == "PM";
+            if (!isPmForProject && username != null)
+            {
+                var userObj = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
+                if (userObj != null)
+                {
+                    isPmForProject = await _context.ProjectMembers
+                        .Include(pm => pm.Role)
+                        .AnyAsync(pm => pm.ProjectId == id && pm.UserId == userObj.UserId && pm.Role!.RoleCode == "PM");
+                }
+            }
 
-            var hasAccess = globalRoleClaim == "SYSTEM_ADMIN" || projectRoleClaim == "PM" || projectRoleClaim == "PC";
+            var hasAccess = globalRoleClaim == "SYSTEM_ADMIN" || globalRoleClaim == "PM" || isPmForProject;
             if (!hasAccess)
             {
-                return Forbid("Chỉ có Admin hệ thống, PM hoặc Project Coordinator của dự án mới có quyền cập nhật.");
+                return StatusCode(403, new { message = "Chỉ có Admin hệ thống hoặc PM của dự án mới có quyền chỉnh sửa thông tin dự án." });
             }
 
             var project = await _context.Projects.FindAsync(id);
