@@ -290,6 +290,19 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
     }
   };
 
+  const handleDeleteTask = async (task: TaskNode) => {
+    if (!window.confirm(`Xác nhận xóa công việc "${task.taskCode} - ${task.taskName}"?\n(Các công việc con và Sub-Task liên quan cũng sẽ bị xóa)`)) {
+      return;
+    }
+
+    try {
+      await taskService.deleteTask(task.taskId);
+      loadTasks();
+    } catch (err: any) {
+      alert(err.message || 'Lỗi khi xóa công việc.');
+    }
+  };
+
   const selectTaskForUpdate = (task: TaskNode) => {
     setSelectedTask(task);
     setEditProgress(task.progressPercent);
@@ -437,6 +450,14 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
                 className="text-xs text-brand-400 hover:text-brand-300 font-medium hover:underline"
               >
                 Cập nhật
+              </button>
+            )}
+            {(userRole === 'PM' || userRole === 'PC' || userRole === 'SYSTEM_ADMIN') && (
+              <button 
+                onClick={() => handleDeleteTask(task)}
+                className="text-xs text-rose-400 hover:text-rose-300 font-medium hover:underline"
+              >
+                Xóa
               </button>
             )}
           </td>

@@ -207,6 +207,18 @@ export const taskService = {
       throw new Error(errText || 'Lỗi khi thay đổi chế độ tiến độ.');
     }
     return response.json();
+  },
+
+  async deleteTask(taskId: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/task/${taskId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+
+    if (!response.ok) {
+      const errObj = await response.json().catch(() => null);
+      throw new Error(errObj?.message || 'Xóa Task thất bại.');
+    }
   }
 };
 

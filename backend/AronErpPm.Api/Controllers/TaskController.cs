@@ -308,6 +308,71 @@ namespace AronErpPm.Api.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { message = "Đã cập nhật chế độ tiến độ thành công!", isManualProgress = task.IsManualProgress, progressPercent = task.ProgressPercent });
         }
+
+        // DELETE: api/task/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteTask(int id)
+        {
+            var username = User.Identity?.Name;
+            var globalRole = User.FindFirst("GlobalRole")?.Value ?? User.FindFirst(ClaimTypes.Role)?.Value;
+            var isSysAdmin = globalRole == "SYSTEM_ADMIN" || globalRole == "SYSADMIN" || (username != null && username.ToLower() == "admin");
+
+            var task = await _context.Tasks.FindAsync(id);
+            if (task == null) return NotFound("Không tìm thấy Task.");
+
+            // Check project role of the user
+            if (!isSysAdmin)
+            {
+                var userMember = await _context.ProjectMembers
+                    .Include(pm => pm.Role)
+                    .FirstOrDefaultAsync(pm => pm.ProjectId == task.ProjectId && username != null && pm.User!.Username.ToLower() == username.ToLower());
+
+                if (userMember == null) return StatusCode(403, new { message = "Bạn không phải thành viên của dự án này." });
+
+                var roleCode = userMember.Role?.RoleCode;
+                if (roleCode != "PM" && roleCode != "PC")
+                {
+                    return StatusCode(403, new { message = "Chỉ PM hoặc PC mới có quyền xóa Task trong Master Plan." });
+                }
+            }
+
+            // Recursive function to remove task and all sub-nodes
+            async System.Threading.Tasks.Task RemoveTaskRecursive(int taskId)
+            {
+                var childTasks = await _context.Tasks.Where(t => t.ParentTaskId == taskId).ToListAsync();
+                foreach (var child in childTasks)
+                {
+                    await RemoveTaskRecursive(child.TaskId);
+                }
+
+                // Delete associated subtasks
+                var subtasks = await _context.SubTasks.Where(st => st.ActivityId == taskId).ToListAsync();
+                if (subtasks.Any())
+                {
+                    _context.SubTasks.RemoveRange(subtasks);
+                }
+
+                // Delete dependencies
+                var deps = await _context.TaskDependencies
+                    .Where(d => d.PredecessorTaskId == taskId || d.SuccessorTaskId == taskId)
+                    .ToListAsync();
+                if (deps.Any())
+                {
+                    _context.TaskDependencies.RemoveRange(deps);
+                }
+
+                var tDelete = await _context.Tasks.FindAsync(taskId);
+                if (tDelete != null)
+                {
+                    _context.Tasks.Remove(tDelete);
+                }
+            }
+
+            await RemoveTaskRecursive(id);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Xóa Task và các dữ liệu liên quan thành công!" });
+        }
     }
 
     public class ToggleProgressModeDto
