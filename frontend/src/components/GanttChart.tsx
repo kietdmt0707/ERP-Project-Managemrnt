@@ -382,8 +382,16 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
     return (
       <React.Fragment key={task.taskId}>
         {/* Row detail */}
-        <tr className={`border-b border-dark-800 hover:bg-dark-800/40 transition-colors ${task.taskLevel === 1 ? 'bg-dark-900/40 font-bold text-white' : task.taskLevel === 2 ? 'bg-dark-900/20 font-semibold text-dark-100' : 'text-dark-200'}`}>
-          <td className="py-3 px-4" style={{ paddingLeft: `${depth * 20 + 16}px` }}>
+        <tr className={`border-b border-dark-800 hover:bg-dark-800/40 transition-colors ${
+          task.taskLevel === 1 ? 'bg-dark-900/50 font-bold text-white' : task.taskLevel === 2 ? 'bg-dark-900/25 font-semibold text-dark-100' : 'text-dark-200'
+        }`}>
+          {/* ID / Code */}
+          <td className="py-3 px-3 text-center border-r border-dark-800 text-xs font-mono font-bold text-dark-300">
+            {task.taskCode}
+          </td>
+
+          {/* Tên Công Việc / WBS */}
+          <td className="py-3 px-4 border-r border-dark-800" style={{ paddingLeft: `${depth * 20 + 16}px` }}>
             <div className="flex items-center gap-2">
               {hasSubtasks ? (
                 <button onClick={() => toggleExpand(task.taskId)} className="text-dark-400 hover:text-white p-0.5 rounded hover:bg-dark-750 transition-colors">
@@ -392,30 +400,66 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
               ) : (
                 <span className="w-4"></span>
               )}
-              <span className="text-xs text-dark-400 font-mono font-semibold w-12">{task.taskCode}</span>
-              <span className="truncate max-w-xs">{task.taskName}</span>
+              <span className="truncate max-w-sm">{task.taskName}</span>
+              {task.aimCode && (
+                <span className="text-[10px] bg-dark-800 text-brand-400 px-1.5 py-0.5 rounded font-mono border border-dark-700">
+                  {task.aimCode}
+                </span>
+              )}
               {!task.isVisibleToAll && <span title="Chỉ mình tôi thấy"><EyeOff size={14} className="text-rose-400" /></span>}
             </div>
           </td>
-          <td className="py-3 px-4 text-xs text-dark-300 font-medium">
+
+          {/* Cấp độ */}
+          <td className="py-3 px-3 text-center border-r border-dark-800 text-xs text-dark-300 font-medium">
             {task.taskLevel === 1 ? 'Phase' : task.taskLevel === 2 ? 'Stream' : task.taskLevel === 3 ? 'Deliverable' : 'Action Task'}
           </td>
-          <td className="py-3 px-4 text-xs text-dark-400">
+
+          {/* Số ngày (Duration) */}
+          <td className="py-3 px-3 text-center border-r border-dark-800 text-xs font-mono font-bold text-brand-400">
+            {displayWorkingDays}
+          </td>
+
+          {/* Từ ngày */}
+          <td className="py-3 px-3 text-center border-r border-dark-800 text-xs font-mono text-dark-300">
+            {formatDate(task.startDatePlanned)}
+          </td>
+
+          {/* Đến ngày */}
+          <td className="py-3 px-3 text-center border-r border-dark-800 text-xs font-mono text-dark-300">
+            {formatDate(task.endDatePlanned)}
+          </td>
+
+          {/* Người phụ trách (PIC) */}
+          <td className="py-3 px-4 border-r border-dark-800 text-xs text-dark-300">
             {task.assigneeName ? (
               <div>
-                <p className="text-dark-200 font-medium">{task.assigneeName}</p>
+                <p className="text-dark-100 font-medium">{task.assigneeName}</p>
                 <p className="text-[10px] text-brand-400">{task.assigneeTeam || 'ARON'}</p>
               </div>
             ) : '-'}
           </td>
-          <td className="py-3 px-4 text-xs font-mono text-dark-300">
-            {formatDate(task.startDatePlanned)} - {formatDate(task.endDatePlanned)}
-            <span className="block text-[10px] text-brand-400 font-semibold">{displayWorkingDays} ngày làm việc</span>
+
+          {/* Đại diện Khách hàng */}
+          <td className="py-3 px-3 border-r border-dark-800 text-xs text-dark-300">
+            {task.keyUser || '-'}
           </td>
-          <td className="py-3 px-4">
+
+          {/* Đơn vị / Nhóm */}
+          <td className="py-3 px-3 border-r border-dark-800 text-xs text-dark-300">
+            {task.party || '-'}
+          </td>
+
+          {/* Ghi chú / Mô tả */}
+          <td className="py-3 px-3 border-r border-dark-800 text-xs text-dark-400 max-w-xs truncate" title={task.description || ''}>
+            {task.description || '-'}
+          </td>
+
+          {/* Tiến độ */}
+          <td className="py-3 px-3 border-r border-dark-800">
             <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <div className="w-20 bg-dark-800 rounded-full h-1.5 overflow-hidden">
+              <div className="flex items-center gap-1.5">
+                <div className="w-16 bg-dark-800 rounded-full h-1.5 overflow-hidden">
                   <div 
                     className={`h-full ${task.status === 'DELAYED' ? 'bg-rose-500' : 'bg-brand-500'}`} 
                     style={{ width: `${task.progressPercent}%` }}
@@ -424,18 +468,22 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
                 <span className="text-xs font-mono font-semibold">{task.progressPercent}%</span>
               </div>
               {task.isManualProgress ? (
-                <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 block w-fit">
-                  [Thủ công bởi PM]
+                <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1 py-0.5 rounded border border-amber-500/20 block w-fit">
+                  [PM Override]
                 </span>
               ) : task.subTaskCount ? (
-                <span className="text-[9px] font-bold text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 block w-fit">
-                  [Auto: {task.subTaskCount} Sub-Tasks]
+                <span className="text-[9px] font-bold text-blue-400 bg-blue-500/10 px-1 py-0.5 rounded border border-blue-500/20 block w-fit">
+                  [Auto: {task.subTaskCount}]
                 </span>
               ) : null}
             </div>
           </td>
-          <td className="py-3 px-4">{renderStatus(task.status)}</td>
-          <td className="py-3 px-4 text-right space-x-2">
+
+          {/* Trạng thái */}
+          <td className="py-3 px-3 border-r border-dark-800">{renderStatus(task.status)}</td>
+
+          {/* Thao tác */}
+          <td className="py-3 px-4 text-right space-x-2 whitespace-nowrap">
             {(userRole === 'PM' || userRole === 'LEADER' || userRole === 'PC' || userRole === 'SYSTEM_ADMIN') && task.taskLevel < 4 && (
               <button 
                 onClick={() => handleOpenCreateTaskModal(task.taskLevel + 1, task)}
@@ -505,7 +553,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
               onClick={() => handleOpenCreateTaskModal(1)}
               className="bg-brand-600 hover:bg-brand-500 text-white text-xs px-3 py-2 rounded-lg font-semibold flex items-center gap-1 transition-all shadow-lg shadow-brand-600/10"
             >
-              <Plus size={14} /> Thêm Task Giai Đoạn (Cấp 1)
+              <Plus size={14} /> Khởi Tạo Task
             </button>
           )}
         </div>
@@ -521,17 +569,27 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
           Lỗi: {error}
         </div>
       ) : (
-        <div className="overflow-x-auto bg-dark-900/20 rounded-xl border border-dark-800">
-          <table className="w-full text-left border-collapse">
+        /* EXPANDED MASTER PLAN TREE GRID TABLE WITH HORIZONTAL & VERTICAL SCROLLBARS */
+        <div className="overflow-x-auto overflow-y-auto max-h-[75vh] bg-dark-900/20 rounded-xl border border-dark-800 custom-scrollbar">
+          <table className="min-w-[1600px] w-full text-left border-collapse">
             <thead>
-              <tr className="bg-dark-900/60 border-b border-dark-800 text-dark-400 text-xs uppercase font-bold">
-                <th className="py-3 px-4 w-1/3">Tên Công Việc / Phân Cấp (WBS)</th>
-                <th className="py-3 px-4">Cấp độ</th>
-                <th className="py-3 px-4">Người phụ trách</th>
-                <th className="py-3 px-4">Thời gian Kế hoạch</th>
-                <th className="py-3 px-4">Tiến độ</th>
-                <th className="py-3 px-4">Trạng thái</th>
-                <th className="py-3 px-4 text-right">Thao tác</th>
+              <tr className="bg-dark-900 border-b border-dark-800 text-dark-300 text-xs font-bold uppercase sticky top-0 z-10 shadow-sm">
+                <th rowSpan={2} className="py-3 px-3 text-center border-r border-dark-800 w-14">ID</th>
+                <th rowSpan={2} className="py-3 px-4 border-r border-dark-800 min-w-[280px]">Tên Công Việc / Phân Cấp (WBS)</th>
+                <th rowSpan={2} className="py-3 px-3 text-center border-r border-dark-800 w-24">Cấp Độ</th>
+                <th rowSpan={2} className="py-3 px-3 text-center border-r border-dark-800 w-24">Số Ngày</th>
+                <th colSpan={2} className="py-2 px-3 text-center border-r border-dark-800 border-b border-dark-800">Thời Gian Kế Hoạch</th>
+                <th rowSpan={2} className="py-3 px-4 border-r border-dark-800 min-w-[160px]">Người Phụ Trách (PIC)</th>
+                <th rowSpan={2} className="py-3 px-3 border-r border-dark-800 min-w-[140px]">Đại Diện Khách Hàng</th>
+                <th rowSpan={2} className="py-3 px-3 border-r border-dark-800 min-w-[140px]">Đơn Vị / Nhóm</th>
+                <th rowSpan={2} className="py-3 px-3 border-r border-dark-800 min-w-[160px]">Ghi Chú / Mô Tả</th>
+                <th rowSpan={2} className="py-3 px-3 border-r border-dark-800 w-28">Tiến Độ</th>
+                <th rowSpan={2} className="py-3 px-3 border-r border-dark-800 w-28">Trạng Thái</th>
+                <th rowSpan={2} className="py-3 px-4 text-right min-w-[130px]">Thao Tác</th>
+              </tr>
+              <tr className="bg-dark-900/90 border-b border-dark-800 text-dark-400 text-[11px] font-bold uppercase sticky top-[37px] z-10">
+                <th className="py-2 px-3 text-center border-r border-dark-800 w-24">Từ Ngày</th>
+                <th className="py-2 px-3 text-center border-r border-dark-800 w-24">Đến Ngày</th>
               </tr>
             </thead>
             <tbody>
@@ -539,7 +597,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
                 tasks.map(task => renderTaskRow(task))
               ) : (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-dark-500 text-xs">
+                  <td colSpan={13} className="text-center py-8 text-dark-500 text-xs">
                     Chưa khai báo danh mục công việc cho dự án này.
                   </td>
                 </tr>
@@ -644,10 +702,10 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
               <div>
                 <h3 className="text-md font-bold text-white flex items-center gap-2">
                   <Plus className="text-brand-500" size={18} />
-                  {createLevel === 1 ? 'Khởi Tạo Task Giai Đoạn (Cấp 1 - Phase)' : createLevel === 2 ? 'Khởi Tạo Sub-Stream (Cấp 2)' : createLevel === 3 ? 'Khởi Tạo Deliverable (Cấp 3)' : 'Khởi Tạo Action Task (Cấp 4)'}
+                  Khởi Tạo Task
                 </h3>
                 <p className="text-[11px] text-dark-400 mt-0.5">
-                  Chuẩn quản trị Master Plan ERP tích hợp Lịch làm việc & Phân bổ Nguồn lực
+                  {createLevel === 1 ? 'Task Cấp 1 (Phase)' : createLevel === 2 ? 'Sub-Stream (Cấp 2)' : createLevel === 3 ? 'Deliverable (Cấp 3)' : 'Action Task (Cấp 4)'} - Chuẩn quản trị Master Plan ERP tích hợp Lịch làm việc & Nguồn lực
                 </p>
               </div>
               <button 
@@ -760,12 +818,12 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-dark-300 font-semibold">Mô Tả Chi Tiết / Phạm Vi Công Việc:</label>
+                  <label className="text-xs text-dark-300 font-semibold">Mô Tả Chi Tiết / Ghi Chú Công Việc:</label>
                   <textarea 
                     rows={3}
                     value={createDescription}
                     onChange={(e) => setCreateDescription(e.target.value)}
-                    placeholder="Nhập phạm vi thực hiện, kết quả bàn giao dự kiến..."
+                    placeholder="Nhập phạm vi thực hiện, ghi chú công việc..."
                     className="w-full bg-dark-950 border border-dark-750 text-xs p-2.5 rounded-xl text-white focus:outline-none focus:border-brand-500"
                   />
                 </div>
@@ -788,7 +846,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-1">
-                    <label className="text-xs text-dark-300 font-semibold">Ngày Bắt Đầu:</label>
+                    <label className="text-xs text-dark-300 font-semibold">Từ Ngày (Bắt Đầu):</label>
                     <input 
                       type="date" 
                       value={createStartDate}
@@ -799,7 +857,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs text-dark-300 font-semibold">Thời Lượng (Duration):</label>
+                    <label className="text-xs text-dark-300 font-semibold">Số Ngày (Duration):</label>
                     <div className="relative">
                       <input 
                         type="number" 
@@ -815,7 +873,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs text-dark-300 font-semibold">Ngày Kết Thúc (Tự Tính):</label>
+                    <label className="text-xs text-dark-300 font-semibold">Đến Ngày (Tự Tính):</label>
                     <input 
                       type="date" 
                       value={createEndDate}
@@ -862,7 +920,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
               <div className="space-y-4 animate-fade-in">
                 <div className="space-y-1">
                   <label className="text-xs text-dark-300 font-semibold flex items-center justify-between">
-                    <span>PIC / Người Phụ Trách Trực Tiếp (Responsible):</span>
+                    <span>Người Phụ Trách (PIC):</span>
                     <span className="text-[10px] text-brand-400">Từ [Đội Ngũ Dự Án]</span>
                   </label>
                   <select
