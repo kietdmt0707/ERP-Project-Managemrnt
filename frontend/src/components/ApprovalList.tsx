@@ -65,8 +65,8 @@ export const ApprovalList: React.FC<ApprovalListProps> = ({ projectId, userRole 
   const flattenTasks = (nodes: TaskNode[], prefix = ''): Array<{ id: number; title: string; code: string }> => {
     let result: Array<{ id: number; title: string; code: string }> = [];
     nodes.forEach(node => {
-      const displayTitle = `${prefix}${node.wbsCode ? `[${node.wbsCode}] ` : ''}${node.taskTitle}`;
-      result.push({ id: node.taskId, title: displayTitle, code: node.wbsCode || `Task #${node.taskId}` });
+      const displayTitle = `${prefix}${node.taskCode ? `[${node.taskCode}] ` : ''}${node.taskName}`;
+      result.push({ id: node.taskId, title: displayTitle, code: node.taskCode || `Task #${node.taskId}` });
       if (node.subTasks && node.subTasks.length > 0) {
         result = result.concat(flattenTasks(node.subTasks, `${prefix}— `));
       }
