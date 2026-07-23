@@ -148,7 +148,9 @@ namespace AronErpPm.Api.Controllers
         public async Task<IActionResult> SaveTask([FromBody] TaskTreeNodeDto dto)
         {
             var username = User.Identity?.Name;
-            
+            var globalRole = User.FindFirst("GlobalRole")?.Value ?? User.FindFirst(ClaimTypes.Role)?.Value;
+            var isSysAdmin = globalRole == "SYSTEM_ADMIN" || globalRole == "SYSADMIN" || (username != null && username.ToLower() == "admin");
+
             // Validate Project
             var project = await _context.Projects.FindAsync(dto.ProjectId);
             if (project == null) return NotFound("Dự án không tồn tại.");
@@ -156,29 +158,23 @@ namespace AronErpPm.Api.Controllers
             // Check project role of the user
             var userMember = await _context.ProjectMembers
                 .Include(pm => pm.Role)
-                .FirstOrDefaultAsync(pm => pm.ProjectId == dto.ProjectId && pm.User!.Username == username);
+                .FirstOrDefaultAsync(pm => pm.ProjectId == dto.ProjectId && username != null && pm.User!.Username.ToLower() == username.ToLower());
 
-            if (userMember == null)
+            if (!isSysAdmin && userMember == null)
             {
-                return Forbid("Bạn không phải thành viên của dự án này.");
+                return StatusCode(403, new { message = "Bạn không phải thành viên của dự án này." });
             }
 
-            var roleCode = userMember.Role?.RoleCode;
+            var roleCode = userMember?.Role?.RoleCode;
 
-            // PERMISSION CHECK RULES
-            // 1. Admin/PM can do anything (create/edit all levels)
-            // 2. Leader can only create/update Level 2 and Level 3 tasks
-            // 3. Member can only update progress/status of Level 2/3 tasks, or create subtasks if assigned
-            // 4. Director has Read-only access
-
-            if (roleCode == "DIRECTOR")
+            if (!isSysAdmin && roleCode == "DIRECTOR")
             {
-                return Forbid("Tài khoản Giám đốc dự án chỉ có quyền xem báo cáo.");
+                return StatusCode(403, new { message = "Tài khoản Giám đốc dự án chỉ có quyền xem báo cáo." });
             }
 
-            if (dto.TaskLevel == 1 && roleCode != "PM" && username != "admin")
+            if (dto.TaskLevel == 1 && !isSysAdmin && roleCode != "PM" && roleCode != "PC")
             {
-                return Forbid("Chỉ PM (Admin) mới có quyền chỉnh sửa Task Cấp 1 (Giai đoạn).");
+                return StatusCode(403, new { message = "Chỉ PM hoặc PC mới có quyền tạo/chỉnh sửa Task Cấp 1 (Giai đoạn)." });
             }
 
             Models.Task? task;

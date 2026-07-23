@@ -20,6 +20,17 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
   const [editStatus, setEditStatus] = useState<string>('NOT_STARTED');
   const [editIsManualProgress, setEditIsManualProgress] = useState<boolean>(false);
 
+  // Create Task Modal State
+  const [isCreatingTask, setIsCreatingTask] = useState<boolean>(false);
+  const [createLevel, setCreateLevel] = useState<number>(1);
+  const [createParentTaskId, setCreateParentTaskId] = useState<number | null>(null);
+  const [createTaskCode, setCreateTaskCode] = useState<string>('');
+  const [createTaskName, setCreateTaskName] = useState<string>('');
+  const [createDescription, setCreateDescription] = useState<string>('');
+  const [createStartDate, setCreateStartDate] = useState<string>('');
+  const [createEndDate, setCreateEndDate] = useState<string>('');
+  const [createSubmitting, setCreateSubmitting] = useState<boolean>(false);
+
   useEffect(() => {
     loadTasks();
   }, [projectId]);
@@ -49,6 +60,54 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
       ...prev,
       [taskId]: !prev[taskId]
     }));
+  };
+
+  const handleOpenCreateTaskModal = (level: number, parentTask?: TaskNode) => {
+    setCreateLevel(level);
+    setCreateParentTaskId(parentTask ? parentTask.taskId : null);
+    setCreateTaskCode(parentTask ? `${parentTask.taskCode}.${(parentTask.subTasks?.length || 0) + 1}` : `${tasks.length + 1}`);
+    setCreateTaskName('');
+    setCreateDescription('');
+    const today = new Date().toISOString().split('T')[0];
+    const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    setCreateStartDate(today);
+    setCreateEndDate(nextMonth);
+    setIsCreatingTask(true);
+  };
+
+  const handleCreateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createTaskCode.trim() || !createTaskName.trim()) {
+      alert('Vui lòng nhập Mã và Tên công việc!');
+      return;
+    }
+
+    setCreateSubmitting(true);
+    try {
+      await taskService.saveTask({
+        taskId: 0,
+        projectId,
+        taskCode: createTaskCode.trim(),
+        taskName: createTaskName.trim(),
+        description: createDescription,
+        taskLevel: createLevel,
+        parentTaskId: createParentTaskId,
+        startDatePlanned: createStartDate ? new Date(createStartDate).toISOString() : new Date().toISOString(),
+        endDatePlanned: createEndDate ? new Date(createEndDate).toISOString() : new Date().toISOString(),
+        durationPlanned: 30,
+        progressPercent: 0,
+        status: 'NOT_STARTED',
+        isVisibleToAll: true,
+        visibilityScope: 'PUBLIC'
+      });
+
+      setIsCreatingTask(false);
+      loadTasks();
+    } catch (err: any) {
+      alert(err.message || 'Lỗi khi tạo công việc mới.');
+    } finally {
+      setCreateSubmitting(false);
+    }
   };
 
   const selectTaskForUpdate = (task: TaskNode) => {
@@ -166,8 +225,15 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
             </div>
           </td>
           <td className="py-3 px-4">{renderStatus(task.status)}</td>
-          <td className="py-3 px-4 text-right">
-            {/* Permission Control: Member can update their tasks, Leader/PM/PC can update any */}
+          <td className="py-3 px-4 text-right space-x-2">
+            {(userRole === 'PM' || userRole === 'LEADER' || userRole === 'PC' || userRole === 'SYSTEM_ADMIN') && task.taskLevel < 4 && (
+              <button 
+                onClick={() => handleOpenCreateTaskModal(task.taskLevel + 1, task)}
+                className="text-xs text-emerald-400 hover:text-emerald-300 font-medium hover:underline"
+              >
+                + Task Con
+              </button>
+            )}
             {(userRole === 'PM' || userRole === 'LEADER' || userRole === 'PC' || task.assigneeName) && (
               <button 
                 onClick={() => selectTaskForUpdate(task)}
@@ -197,7 +263,10 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
         </div>
         
         {(userRole === 'PM' || userRole === 'SYSTEM_ADMIN' || userRole === 'PC') && (
-          <button className="bg-brand-600 hover:bg-brand-500 text-white text-xs px-3 py-2 rounded-lg font-semibold flex items-center gap-1 transition-all">
+          <button 
+            onClick={() => handleOpenCreateTaskModal(1)}
+            className="bg-brand-600 hover:bg-brand-500 text-white text-xs px-3 py-2 rounded-lg font-semibold flex items-center gap-1 transition-all shadow-lg shadow-brand-600/10"
+          >
             <Plus size={14} /> Thêm Task Giai Đoạn (Cấp 1)
           </button>
         )}
@@ -311,7 +380,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
               <button 
                 type="button" 
                 onClick={() => setIsEditing(false)}
-                className="bg-dark-800 hover:bg-dark-700 text-xs px-4 py-2 rounded-lg font-semibold"
+                className="bg-dark-800 hover:bg-dark-700 text-xs px-4 py-2 rounded-lg font-semibold text-white"
               >
                 Đóng
               </button>
@@ -320,6 +389,100 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
                 className="bg-brand-600 hover:bg-brand-500 text-white text-xs px-4 py-2 rounded-lg font-semibold"
               >
                 Lưu Thay Đổi
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Create Task Modal */}
+      {isCreatingTask && (
+        <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <form onSubmit={handleCreateTask} className="bg-dark-900 border border-dark-800 max-w-md w-full p-6 rounded-2xl shadow-2xl space-y-4 animate-slide-up">
+            <div className="flex justify-between items-center border-b border-dark-800 pb-2">
+              <h3 className="text-md font-bold text-white flex items-center gap-2">
+                <Plus className="text-brand-500" size={18} />
+                {createLevel === 1 ? 'Thêm Task Giai Đoạn (Cấp 1 - Phase)' : createLevel === 2 ? 'Thêm Sub-Stream (Cấp 2)' : createLevel === 3 ? 'Thêm Deliverable (Cấp 3)' : 'Thêm Action Task (Cấp 4)'}
+              </h3>
+              <button 
+                type="button" 
+                onClick={() => setIsCreatingTask(false)}
+                className="text-xs text-dark-400 hover:text-white"
+              >
+                Đóng
+              </button>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs text-dark-300 font-semibold">Mã công việc (Task Code) (*):</label>
+              <input 
+                type="text" 
+                value={createTaskCode}
+                onChange={(e) => setCreateTaskCode(e.target.value)}
+                placeholder="VD: 1, 2, 1.1, 1.1.2..."
+                className="w-full bg-dark-950 border border-dark-750 text-xs p-2.5 rounded-xl text-white font-mono focus:outline-none focus:border-brand-500"
+                required
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs text-dark-300 font-semibold">Tên công việc (*):</label>
+              <input 
+                type="text" 
+                value={createTaskName}
+                onChange={(e) => setCreateTaskName(e.target.value)}
+                placeholder="VD: Giai Đoạn Khởi Động & Thiết Kế Giải Pháp..."
+                className="w-full bg-dark-950 border border-dark-750 text-xs p-2.5 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                required
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs text-dark-300 font-semibold">Mô tả công việc:</label>
+              <textarea 
+                rows={2}
+                value={createDescription}
+                onChange={(e) => setCreateDescription(e.target.value)}
+                placeholder="Mô tả phạm vi / yêu cầu chi tiết..."
+                className="w-full bg-dark-950 border border-dark-750 text-xs p-2.5 rounded-xl text-white focus:outline-none focus:border-brand-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs text-dark-300 font-semibold">Ngày bắt đầu:</label>
+                <input 
+                  type="date" 
+                  value={createStartDate}
+                  onChange={(e) => setCreateStartDate(e.target.value)}
+                  className="w-full bg-dark-950 border border-dark-750 text-xs p-2 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-dark-300 font-semibold">Ngày kết thúc:</label>
+                <input 
+                  type="date" 
+                  value={createEndDate}
+                  onChange={(e) => setCreateEndDate(e.target.value)}
+                  className="w-full bg-dark-950 border border-dark-750 text-xs p-2 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end pt-4 border-t border-dark-800">
+              <button 
+                type="button" 
+                onClick={() => setIsCreatingTask(false)}
+                className="bg-dark-800 hover:bg-dark-700 text-xs px-4 py-2 rounded-lg font-semibold text-white"
+              >
+                Hủy Bỏ
+              </button>
+              <button 
+                type="submit" 
+                disabled={createSubmitting}
+                className="bg-brand-600 hover:bg-brand-500 text-white text-xs px-4 py-2 rounded-lg font-semibold text-white disabled:opacity-50"
+              >
+                {createSubmitting ? 'Đang tạo...' : 'Khởi Tạo Task'}
               </button>
             </div>
           </form>
