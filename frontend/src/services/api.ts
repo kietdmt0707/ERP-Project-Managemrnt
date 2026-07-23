@@ -590,6 +590,74 @@ export const travelPolicyService = {
   }
 };
 
+export interface TimesheetItem {
+  timesheetId: number;
+  projectId: number;
+  memberId: number;
+  memberName: string;
+  taskId?: number;
+  taskCode: string;
+  taskTitle: string;
+  workDate: string;
+  hoursWorked: number;
+  description: string;
+  status: string;
+  approvedByName?: string;
+  approvalDate?: string;
+  createdDate: string;
+}
+
+export const timesheetService = {
+  async getTimesheets(projectId: number): Promise<TimesheetItem[]> {
+    const response = await fetch(`${API_BASE_URL}/timesheet?projectId=${projectId}`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải báo cáo ngày công.');
+    return response.json();
+  },
+  async createTimesheet(data: { projectId: number; taskId?: number; workDate: string; hoursWorked: number; description?: string }): Promise<TimesheetItem> {
+    const response = await fetch(`${API_BASE_URL}/timesheet`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Lưu khai báo ngày công thất bại.');
+    }
+    return response.json();
+  },
+  async createBulkTimesheets(items: Array<{ projectId: number; taskId?: number; workDate: string; hoursWorked: number; description?: string }>): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/timesheet/bulk`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(items)
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Lưu ma trận tuần thất bại.');
+    }
+    return response.json();
+  },
+  async updateTimesheet(id: number, data: Partial<TimesheetItem>): Promise<TimesheetItem> {
+    const response = await fetch(`${API_BASE_URL}/timesheet/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error('Không thể cập nhật báo cáo ngày công.');
+    return response.json();
+  },
+  async deleteTimesheet(id: number): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/timesheet/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể xóa báo cáo ngày công.');
+    return response.json();
+  }
+};
+
 export interface OracleInstanceDto {
   instanceId?: number;
   projectId: number;

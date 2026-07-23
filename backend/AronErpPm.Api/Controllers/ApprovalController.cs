@@ -106,29 +106,35 @@ namespace AronErpPm.Api.Controllers
                 TokenExpiry = DateTime.UtcNow.AddHours(48)
             };
 
+            // Step 3 Record (Project Director)
+            var step3 = new ApprovalStep
+            {
+                WorkflowId = workflow.WorkflowId,
+                StepNumber = 3,
+                ApproverMemberId = step3ApproverId,
+                StepStatus = "PENDING",
+                SecureToken = EmailService.GenerateSecureToken(),
+                TokenExpiry = DateTime.UtcNow.AddHours(72)
+            };
+
             if (request.TargetType.ToUpper() == "TIMESHEET")
             {
-                _context.ApprovalSteps.AddRange(step1, step2);
                 if (isInitiatorPm)
                 {
-                    workflow.WorkflowStatus = "APPROVED";
-                    workflow.UpdatedDate = DateTime.UtcNow;
+                    // PM submitting timesheet -> Requires Director approval (Step 3)
+                    _context.ApprovalSteps.AddRange(step1, step2, step3);
+                    workflow.CurrentStepNumber = 3;
+                    workflow.WorkflowStatus = "PENDING";
                     _context.ApprovalWorkflows.Update(workflow);
-                    await UpdateTargetItemStatusAsync(workflow.TargetType, workflow.TargetId, "APPROVED");
+                }
+                else
+                {
+                    _context.ApprovalSteps.AddRange(step1, step2);
                 }
             }
             else
             {
-                // Step 3 Record (Only for financial Travel & Expenses)
-                var step3 = new ApprovalStep
-                {
-                    WorkflowId = workflow.WorkflowId,
-                    StepNumber = 3,
-                    ApproverMemberId = step3ApproverId,
-                    StepStatus = "PENDING",
-                    SecureToken = EmailService.GenerateSecureToken(),
-                    TokenExpiry = DateTime.UtcNow.AddHours(72)
-                };
+                // Financial Travel & Expenses -> 3 Steps
                 _context.ApprovalSteps.AddRange(step1, step2, step3);
 
                 if (isInitiatorPm)
@@ -144,7 +150,7 @@ namespace AronErpPm.Api.Controllers
             int stepIdToSend = step1.StepId;
             string tokenToSend = step1.SecureToken!;
 
-            if (isInitiatorPm && request.TargetType.ToUpper() != "TIMESHEET")
+            if (isInitiatorPm)
             {
                 currentApprover = dirMember;
                 var savedStep3 = await _context.ApprovalSteps.FirstOrDefaultAsync(s => s.WorkflowId == workflow.WorkflowId && s.StepNumber == 3);
@@ -159,7 +165,7 @@ namespace AronErpPm.Api.Controllers
                 currentApprover = leaderMember ?? pmMember;
             }
 
-            if (currentApprover?.User != null && (!isInitiatorPm || request.TargetType.ToUpper() != "TIMESHEET"))
+            if (currentApprover?.User != null)
             {
                 await _emailService.SendApprovalEmailAsync(
                     currentApprover.User.Email,
@@ -174,10 +180,10 @@ namespace AronErpPm.Api.Controllers
                 );
             }
 
-            // Update Target item status to "PENDING_APPROVAL" or "SUBMITTED"
+            // Update Target item status to "SUBMITTED"
             await UpdateTargetItemStatusAsync(workflow.TargetType, workflow.TargetId, "SUBMITTED");
 
-            return Ok(new { message = "Gửi yêu cầu phê duyệt thành công! Luồng phê duyệt 3 cấp đã được kích hoạt.", workflowId = workflow.WorkflowId });
+            return Ok(new { message = isInitiatorPm ? "Timesheet đã được chuyển tới Giám Đốc (Director) phê duyệt!" : "Gửi yêu cầu phê duyệt thành công! Luồng phê duyệt đã được kích hoạt.", workflowId = workflow.WorkflowId });
         }
 
         // 2. One-click Email Quick Approval API (Returns beautiful HTML pages)
