@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { projectService, userService, masterDataService, ProjectDto, UserDto, ProjectScopeOptionDto, hasPermission } from '../services/api';
+import { projectService, userService, masterDataService, ProjectDto, UserDto, ProjectScopeOptionDto } from '../services/api';
 import { Briefcase, Plus, Folder, MapPin, Building, Phone, UserPlus, Trash2, Edit3, Calendar, Clock } from 'lucide-react';
 
 interface ProjectManagerProps {
