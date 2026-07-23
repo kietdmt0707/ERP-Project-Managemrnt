@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { subTaskService, taskService, projectService, SubTaskDto, TaskNode, ProjectMemberDto } from '../services/api';
-import { CheckSquare, Plus, Filter, Search, Calendar, User, Edit3, Trash2, Link, AlertCircle, CheckCircle2, Clock, Play, AlertTriangle } from 'lucide-react';
+import { subTaskService, taskService, teamService, SubTaskDto, TaskNode, TeamMemberDto } from '../services/api';
+import { CheckSquare, Plus, Filter, Search, User, Edit3, Trash2, Link, CheckCircle2, Clock, Play, AlertTriangle } from 'lucide-react';
 
 interface SubTaskManagerProps {
   projectId: number;
@@ -11,7 +11,7 @@ interface SubTaskManagerProps {
 export const SubTaskManager: React.FC<SubTaskManagerProps> = ({ projectId, userRole, currentUser }) => {
   const [subtasks, setSubtasks] = useState<SubTaskDto[]>([]);
   const [activities, setActivities] = useState<TaskNode[]>([]);
-  const [members, setMembers] = useState<any[]>([]);
+  const [members, setMembers] = useState<TeamMemberDto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,14 +54,14 @@ export const SubTaskManager: React.FC<SubTaskManagerProps> = ({ projectId, userR
       setLoading(true);
       setError(null);
 
-      const [subtaskData, taskTreeData, memberData] = await Promise.all([
+      const [subtaskData, taskTreeData, teamData] = await Promise.all([
         subTaskService.getSubTasks(projectId),
         taskService.getTaskTree(projectId),
-        projectService.getProjectMembers(projectId).catch(() => [])
+        teamService.getTeams(projectId).catch(() => ({ members: [] }))
       ]);
 
       setSubtasks(subtaskData || []);
-      setMembers(memberData || []);
+      setMembers(teamData?.members || []);
 
       // Flatten Task Tree to get list of Activity nodes
       const flatList: TaskNode[] = [];

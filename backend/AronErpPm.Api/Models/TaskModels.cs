@@ -141,7 +141,6 @@ namespace AronErpPm.Api.Models
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedDate { get; set; }
     }
-}
 
     // 2. Task Dependencies (Predecessors & Successors)
     public class TaskDependency
