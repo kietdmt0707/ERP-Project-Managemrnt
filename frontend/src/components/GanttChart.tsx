@@ -828,7 +828,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
                     <option value="">-- Chọn Nhân Sự Triển Khai --</option>
                     {projectMembers.map(m => (
                       <option key={m.projectMemberId} value={m.projectMemberId}>
-                        {m.user?.fullName || m.user?.username} ({m.role?.roleName || 'Member'}) - {m.functionalTeam?.functionalTeamName || 'ARON'}
+                        {m.fullName || m.username} ({m.roleName || 'Member'}) - {m.functionalTeamName || 'ARON'}
                       </option>
                     ))}
                   </select>
