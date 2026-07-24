@@ -28,162 +28,172 @@ namespace AronErpPm.Api.Controllers
         [HttpPost("submit")]
         public async Task<IActionResult> SubmitRequest([FromBody] FileRequestDto request)
         {
-            var username = User.Identity?.Name;
-            
-            // Get Submitter membership
-            var member = await _context.ProjectMembers
-                .Include(pm => pm.User)
-                .Include(pm => pm.FunctionalTeam)
-                .FirstOrDefaultAsync(pm => pm.ProjectId == request.ProjectId && pm.User!.Username == username);
-
-            if (member == null) return Forbid("Bạn không phải thành viên dự án này.");
-
-            // Create Approval Workflow header
-            var workflow = new ApprovalWorkflow
+            try
             {
-                ProjectId = request.ProjectId,
-                SubmitterMemberId = member.ProjectMemberId,
-                TargetType = request.TargetType.ToUpper(),
-                TargetId = request.TargetId,
-                CurrentStepNumber = 1,
-                WorkflowStatus = "PENDING"
-            };
+                var username = User.Identity?.Name;
+                
+                // Get Submitter membership
+                var member = await _context.ProjectMembers
+                    .Include(pm => pm.User)
+                    .Include(pm => pm.FunctionalTeam)
+                    .FirstOrDefaultAsync(pm => pm.ProjectId == request.ProjectId && pm.User!.Username == username);
 
-            _context.ApprovalWorkflows.Add(workflow);
-            await _context.SaveChangesAsync();
+                if (member == null) return Forbid("Bạn không phải thành viên dự án này.");
 
-            // Setup the 3 Steps dynamically based on organizational roles
-            // Step 1: Module Leader (e.g., Leader of the Functional Team)
-            var leaderMember = await _context.ProjectMembers
-                .Include(pm => pm.User)
-                .FirstOrDefaultAsync(pm => pm.ProjectId == request.ProjectId 
-                                && pm.FunctionalTeamId == member.FunctionalTeamId 
-                                && pm.Role!.RoleCode == "LEADER" && pm.IsActive);
-            
-            // Step 2: Project PM
-            var pmMember = await _context.ProjectMembers
-                .Include(pm => pm.User)
-                .FirstOrDefaultAsync(pm => pm.ProjectId == request.ProjectId 
-                                && pm.Role!.RoleCode == "PM" && pm.IsActive);
-
-            // Step 3: Project Director
-            var dirMember = await _context.ProjectMembers
-                .Include(pm => pm.User)
-                .FirstOrDefaultAsync(pm => pm.ProjectId == request.ProjectId 
-                                && pm.Role!.RoleCode == "DIRECTOR" && pm.IsActive);
-
-            // In case a step is missing, fallback to PM or Director
-            var step1ApproverId = leaderMember?.ProjectMemberId ?? pmMember?.ProjectMemberId ?? member.ProjectMemberId;
-            var step2ApproverId = pmMember?.ProjectMemberId ?? dirMember?.ProjectMemberId ?? step1ApproverId;
-            var step3ApproverId = dirMember?.ProjectMemberId ?? step2ApproverId;
-
-            // Self-approval bypass check: If the initiator is the PM of the project
-            var isInitiatorPm = member.Role?.RoleCode == "PM";
-
-            // Step 1 Record
-            var step1 = new ApprovalStep
-            {
-                WorkflowId = workflow.WorkflowId,
-                StepNumber = 1,
-                ApproverMemberId = step1ApproverId,
-                StepStatus = isInitiatorPm ? "APPROVED" : "PENDING",
-                ActionDate = isInitiatorPm ? DateTime.UtcNow : (DateTime?)null,
-                Comments = isInitiatorPm ? "Tự động duyệt (Khởi tạo bởi PM)" : null,
-                SecureToken = EmailService.GenerateSecureToken(),
-                TokenExpiry = DateTime.UtcNow.AddHours(24)
-            };
-
-            // Step 2 Record
-            var step2 = new ApprovalStep
-            {
-                WorkflowId = workflow.WorkflowId,
-                StepNumber = 2,
-                ApproverMemberId = step2ApproverId,
-                StepStatus = isInitiatorPm ? "APPROVED" : "PENDING",
-                ActionDate = isInitiatorPm ? DateTime.UtcNow : (DateTime?)null,
-                Comments = isInitiatorPm ? "Tự động duyệt (Khởi tạo bởi PM)" : null,
-                SecureToken = EmailService.GenerateSecureToken(),
-                TokenExpiry = DateTime.UtcNow.AddHours(48)
-            };
-
-            // Step 3 Record (Project Director)
-            var step3 = new ApprovalStep
-            {
-                WorkflowId = workflow.WorkflowId,
-                StepNumber = 3,
-                ApproverMemberId = step3ApproverId,
-                StepStatus = "PENDING",
-                SecureToken = EmailService.GenerateSecureToken(),
-                TokenExpiry = DateTime.UtcNow.AddHours(72)
-            };
-
-            if (request.TargetType.ToUpper() == "TIMESHEET")
-            {
-                if (isInitiatorPm)
+                // Create Approval Workflow header
+                var workflow = new ApprovalWorkflow
                 {
-                    // PM submitting timesheet -> Requires Director approval (Step 3)
-                    _context.ApprovalSteps.AddRange(step1, step2, step3);
-                    workflow.CurrentStepNumber = 3;
-                    workflow.WorkflowStatus = "PENDING";
-                    _context.ApprovalWorkflows.Update(workflow);
+                    ProjectId = request.ProjectId,
+                    SubmitterMemberId = member.ProjectMemberId,
+                    TargetType = request.TargetType.ToUpper(),
+                    TargetId = request.TargetId,
+                    CurrentStepNumber = 1,
+                    WorkflowStatus = "PENDING"
+                };
+
+                _context.ApprovalWorkflows.Add(workflow);
+                await _context.SaveChangesAsync();
+
+                // Setup the 3 Steps dynamically based on organizational roles
+                // Step 1: Module Leader (e.g., Leader of the Functional Team)
+                var leaderMember = await _context.ProjectMembers
+                    .Include(pm => pm.User)
+                    .FirstOrDefaultAsync(pm => pm.ProjectId == request.ProjectId 
+                                    && pm.FunctionalTeamId == member.FunctionalTeamId 
+                                    && pm.Role!.RoleCode == "LEADER" && pm.IsActive);
+                
+                // Step 2: Project PM
+                var pmMember = await _context.ProjectMembers
+                    .Include(pm => pm.User)
+                    .FirstOrDefaultAsync(pm => pm.ProjectId == request.ProjectId 
+                                    && pm.Role!.RoleCode == "PM" && pm.IsActive);
+
+                // Step 3: Project Director
+                var dirMember = await _context.ProjectMembers
+                    .Include(pm => pm.User)
+                    .FirstOrDefaultAsync(pm => pm.ProjectId == request.ProjectId 
+                                    && pm.Role!.RoleCode == "DIRECTOR" && pm.IsActive);
+
+                // In case a step is missing, fallback to PM or Director
+                var step1ApproverId = leaderMember?.ProjectMemberId ?? pmMember?.ProjectMemberId ?? member.ProjectMemberId;
+                var step2ApproverId = pmMember?.ProjectMemberId ?? dirMember?.ProjectMemberId ?? step1ApproverId;
+                var step3ApproverId = dirMember?.ProjectMemberId ?? step2ApproverId;
+
+                // Self-approval bypass check: If the initiator is the PM of the project
+                var isInitiatorPm = member.Role?.RoleCode == "PM";
+
+                // Step 1 Record
+                var step1 = new ApprovalStep
+                {
+                    WorkflowId = workflow.WorkflowId,
+                    StepNumber = 1,
+                    ApproverMemberId = step1ApproverId,
+                    StepStatus = isInitiatorPm ? "APPROVED" : "PENDING",
+                    ActionDate = isInitiatorPm ? DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc) : (DateTime?)null,
+                    Comments = isInitiatorPm ? "Tự động duyệt (Khởi tạo bởi PM)" : null,
+                    SecureToken = EmailService.GenerateSecureToken(),
+                    TokenExpiry = DateTime.SpecifyKind(DateTime.UtcNow.AddHours(24), DateTimeKind.Utc)
+                };
+
+                // Step 2 Record
+                var step2 = new ApprovalStep
+                {
+                    WorkflowId = workflow.WorkflowId,
+                    StepNumber = 2,
+                    ApproverMemberId = step2ApproverId,
+                    StepStatus = isInitiatorPm ? "APPROVED" : "PENDING",
+                    ActionDate = isInitiatorPm ? DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc) : (DateTime?)null,
+                    Comments = isInitiatorPm ? "Tự động duyệt (Khởi tạo bởi PM)" : null,
+                    SecureToken = EmailService.GenerateSecureToken(),
+                    TokenExpiry = DateTime.SpecifyKind(DateTime.UtcNow.AddHours(48), DateTimeKind.Utc)
+                };
+
+                // Step 3 Record (Project Director)
+                var step3 = new ApprovalStep
+                {
+                    WorkflowId = workflow.WorkflowId,
+                    StepNumber = 3,
+                    ApproverMemberId = step3ApproverId,
+                    StepStatus = "PENDING",
+                    SecureToken = EmailService.GenerateSecureToken(),
+                    TokenExpiry = DateTime.SpecifyKind(DateTime.UtcNow.AddHours(72), DateTimeKind.Utc)
+                };
+
+                if (request.TargetType.ToUpper() == "TIMESHEET")
+                {
+                    if (isInitiatorPm)
+                    {
+                        // PM submitting timesheet -> Requires Director approval (Step 3)
+                        _context.ApprovalSteps.AddRange(step1, step2, step3);
+                        workflow.CurrentStepNumber = 3;
+                        workflow.WorkflowStatus = "PENDING";
+                        _context.ApprovalWorkflows.Update(workflow);
+                    }
+                    else
+                    {
+                        _context.ApprovalSteps.AddRange(step1, step2);
+                    }
                 }
                 else
                 {
-                    _context.ApprovalSteps.AddRange(step1, step2);
+                    // Financial Travel & Expenses -> 3 Steps
+                    _context.ApprovalSteps.AddRange(step1, step2, step3);
+
+                    if (isInitiatorPm)
+                    {
+                        workflow.CurrentStepNumber = 3;
+                        _context.ApprovalWorkflows.Update(workflow);
+                    }
                 }
-            }
-            else
-            {
-                // Financial Travel & Expenses -> 3 Steps
-                _context.ApprovalSteps.AddRange(step1, step2, step3);
+                await _context.SaveChangesAsync();
+
+                // Trigger Email to the correct starting step approver
+                ProjectMember? currentApprover = null;
+                int stepIdToSend = step1.StepId;
+                string tokenToSend = step1.SecureToken!;
 
                 if (isInitiatorPm)
                 {
-                    workflow.CurrentStepNumber = 3;
-                    _context.ApprovalWorkflows.Update(workflow);
+                    currentApprover = dirMember;
+                    var savedStep3 = await _context.ApprovalSteps.FirstOrDefaultAsync(s => s.WorkflowId == workflow.WorkflowId && s.StepNumber == 3);
+                    if (savedStep3 != null)
+                    {
+                        stepIdToSend = savedStep3.StepId;
+                        tokenToSend = savedStep3.SecureToken!;
+                    }
                 }
-            }
-            await _context.SaveChangesAsync();
-
-            // Trigger Email to the correct starting step approver
-            ProjectMember? currentApprover = null;
-            int stepIdToSend = step1.StepId;
-            string tokenToSend = step1.SecureToken!;
-
-            if (isInitiatorPm)
-            {
-                currentApprover = dirMember;
-                var savedStep3 = await _context.ApprovalSteps.FirstOrDefaultAsync(s => s.WorkflowId == workflow.WorkflowId && s.StepNumber == 3);
-                if (savedStep3 != null)
+                else
                 {
-                    stepIdToSend = savedStep3.StepId;
-                    tokenToSend = savedStep3.SecureToken!;
+                    currentApprover = leaderMember ?? pmMember;
                 }
+
+                if (currentApprover?.User != null)
+                {
+                    await _emailService.SendApprovalEmailAsync(
+                        currentApprover.User.Email,
+                        currentApprover.User.FullName,
+                        member.User!.FullName,
+                        member.Project?.ProjectName ?? "ARON ERP Project",
+                        workflow.TargetType,
+                        request.Description,
+                        request.Amount,
+                        stepIdToSend,
+                        tokenToSend
+                    );
+                }
+
+                // Update Target item status to "SUBMITTED"
+                await UpdateTargetItemStatusAsync(workflow.TargetType, workflow.TargetId, "SUBMITTED");
+
+                return Ok(new { message = isInitiatorPm ? "Timesheet đã được chuyển tới Giám Đốc (Director) phê duyệt!" : "Gửi yêu cầu phê duyệt thành công! Luồng phê duyệt đã được kích hoạt.", workflowId = workflow.WorkflowId });
             }
-            else
+            catch (Exception ex)
             {
-                currentApprover = leaderMember ?? pmMember;
+                var details = ex.Message;
+                if (ex.InnerException != null) details += " | Inner: " + ex.InnerException.Message;
+                Console.WriteLine($"SubmitRequest DB Error: {details}");
+                return BadRequest(new { message = "Lỗi xử lý yêu cầu duyệt: " + details });
             }
-
-            if (currentApprover?.User != null)
-            {
-                await _emailService.SendApprovalEmailAsync(
-                    currentApprover.User.Email,
-                    currentApprover.User.FullName,
-                    member.User!.FullName,
-                    member.Project?.ProjectName ?? "ARON ERP Project",
-                    workflow.TargetType,
-                    request.Description,
-                    request.Amount,
-                    stepIdToSend,
-                    tokenToSend
-                );
-            }
-
-            // Update Target item status to "SUBMITTED"
-            await UpdateTargetItemStatusAsync(workflow.TargetType, workflow.TargetId, "SUBMITTED");
-
-            return Ok(new { message = isInitiatorPm ? "Timesheet đã được chuyển tới Giám Đốc (Director) phê duyệt!" : "Gửi yêu cầu phê duyệt thành công! Luồng phê duyệt đã được kích hoạt.", workflowId = workflow.WorkflowId });
         }
 
         // 2. One-click Email Quick Approval API (Returns beautiful HTML pages)
