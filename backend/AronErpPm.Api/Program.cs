@@ -105,11 +105,20 @@ app.UseAuthorization();
 
 app.MapControllers().RequireCors("AllowAll");
 
-// Auto-migration (Simulated during local runs)
-using (var scope = app.Services.CreateScope())
+// Auto-migration & Database Initialization (Safe Startup)
+try
 {
-    var db = scope.ServiceProvider.GetRequiredService<AronDbContext>();
-    db.Database.EnsureCreated(); // Tự động tạo bảng nếu chưa tồn tại trên Postgres
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AronDbContext>();
+        try
+        {
+            db.Database.EnsureCreated();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Database EnsureCreated note: {ex.Message}");
+        }
     
     // Tự động nâng cấp cấu trúc bảng nếu đã tồn tại trước đó
     var migrations = new List<(string sql, string description)>
@@ -363,6 +372,10 @@ using (var scope = app.Services.CreateScope())
     {
         Console.WriteLine($"Error seeding roles/sysadmin: {ex.Message}");
     }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Global startup migration error: {ex.Message}");
 }
 
 app.Run();
