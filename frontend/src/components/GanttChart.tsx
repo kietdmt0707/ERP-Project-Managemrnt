@@ -229,7 +229,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
   };
 
   // Helper to split comma-separated strings cleanly
-  const splitStringList = (str?: string): string[] => {
+  const splitStringList = (str?: string | null): string[] => {
     if (!str) return [];
     return str.split(',').map(s => s.trim()).filter(Boolean);
   };
@@ -420,7 +420,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
   };
 
   // Render multi-assignment badges on grid cells
-  const renderBadgesList = (rawText?: string, defaultColor: 'brand' | 'blue' | 'emerald' | 'amber' = 'brand') => {
+  const renderBadgesList = (rawText?: string | null, defaultColor: 'brand' | 'blue' | 'emerald' | 'amber' = 'brand') => {
     const list = splitStringList(rawText);
     if (list.length === 0) return <span className="text-dark-500 text-xs">-</span>;
 
