@@ -107,9 +107,6 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline - Enable CORS first before any routing or auth middleware
-app.UseCors("AllowAll");
-
 // Global exception handling middleware to preserve CORS headers on any runtime exception
 app.Use(async (context, next) =>
 {
@@ -120,13 +117,23 @@ app.Use(async (context, next) =>
     catch (Exception ex)
     {
         Console.WriteLine($"Unhandled exception: {ex}");
+        
+        // Ensure response is clear before writing
+        context.Response.Clear();
         context.Response.StatusCode = 500;
         context.Response.ContentType = "application/json";
+        
+        // Explicitly set CORS header for the error response so the browser doesn't block it
+        context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
+        
         await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new { message = "Lỗi hệ thống: " + ex.Message }));
     }
 });
 
 app.UseRouting();
+
+// CORS must be placed between UseRouting and UseEndpoints/MapControllers
+app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
