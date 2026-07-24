@@ -304,7 +304,7 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
                       <td className="py-3 pr-2">
                         <div className="flex items-center gap-2">
                           <img 
-                            src={m.avatarPath || "https://api.dicebear.com/7.x/initials/svg?seed=" + Uri.EscapeDataString(m.fullName || m.username)} 
+                            src={m.avatarPath || "https://api.dicebear.com/7.x/initials/svg?seed=" + encodeURIComponent(m.fullName || m.username)} 
                             alt="Avatar" 
                             className="h-7 w-7 rounded-full border border-dark-800 bg-dark-950 shrink-0" 
                           />
