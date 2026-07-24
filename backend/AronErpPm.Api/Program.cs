@@ -27,6 +27,17 @@ builder.Services.AddSingleton<SessionContextInterceptor>();
 builder.Services.AddDbContext<AronDbContext>((serviceProvider, options) =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    if (string.IsNullOrWhiteSpace(connectionString) || connectionString.Contains("localhost"))
+    {
+        var envConn = builder.Configuration["DATABASE_URL"] 
+                   ?? builder.Configuration["DATABASE_URL_UNPOOLED"] 
+                   ?? builder.Configuration["DefaultConnection"] 
+                   ?? builder.Configuration["ConnectionStrings:DefaultConnection"];
+        if (!string.IsNullOrWhiteSpace(envConn))
+        {
+            connectionString = envConn;
+        }
+    }
     
     // Tự động phân tích cú pháp nếu nhận được chuỗi kết nối dạng postgres:// hoặc postgresql:// từ Neon
     if (!string.IsNullOrEmpty(connectionString) && (connectionString.StartsWith("postgres://") || connectionString.StartsWith("postgresql://")))
@@ -98,6 +109,23 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline - Enable CORS first before any routing or auth middleware
 app.UseCors("AllowAll");
+
+// Global exception handling middleware to preserve CORS headers on any runtime exception
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Unhandled exception: {ex}");
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new { message = "Lỗi hệ thống: " + ex.Message }));
+    }
+});
+
 app.UseRouting();
 
 app.UseAuthentication();
