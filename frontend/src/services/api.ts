@@ -898,8 +898,8 @@ export const userService = {
       body: JSON.stringify(user)
     });
     if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(errText || 'Tạo người dùng thất bại.');
+      const errObj = await response.json().catch(() => null);
+      throw new Error(errObj?.message || 'Tạo người dùng thất bại.');
     }
     return response.json();
   },
@@ -910,8 +910,8 @@ export const userService = {
       body: JSON.stringify(user)
     });
     if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(errText || 'Cập nhật người dùng thất bại.');
+      const errObj = await response.json().catch(() => null);
+      throw new Error(errObj?.message || 'Cập nhật người dùng thất bại.');
     }
     return response.json();
   },

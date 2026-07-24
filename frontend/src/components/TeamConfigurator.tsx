@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { teamService, TeamMemberDto } from '../services/api';
-import { Users, Plus, UserPlus, Briefcase, Trash2, Edit3 } from 'lucide-react';
+import { teamService, userService, TeamMemberDto, UserDto } from '../services/api';
+import { Users, Plus, UserPlus, Briefcase, Trash2, Edit3, UserCheck, Edit } from 'lucide-react';
 
 interface TeamConfiguratorProps {
   projectId: number;
@@ -26,6 +26,11 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [isEditingMember, setIsEditingMember] = useState(false);
+
+  // System Users List for dropdown selection
+  const [allSystemUsers, setAllSystemUsers] = useState<UserDto[]>([]);
+  const [assignMode, setAssignMode] = useState<'SYSTEM' | 'MANUAL'>('SYSTEM');
+  const [selectedUserId, setSelectedUserId] = useState<number | undefined>(undefined);
 
   // Member form
   const [username, setUsername] = useState('');
@@ -62,8 +67,19 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
     }
   };
 
-  const handleOpenAddMember = () => {
+  const loadSystemUsers = async () => {
+    try {
+      const users = await userService.getUsers();
+      setAllSystemUsers(users.filter(u => u.isActive));
+    } catch (err) {
+      console.warn('Không thể tải danh sách tài khoản người dùng hệ thống.');
+    }
+  };
+
+  const handleOpenAddMember = async () => {
     setIsEditingMember(false);
+    setAssignMode('SYSTEM');
+    setSelectedUserId(undefined);
     setUsername('');
     setFullName('');
     setEmail('');
@@ -75,10 +91,23 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
       setRoleId(data.roles[data.roles.length - 1].roleId);
     }
     setShowMemberModal(true);
+    await loadSystemUsers();
+  };
+
+  const handleSelectSystemUser = (userIdNum: number) => {
+    setSelectedUserId(userIdNum);
+    const targetUser = allSystemUsers.find(u => u.userId === userIdNum);
+    if (targetUser) {
+      setUsername(targetUser.username);
+      setFullName(targetUser.fullName);
+      setEmail(targetUser.email);
+      setPhone(targetUser.phone || '');
+    }
   };
 
   const handleOpenEditMember = (m: TeamMemberDto) => {
     setIsEditingMember(true);
+    setAssignMode('MANUAL');
     setUsername(m.username);
     setFullName(m.fullName);
     setEmail(m.email);
@@ -92,16 +121,21 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
 
   const handleMemberSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!username.trim() || !fullName.trim()) {
+      alert('Vui lòng chọn hoặc nhập Tên tài khoản và Họ tên!');
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
     try {
       await teamService.assignMember({
         projectId,
-        username,
-        fullName,
-        email,
-        phone,
-        title,
+        username: username.trim(),
+        fullName: fullName.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        title: title.trim(),
         roleId,
         functionalTeamId,
         dailyRate: (userRole === 'PM' || userRole === 'DIRECTOR' || userRole === 'SYSTEM_ADMIN') ? dailyRate : undefined
@@ -270,7 +304,7 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
                       <td className="py-3 pr-2">
                         <div className="flex items-center gap-2">
                           <img 
-                            src={m.avatarPath} 
+                            src={m.avatarPath || "https://api.dicebear.com/7.x/initials/svg?seed=" + Uri.EscapeDataString(m.fullName || m.username)} 
                             alt="Avatar" 
                             className="h-7 w-7 rounded-full border border-dark-800 bg-dark-950 shrink-0" 
                           />
@@ -342,7 +376,59 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
               <button onClick={() => setShowMemberModal(false)} className="text-xs text-dark-400 hover:text-white">Đóng</button>
             </div>
 
+            {/* Option to choose existing account vs manual entry (Only shown when adding new member) */}
+            {!isEditingMember && (
+              <div className="flex gap-2 p-1 bg-dark-900 border border-dark-800 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setAssignMode('SYSTEM')}
+                  className={`flex-1 text-xs py-2 px-3 rounded-lg font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                    assignMode === 'SYSTEM'
+                      ? 'bg-brand-600 text-white shadow-md'
+                      : 'text-dark-400 hover:text-white'
+                  }`}
+                >
+                  <UserCheck size={14} /> Chọn Từ Tài Khoản Hệ Thống
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setAssignMode('MANUAL'); setUsername(''); setFullName(''); setEmail(''); setPhone(''); }}
+                  className={`flex-1 text-xs py-2 px-3 rounded-lg font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                    assignMode === 'MANUAL'
+                      ? 'bg-brand-600 text-white shadow-md'
+                      : 'text-dark-400 hover:text-white'
+                  }`}
+                >
+                  <Edit size={14} /> Nhập Thủ Công Mới
+                </button>
+              </div>
+            )}
+
             <form onSubmit={handleMemberSubmit} className="space-y-4">
+              
+              {/* SYSTEM ACCOUNT DROPDOWN MODE */}
+              {!isEditingMember && assignMode === 'SYSTEM' && (
+                <div className="space-y-1 bg-dark-950 p-3.5 rounded-xl border border-dark-800">
+                  <label className="text-xs text-dark-200 font-semibold flex justify-between">
+                    <span>Chọn Tài Khoản Người Dùng (Users Hub):</span>
+                    <span className="text-[10px] text-brand-400">Tìm thấy: {allSystemUsers.length} tài khoản</span>
+                  </label>
+                  <select
+                    value={selectedUserId || ''}
+                    onChange={(e) => handleSelectSystemUser(Number(e.target.value))}
+                    className="w-full bg-dark-900 border border-dark-750 text-xs p-2.5 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                  >
+                    <option value="">-- Chọn tài khoản người dùng đã khai báo --</option>
+                    {allSystemUsers.map(u => (
+                      <option key={u.userId} value={u.userId}>
+                        {u.fullName} (@{u.username}) - {u.email}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* USERNAME & FULL NAME FIELDS */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs text-dark-300 font-semibold">Tài khoản đăng nhập (Username):</label>
@@ -351,8 +437,8 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="VD: kiettm"
-                    disabled={isEditingMember}
-                    className="w-full bg-dark-900 border border-dark-800 text-xs p-2.5 rounded-xl text-white disabled:opacity-60"
+                    disabled={isEditingMember || (!isEditingMember && assignMode === 'SYSTEM')}
+                    className="w-full bg-dark-900 border border-dark-800 text-xs p-2.5 rounded-xl text-white disabled:opacity-60 font-mono"
                     required
                   />
                 </div>
@@ -364,12 +450,14 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="VD: Dương Minh Tuấn Kiệt"
-                    className="w-full bg-dark-900 border border-dark-800 text-xs p-2.5 rounded-xl text-white"
+                    disabled={!isEditingMember && assignMode === 'SYSTEM' && !!selectedUserId}
+                    className="w-full bg-dark-900 border border-dark-800 text-xs p-2.5 rounded-xl text-white disabled:opacity-75"
                     required
                   />
                 </div>
               </div>
 
+              {/* EMAIL & PHONE FIELDS */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs text-dark-300 font-semibold">Email làm việc (*):</label>
@@ -378,7 +466,8 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="VD: kietdmt@aron.com.vn"
-                    className="w-full bg-dark-900 border border-dark-800 text-xs p-2.5 rounded-xl text-white"
+                    disabled={!isEditingMember && assignMode === 'SYSTEM' && !!selectedUserId}
+                    className="w-full bg-dark-900 border border-dark-800 text-xs p-2.5 rounded-xl text-white disabled:opacity-75"
                     required
                   />
                 </div>
@@ -395,6 +484,7 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
                 </div>
               </div>
 
+              {/* FUNCTIONAL TEAM & ROLE FIELDS */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs text-dark-300 font-semibold">Đội chức năng (Functional Team):</label>
