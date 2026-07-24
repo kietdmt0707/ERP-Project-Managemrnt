@@ -120,6 +120,9 @@ namespace AronErpPm.Api.Controllers
             var exists = await _context.Users.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower());
             if (exists) return BadRequest(new { message = "Tên đăng nhập đã tồn tại." });
 
+            var emailExists = await _context.Users.AnyAsync(u => u.Email.ToLower() == request.Email.ToLower());
+            if (emailExists) return BadRequest(new { message = "Email này đã được sử dụng cho một tài khoản khác." });
+
             var newUser = new User
             {
                 Username = request.Username,
@@ -129,13 +132,22 @@ namespace AronErpPm.Api.Controllers
                 Phone = request.Phone,
                 AvatarPath = "https://api.dicebear.com/7.x/initials/svg?seed=" + Uri.EscapeDataString(request.FullName),
                 IsActive = request.IsActive,
-                ExpiryDate = request.ExpiryDate,
+                ExpiryDate = request.ExpiryDate.HasValue ? DateTime.SpecifyKind(request.ExpiryDate.Value, DateTimeKind.Utc) : null,
                 GlobalRoleId = request.GlobalRoleId,
                 CreatedDate = DateTime.UtcNow
             };
 
             _context.Users.Add(newUser);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"CreateUser DB Error: {ex.Message}");
+                if (ex.InnerException != null) Console.WriteLine($"Inner: {ex.InnerException.Message}");
+                return BadRequest(new { message = "Lỗi lưu dữ liệu: Email hoặc Username có thể đã bị trùng lặp ở Database." });
+            }
 
             return Ok(new UserDto
             {
@@ -193,8 +205,14 @@ namespace AronErpPm.Api.Controllers
             if (!string.IsNullOrEmpty(request.Username) && user.Username.ToLower() != request.Username.ToLower())
             {
                 var exists = await _context.Users.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower());
-                if (exists) return BadRequest("Tên đăng nhập mới đã tồn tại.");
+                if (exists) return BadRequest(new { message = "Tên đăng nhập mới đã tồn tại." });
                 user.Username = request.Username;
+            }
+
+            if (!string.IsNullOrEmpty(request.Email) && user.Email.ToLower() != request.Email.ToLower())
+            {
+                var emailExists = await _context.Users.AnyAsync(u => u.Email.ToLower() == request.Email.ToLower());
+                if (emailExists) return BadRequest(new { message = "Email này đã được sử dụng cho một tài khoản khác." });
             }
 
             user.FullName = request.FullName;
@@ -204,7 +222,7 @@ namespace AronErpPm.Api.Controllers
             user.AnnualLeaveDays = request.AnnualLeaveDays;
             user.CarryOverDays = request.CarryOverDays;
             user.IsActive = request.IsActive;
-            user.ExpiryDate = request.ExpiryDate;
+            user.ExpiryDate = request.ExpiryDate.HasValue ? DateTime.SpecifyKind(request.ExpiryDate.Value, DateTimeKind.Utc) : null;
             user.GlobalRoleId = request.GlobalRoleId;
             user.UpdatedDate = DateTime.UtcNow;
 
@@ -212,12 +230,22 @@ namespace AronErpPm.Api.Controllers
             {
                 if (request.Password.Length < 8)
                 {
-                    return BadRequest("Mật khẩu mới phải có ít nhất 8 ký tự.");
+                    return BadRequest(new { message = "Mật khẩu mới phải có ít nhất 8 ký tự." });
                 }
                 user.PasswordHash = HashPassword(request.Password);
             }
 
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"UpdateUser DB Error: {ex.Message}");
+                if (ex.InnerException != null) Console.WriteLine($"Inner: {ex.InnerException.Message}");
+                return BadRequest(new { message = "Lỗi cập nhật dữ liệu: Email hoặc Username có thể bị trùng lặp ở Database." });
+            }
+
             return Ok(user);
         }
 
