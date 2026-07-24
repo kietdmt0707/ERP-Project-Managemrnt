@@ -25,10 +25,23 @@ namespace AronErpPm.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetSettings()
         {
-            var settings = await _context.SystemSettings.FirstOrDefaultAsync();
-            if (settings == null)
+            try
             {
-                // Return default settings if none exist
+                var settings = await _context.SystemSettings.FirstOrDefaultAsync();
+                if (settings == null)
+                {
+                    // Return default settings if none exist
+                    return Ok(new SystemSetting
+                    {
+                        AppName = "ARON Project Management",
+                        LogoUrl = "https://raw.githubusercontent.com/vitejs/vite/main/packages/vite/src/node/logo.png",
+                        BannerUrl = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1600"
+                    });
+                }
+                return Ok(settings);
+            }
+            catch (Exception ex)
+            {
                 return Ok(new SystemSetting
                 {
                     AppName = "ARON Project Management",
@@ -36,7 +49,6 @@ namespace AronErpPm.Api.Controllers
                     BannerUrl = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1600"
                 });
             }
-            return Ok(settings);
         }
 
         // POST: api/setting
