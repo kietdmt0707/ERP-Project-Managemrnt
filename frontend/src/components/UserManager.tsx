@@ -169,6 +169,12 @@ export const UserManager: React.FC<UserManagerProps> = ({ currentUserGlobalRole 
     e.preventDefault();
     setError(null);
     try {
+      const parseExpiryDate = (d?: string) => {
+        if (!d || !d.trim()) return undefined;
+        const parsed = new Date(d);
+        return isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
+      };
+
       if (editingUser && editingUser.userId) {
         await userService.updateUser(editingUser.userId, {
           username,
@@ -178,7 +184,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ currentUserGlobalRole 
           phone,
           isActive,
           globalRoleId,
-          expiryDate: expiryDate ? new Date(expiryDate).toISOString() : undefined
+          expiryDate: parseExpiryDate(expiryDate)
         });
 
         // Save project memberships - only send required fields to prevent JSON binding cycles / failures
@@ -200,7 +206,7 @@ export const UserManager: React.FC<UserManagerProps> = ({ currentUserGlobalRole 
           phone,
           isActive,
           globalRoleId,
-          expiryDate: expiryDate ? new Date(expiryDate).toISOString() : undefined
+          expiryDate: parseExpiryDate(expiryDate)
         });
         alert('Tạo người dùng mới thành công!');
       }

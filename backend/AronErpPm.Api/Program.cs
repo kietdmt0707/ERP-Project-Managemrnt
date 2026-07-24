@@ -96,9 +96,9 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-app.UseRouting();
+// Configure the HTTP request pipeline - Enable CORS first before any routing or auth middleware
 app.UseCors("AllowAll");
+app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
