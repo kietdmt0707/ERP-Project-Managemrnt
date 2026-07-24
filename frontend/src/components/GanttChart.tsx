@@ -599,12 +599,13 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
   const uniqueAvailableTeams = Array.from(new Set(availableTeams));
 
   return (
-    <div className="space-y-6">
+    <div className={isWideView ? "fixed inset-0 z-40 bg-dark-950 p-6 overflow-y-auto space-y-4 animate-fade-in" : "space-y-6"}>
       {/* Header section */}
       <div className="flex justify-between items-center bg-dark-900/40 p-4 rounded-xl border border-dark-800">
         <div>
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Calendar className="text-brand-500" /> Kế hoạch dự án - Master Plan
+            {isWideView && <span className="bg-brand-500/20 text-brand-300 border border-brand-500/30 text-xs px-2 py-0.5 rounded-full font-semibold">Chế độ Màn hình Rộng (Wide View)</span>}
           </h2>
           <p className="text-xs text-dark-400 mt-1">
             Phân cấp WBS 4 cấp liên kết Workday Calendar Engine. Chế độ Phân công Đa nhóm & Đa nhân sự linh hoạt
@@ -614,15 +615,15 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
         <div className="flex items-center gap-2.5">
           <button 
             onClick={() => setIsWideView(!isWideView)}
-            className={`text-xs px-3 py-2 rounded-lg font-semibold flex items-center gap-1.5 border transition-all ${
+            className={`text-xs px-3 py-2 rounded-lg font-bold flex items-center gap-1.5 border transition-all ${
               isWideView 
-                ? 'bg-brand-600/20 text-brand-300 border-brand-500/40' 
-                : 'bg-dark-800 hover:bg-dark-700 text-dark-200 border-dark-700'
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30 shadow-lg shadow-amber-500/10' 
+                : 'bg-brand-600 hover:bg-brand-500 text-white border-brand-500 shadow-lg shadow-brand-600/10'
             }`}
             title="Bật/Tắt Chế độ Màn hình rộng Full-Width"
           >
             {isWideView ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-            {isWideView ? 'Màn Hình Chuẩn' : 'Mở Rộng Wide View'}
+            {isWideView ? 'Thu Gọn Về Màn Hình Thường' : 'Mở Rộng Wide View [⤢]'}
           </button>
 
           <button 
@@ -664,7 +665,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
         </div>
       ) : (
         /* EXPANDED MASTER PLAN TREE GRID TABLE WITH HORIZONTAL & VERTICAL SCROLLBARS */
-        <div className={`overflow-x-auto overflow-y-auto ${isWideView ? 'max-h-[85vh]' : 'max-h-[75vh]'} bg-dark-900/20 rounded-xl border border-dark-800 custom-scrollbar`}>
+        <div className={`overflow-x-auto overflow-y-auto ${isWideView ? 'h-[calc(100vh-130px)] max-h-none border-2 border-brand-500/30' : 'max-h-[75vh] border border-dark-800'} bg-dark-900/20 rounded-xl custom-scrollbar transition-all`}>
           <table className="min-w-[1600px] w-full text-left border-collapse">
             <thead>
               <tr className="bg-dark-900 border-b border-dark-800 text-dark-300 text-xs font-bold uppercase sticky top-0 z-10 shadow-sm">
