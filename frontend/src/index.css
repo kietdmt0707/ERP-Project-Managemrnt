@@ -48,6 +48,19 @@
   transition: background-color 0.2s ease, border-color 0.2s ease, text-decoration-color 0.2s ease;
 }
 
+@layer utilities {
+  .bg-dark-900-30 { background-color: color-mix(in srgb, var(--color-dark-900) 30%, transparent); }
+  .bg-dark-900-40 { background-color: color-mix(in srgb, var(--color-dark-900) 40%, transparent); }
+  .bg-dark-900-60 { background-color: color-mix(in srgb, var(--color-dark-900) 60%, transparent); }
+  .bg-dark-950-80 { background-color: color-mix(in srgb, var(--color-dark-950) 80%, transparent); }
+  .hover\:bg-dark-900-30:hover { background-color: color-mix(in srgb, var(--color-dark-900) 30%, transparent); }
+  
+  .bg-brand-500-10 { background-color: color-mix(in srgb, var(--color-brand-500) 10%, transparent); }
+  .hover\:bg-brand-500-20:hover { background-color: color-mix(in srgb, var(--color-brand-500) 20%, transparent); }
+  .border-brand-500-20 { border-color: color-mix(in srgb, var(--color-brand-500) 20%, transparent); }
+  .shadow-brand-600-10 { box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--color-brand-600) 10%, transparent), 0 4px 6px -4px color-mix(in srgb, var(--color-brand-600) 10%, transparent); }
+}
+
 /* --- THEME SYSTEM --- */
 
 /* Default Blue - Dark Mode */

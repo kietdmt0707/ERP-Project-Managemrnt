@@ -18,6 +18,7 @@ namespace AronErpPm.Api.Data
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<ProjectMember> ProjectMembers { get; set; } = null!;
         public DbSet<Task> Tasks { get; set; } = null!;
+        public DbSet<SubTask> SubTasks { get; set; } = null!;
         public DbSet<TaskDependency> TaskDependencies { get; set; } = null!;
         public DbSet<Issue> Issues { get; set; } = null!;
         public DbSet<Timesheet> Timesheets { get; set; } = null!;
@@ -31,6 +32,10 @@ namespace AronErpPm.Api.Data
         public DbSet<SharepointMapping> SharepointMappings { get; set; } = null!;
         public DbSet<SystemSetting> SystemSettings { get; set; } = null!;
         public DbSet<ProjectScopeOption> ProjectScopeOptions { get; set; } = null!;
+        public DbSet<LeaveRequest> LeaveRequests { get; set; } = null!;
+        public DbSet<LeaveProjectApproval> LeaveProjectApprovals { get; set; } = null!;
+        public DbSet<TravelRegion> TravelRegions { get; set; } = null!;
+        public DbSet<TravelExpensePolicy> TravelExpensePolicies { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

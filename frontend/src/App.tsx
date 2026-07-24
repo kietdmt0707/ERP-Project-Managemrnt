@@ -10,7 +10,11 @@ import { BusinessTripTracker } from './components/BusinessTripTracker';
 import { UserManager } from './components/UserManager';
 import { MasterDataManager } from './components/MasterDataManager';
 import { ProjectDocuments } from './components/ProjectDocuments';
-import { Calendar, FileText, CheckSquare, DollarSign, LogOut, ArrowRight, Server, ShieldAlert, Users, Sliders, Briefcase, Plane, Folder, Eye, EyeOff } from 'lucide-react';
+import { LeaveManagement } from './components/LeaveManagement';
+import { TravelPolicyConfig } from './components/TravelPolicyConfig';
+import { OracleEnvironmentManager } from './components/OracleEnvironmentManager';
+import { SubTaskManager } from './components/SubTaskManager';
+import { Calendar, FileText, CheckSquare, DollarSign, LogOut, ArrowRight, Server, ShieldAlert, Users, Sliders, Briefcase, Plane, Folder, Eye, EyeOff, Clipboard as ClipboardIcon } from 'lucide-react';
 
 function App() {
   const [currentUser, setCurrentUser] = useState<AuthResponse | null>(null);
@@ -46,7 +50,8 @@ function App() {
   const [resetError, setResetError] = useState<string | null>(null);
   const [resetLoading, setResetLoading] = useState(false);
 
-  // Theme & Mode States
+  // Theme & Mode & Layout States
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [activeTheme, setActiveTheme] = useState<string>(() => {
     return localStorage.getItem('aron-app-theme') || 'default';
   });
@@ -67,6 +72,9 @@ function App() {
   const [profileFullName, setProfileFullName] = useState('');
   const [profileEmail, setProfileEmail] = useState('');
   const [profilePhone, setProfilePhone] = useState('');
+  const [profileAvatarPath, setProfileAvatarPath] = useState('');
+  const [profileAnnualLeaveDays, setProfileAnnualLeaveDays] = useState(12);
+  const [profileCarryOverDays, setProfileCarryOverDays] = useState(0);
   const [profilePassword, setProfilePassword] = useState('');
   const [profileConfirmPassword, setProfileConfirmPassword] = useState('');
   const [profileSaving, setProfileSaving] = useState(false);
@@ -77,6 +85,9 @@ function App() {
       setProfileFullName(currentUser.fullName);
       setProfileEmail(currentUser.email);
       setProfilePhone(currentUser.phone || '');
+      setProfileAvatarPath(currentUser.avatarPath || '');
+      setProfileAnnualLeaveDays(currentUser.annualLeaveDays || 12);
+      setProfileCarryOverDays(currentUser.carryOverDays || 0);
       setProfilePassword('');
       setProfileConfirmPassword('');
       setProfileError(null);
@@ -105,7 +116,10 @@ function App() {
       const updateData: any = {
         fullName: profileFullName,
         email: profileEmail,
-        phone: profilePhone
+        phone: profilePhone,
+        avatarPath: profileAvatarPath,
+        annualLeaveDays: Number(profileAnnualLeaveDays),
+        carryOverDays: Number(profileCarryOverDays)
       };
 
       if (profilePassword) {
@@ -119,7 +133,10 @@ function App() {
         ...currentUser,
         fullName: updatedUser.fullName,
         email: updatedUser.email,
-        phone: updatedUser.phone
+        phone: updatedUser.phone,
+        avatarPath: updatedUser.avatarPath,
+        annualLeaveDays: updatedUser.annualLeaveDays,
+        carryOverDays: updatedUser.carryOverDays
       };
 
       localStorage.setItem('aron_pm_user', JSON.stringify(updatedCurrentUser));
@@ -195,7 +212,7 @@ function App() {
   };
 
   // Tab selections
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'gantt' | 'ricefw' | 'approvals' | 'costs' | 'environments' | 'team' | 'trips' | 'projects' | 'settings' | 'users' | 'documents' | 'masterdata'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'gantt' | 'subtasks' | 'ricefw' | 'approvals' | 'costs' | 'environments' | 'team' | 'trips' | 'projects' | 'settings' | 'users' | 'documents' | 'masterdata' | 'leaves' | 'travelpolicy'>('dashboard');
 
   useEffect(() => {
     loadSystemSettings();
@@ -295,7 +312,7 @@ function App() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-dark-950 px-4 relative overflow-hidden">
         {/* Background gradient lights */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-500-10 rounded-full blur-[100px] pointer-events-none"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none"></div>
 
         <div className="w-full max-w-md space-y-8 glass-panel p-8 rounded-3xl border border-dark-800 shadow-2xl relative z-10 animate-slide-up">
@@ -514,7 +531,7 @@ function App() {
   return (
     <div className="min-h-screen bg-dark-950 flex flex-col">
       {/* Top Navigation */}
-      <header className="border-b border-dark-850 bg-dark-900/60 backdrop-blur-md sticky top-0 z-30 px-6 py-4 flex justify-between items-center">
+      <header className="border-b border-dark-850 bg-dark-900-60 backdrop-blur-md sticky top-0 z-30 px-6 py-4 flex justify-between items-center">
         <div 
           onClick={() => { setActiveProject(null); setActiveTab('dashboard'); }}
           className="flex items-center gap-3 cursor-pointer hover:opacity-85 transition-opacity"
@@ -569,6 +586,14 @@ function App() {
 
           {/* Profile Card */}
           <div className="flex items-center gap-3 pl-4 border-l border-dark-800">
+            {currentUser.avatarPath && (
+              <img 
+                src={currentUser.avatarPath} 
+                alt="Avatar" 
+                className="w-8 h-8 rounded-full border border-dark-750 object-cover cursor-pointer hover:scale-105 transition-transform" 
+                onClick={handleOpenProfile}
+              />
+            )}
             <button 
               onClick={handleOpenProfile}
               className="text-right hover:opacity-80 transition-opacity flex flex-col items-end"
@@ -591,17 +616,28 @@ function App() {
       </header>
 
       {/* Main Container */}
-      <div className="flex-1 flex px-6 py-6 gap-6 max-w-7xl w-full mx-auto">
+      <div className={`flex-1 flex px-4 md:px-6 py-6 gap-4 w-full transition-all duration-300 ${activeTab === 'gantt' || isSidebarCollapsed ? 'max-w-none' : 'max-w-7xl mx-auto'}`}>
         {/* Left Sidebar Menu */}
-        <aside className="w-60 shrink-0 space-y-2">
+        <aside className={`${isSidebarCollapsed ? 'w-14' : 'w-60'} shrink-0 space-y-2 transition-all duration-300 relative`}>
+          {/* Toggle Sidebar Collapse Button */}
+          <button
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-[11px] font-semibold text-dark-400 hover:text-white hover:bg-dark-900/60 transition-all border border-dark-800/50 mb-2"
+            title={isSidebarCollapsed ? 'Mở rộng Sidebar' : 'Thu gọn Sidebar'}
+          >
+            <span>{isSidebarCollapsed ? '▶' : '◀ Thu Gọn Menu'}</span>
+            {!isSidebarCollapsed && <span className="text-[10px] text-brand-400 font-mono">Full Width Mode</span>}
+          </button>
+
           {/* Home Dashboard Link (Always available) */}
           <button 
             onClick={() => { setActiveProject(null); setActiveTab('dashboard'); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-              activeTab === 'dashboard' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+            className={`w-full flex items-center gap-3 ${isSidebarCollapsed ? 'justify-center px-2' : 'px-4'} py-3 rounded-xl text-xs font-semibold transition-all ${
+              activeTab === 'dashboard' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
             }`}
+            title="Dashboard & Dự Án"
           >
-            <Sliders size={16} /> Dashboard & Dự Án
+            <Sliders size={16} /> {!isSidebarCollapsed && 'Dashboard & Dự Án'}
           </button>
 
           {activeProject ? (
@@ -610,18 +646,27 @@ function App() {
                 <button 
                   onClick={() => setActiveTab('gantt')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                    activeTab === 'gantt' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                    activeTab === 'gantt' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                   }`}
                 >
-                  <Calendar size={16} /> Kế hoạch & Sơ đồ Gán
+                  <Calendar size={16} /> Kế hoạch dự án - Master Plan
                 </button>
               )}
+
+              <button 
+                onClick={() => setActiveTab('subtasks')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                  activeTab === 'subtasks' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
+                }`}
+              >
+                <CheckSquare size={16} /> Nhiệm Vụ Sub-Tasks
+              </button>
               
               {hasPermission(currentUser, 'RICEFW') && (
                 <button 
                   onClick={() => setActiveTab('ricefw')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                    activeTab === 'ricefw' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                    activeTab === 'ricefw' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                   }`}
                 >
                   <FileText size={16} /> Quản lý RICEFW (Oracle)
@@ -632,7 +677,7 @@ function App() {
                 <button 
                   onClick={() => setActiveTab('team')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                    activeTab === 'team' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                    activeTab === 'team' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                   }`}
                 >
                   <Users size={16} /> Đội Ngũ Dự Án
@@ -643,18 +688,27 @@ function App() {
                 <button 
                   onClick={() => setActiveTab('trips')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                    activeTab === 'trips' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                    activeTab === 'trips' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                   }`}
                 >
                   <Plane size={16} /> Công Tác & Tạm Ứng
                 </button>
               )}
 
+              <button 
+                onClick={() => setActiveTab('leaves')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                  activeTab === 'leaves' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
+                }`}
+              >
+                <Calendar size={16} /> Quản Lý Nghỉ Phép
+              </button>
+
               {hasPermission(currentUser, 'Approvals') && (
                 <button 
                   onClick={() => setActiveTab('approvals')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                    activeTab === 'approvals' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                    activeTab === 'approvals' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                   }`}
                 >
                   <CheckSquare size={16} /> Timesheets & Phê Duyệt
@@ -665,7 +719,7 @@ function App() {
                 <button 
                   onClick={() => setActiveTab('environments')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                    activeTab === 'environments' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                    activeTab === 'environments' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                   }`}
                 >
                   <Server size={16} /> Môi trường Oracle Instance
@@ -676,7 +730,7 @@ function App() {
                 <button 
                   onClick={() => setActiveTab('documents')}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                    activeTab === 'documents' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                    activeTab === 'documents' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                   }`}
                 >
                   <Folder size={16} /> Tài Liệu OneDrive/SharePoint
@@ -688,7 +742,7 @@ function App() {
                   <button 
                     onClick={() => setActiveTab('costs')}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                      activeTab === 'costs' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                      activeTab === 'costs' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                     }`}
                   >
                     <DollarSign size={16} /> Dashboard Chi Phí & Giá Cost
@@ -706,7 +760,7 @@ function App() {
             <button 
               onClick={() => setActiveTab('projects')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                activeTab === 'projects' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                activeTab === 'projects' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
               }`}
             >
               <Briefcase size={16} /> Khởi Tạo & Quản Lý Dự Án
@@ -716,7 +770,7 @@ function App() {
               <button 
                 onClick={() => setActiveTab('users')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'users' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                  activeTab === 'users' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                 }`}
               >
                 <Users size={16} /> Quản Lý Người Dùng
@@ -727,7 +781,7 @@ function App() {
               <button 
                 onClick={() => setActiveTab('masterdata')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'masterdata' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                  activeTab === 'masterdata' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                 }`}
               >
                 <Server size={16} /> Master Data & RBAC
@@ -738,10 +792,21 @@ function App() {
               <button 
                 onClick={() => setActiveTab('settings')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                  activeTab === 'settings' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/10' : 'text-dark-400 hover:bg-dark-900/60 hover:text-white'
+                  activeTab === 'settings' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
                 }`}
               >
                 <Sliders size={16} /> Thiết Lập Hệ Thống
+              </button>
+            )}
+
+            {hasPermission(currentUser, 'Settings') && (
+              <button 
+                onClick={() => setActiveTab('travelpolicy')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                  activeTab === 'travelpolicy' ? 'bg-brand-600 text-white shadow-lg shadow-brand-600-10' : 'text-dark-400 hover:bg-dark-900-60 hover:text-white'
+                }`}
+              >
+                <ClipboardIcon size={16} /> Định Mức Công Tác Phí
               </button>
             )}
           </div>
@@ -842,7 +907,7 @@ function App() {
                             />
                             <div className="flex-1 space-y-1">
                               <p className={`text-xs font-semibold leading-tight ${task.completed ? 'text-dark-500 line-through' : 'text-white'}`}>{task.name}</p>
-                              <span className="inline-block text-[9px] font-bold text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded border border-brand-500/5">
+                              <span className="inline-block text-[9px] font-bold text-brand-400 bg-brand-500-10 px-2 py-0.5 rounded border border-brand-500/5">
                                 {task.project}
                               </span>
                             </div>
@@ -981,9 +1046,9 @@ function App() {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {currentUser.projectRoles.map((pr) => (
-                      <div key={pr.projectId} className="bg-dark-900 p-5 rounded-2xl border border-dark-850 flex flex-col justify-between space-y-4 hover:border-brand-500/20 transition-all shadow-sm">
+                      <div key={pr.projectId} className="bg-dark-900 p-5 rounded-2xl border border-dark-850 flex flex-col justify-between space-y-4 hover:border-brand-500-20 transition-all shadow-sm">
                         <div className="space-y-2">
-                          <span className="text-[9px] font-bold font-mono text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded border border-brand-500/10">
+                          <span className="text-[9px] font-bold font-mono text-brand-400 bg-brand-500-10 px-2 py-0.5 rounded border border-brand-500/10">
                             {pr.projectCode}
                           </span>
                           <h4 className="text-sm font-bold text-white mt-1 leading-snug">{pr.projectName}</h4>
@@ -1031,11 +1096,17 @@ function App() {
 
             {activeTab === 'masterdata' && <MasterDataManager currentUserGlobalRole={currentUser?.globalRole} />}
 
-            {activeTab !== 'dashboard' && activeTab !== 'projects' && activeTab !== 'settings' && activeTab !== 'users' && activeTab !== 'masterdata' && (
+            {activeTab === 'leaves' && <LeaveManagement />}
+
+            {activeTab === 'travelpolicy' && <TravelPolicyConfig />}
+
+            {activeTab !== 'dashboard' && activeTab !== 'projects' && activeTab !== 'settings' && activeTab !== 'users' && activeTab !== 'masterdata' && activeTab !== 'leaves' && activeTab !== 'travelpolicy' && (
               activeProject ? (
                 <>
                   {activeTab === 'gantt' && <GanttChart projectId={activeProject.projectId} userRole={activeProject.roleCode} />}
                   
+                  {activeTab === 'subtasks' && <SubTaskManager projectId={activeProject.projectId} userRole={activeProject.roleCode} currentUser={currentUser} />}
+
                   {activeTab === 'ricefw' && <RicefwTracker projectId={activeProject.projectId} userRole={activeProject.roleCode} />}
                   
                   {activeTab === 'team' && <TeamConfigurator projectId={activeProject.projectId} userRole={activeProject.roleCode} />}
@@ -1046,45 +1117,11 @@ function App() {
 
                   {activeTab === 'approvals' && <ApprovalList projectId={activeProject.projectId} userRole={activeProject.roleCode} />}
                   
-                  {activeTab === 'environments' && (
-                    <div className="space-y-6">
-                      <div className="bg-dark-900/40 p-4 rounded-xl border border-dark-800">
-                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                          <Server className="text-brand-500" /> Quản Lý Phiên Bản & Môi Trường (Oracle Instances)
-                        </h2>
-                        <p className="text-xs text-dark-400 mt-1">Theo dõi các môi trường phát triển, kiểm thử tích hợp (CRP/SIT) và UAT</p>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-dark-900/60 p-5 rounded-xl border border-dark-800 space-y-2">
-                          <span className="text-[10px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold">HOẠT ĐỘNG (ACTIVE)</span>
-                          <h3 className="text-md font-bold text-white">Môi trường DEV1</h3>
-                          <p className="text-xs text-dark-400">Phiên bản: Fusion Cloud 24C</p>
-                          <p className="text-xs text-dark-400">Mô tả: Môi trường cấu hình & test nội bộ của ARON Tech Team</p>
-                          <p className="text-[10px] text-dark-500 pt-2 border-t border-dark-800">Cập nhật lúc: 14/07/2026</p>
-                        </div>
-
-                        <div className="bg-dark-900/60 p-5 rounded-xl border border-dark-800 space-y-2">
-                          <span className="text-[10px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold">HOẠT ĐỘNG (ACTIVE)</span>
-                          <h3 className="text-md font-bold text-white">Môi trường TEST1</h3>
-                          <p className="text-xs text-dark-400">Phiên bản: Fusion Cloud 24C</p>
-                          <p className="text-xs text-dark-400">Mô tả: Môi trường phục vụ các đợt kiểm thử tích hợp CRP & SIT</p>
-                          <p className="text-[10px] text-dark-500 pt-2 border-t border-dark-800">Cập nhật lúc: 14/07/2026</p>
-                        </div>
-
-                        <div className="bg-dark-900/60 p-5 rounded-xl border border-dark-800/80 border-dashed space-y-2 opacity-60">
-                          <span className="text-[10px] bg-dark-800 border border-dark-700 text-dark-400 px-2 py-0.5 rounded font-bold">CHƯA KHỞI TẠO</span>
-                          <h3 className="text-md font-bold text-dark-300">Môi trường UAT</h3>
-                          <p className="text-xs text-dark-400">Phiên bản: Fusion Cloud 24C</p>
-                          <p className="text-xs text-dark-400">Mô tả: Dành cho khách hàng kiểm thử chấp nhận (UAT) sau khi hoàn thành SIT</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  {activeTab === 'environments' && <OracleEnvironmentManager projectId={activeProject.projectId} userRole={activeProject.roleCode} />}
 
                   {activeTab === 'costs' && (
                     <div className="space-y-6">
-                      <div className="bg-dark-900/40 p-4 rounded-xl border border-dark-800">
+                      <div className="bg-dark-900-40 p-4 rounded-xl border border-dark-800">
                         <h2 className="text-lg font-bold text-white flex items-center gap-2">
                           <DollarSign className="text-emerald-500" /> Dashboard Quản Lý Giá Cost & Tài Chính Dự Án
                         </h2>
@@ -1095,15 +1132,15 @@ function App() {
                       {activeProject.roleCode === 'PM' || activeProject.roleCode === 'DIRECTOR' || currentUser.globalRole === 'SYSTEM_ADMIN' ? (
                         <div className="space-y-6">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="bg-dark-900/60 p-5 rounded-xl border border-dark-800 text-xs">
+                            <div className="bg-dark-900-60 p-5 rounded-xl border border-dark-800 text-xs">
                               <p className="text-dark-400">Tổng Chi Phí Nhân Sự Ghi Nhận (Actual Cost)</p>
                               <p className="text-xl font-bold text-white mt-1">45,800,000 VNĐ</p>
                             </div>
-                            <div className="bg-dark-900/60 p-5 rounded-xl border border-dark-800 text-xs">
+                            <div className="bg-dark-900-60 p-5 rounded-xl border border-dark-800 text-xs">
                               <p className="text-dark-400">Chi Phí Tạm Ứng Công Tác (Advance Claims)</p>
                               <p className="text-xl font-bold text-emerald-400 mt-1">2,000,000 VNĐ</p>
                             </div>
-                            <div className="bg-dark-900/60 p-5 rounded-xl border border-dark-800 text-xs">
+                            <div className="bg-dark-900-60 p-5 rounded-xl border border-dark-800 text-xs">
                               <p className="text-dark-400">Ngân Sách Dự Kiến Dự Án (Planned Budget)</p>
                               <p className="text-xl font-bold text-brand-400 mt-1">1,200,000,000 VNĐ</p>
                             </div>
@@ -1169,7 +1206,7 @@ function App() {
           </div>
         </main>
       {showProfileModal && (
-        <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-dark-950-80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-2xl bg-dark-900 border border-dark-800 p-6 rounded-2xl shadow-2xl space-y-6 animate-slide-up text-left">
             <div className="flex justify-between items-center border-b border-dark-850 pb-3">
               <h3 className="text-md font-bold text-white flex items-center gap-2">
@@ -1235,6 +1272,48 @@ function App() {
                   />
                 </div>
 
+                <div className="space-y-1">
+                  <label className="text-xs text-dark-300 font-semibold flex items-center justify-between">
+                    <span>Ảnh Đại Diện (URL ảnh):</span>
+                    {profileAvatarPath && (
+                      <img src={profileAvatarPath} alt="Avatar Preview" className="w-7 h-7 rounded-full border border-dark-850 object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    )}
+                  </label>
+                  <input 
+                    type="text" 
+                    value={profileAvatarPath} 
+                    onChange={e => setProfileAvatarPath(e.target.value)} 
+                    placeholder="Nhập link ảnh (URL)..."
+                    className="w-full bg-dark-950 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs text-dark-300 font-semibold">Tồn ngày phép năm:</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      max="30"
+                      value={profileAnnualLeaveDays} 
+                      onChange={e => setProfileAnnualLeaveDays(Number(e.target.value) || 0)} 
+                      className="w-full bg-dark-950 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-dark-300 font-semibold">Phép năm ngoái (Carry-over):</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      max="5"
+                      value={profileCarryOverDays} 
+                      onChange={e => setProfileCarryOverDays(Number(e.target.value) || 0)} 
+                      className="w-full bg-dark-950 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+                </div>
+
                 <div className="border-t border-dark-850 pt-4 space-y-3">
                   <div className="space-y-1">
                     <label className="text-xs text-dark-300 font-semibold">Mật khẩu mới (Để trống nếu không đổi):</label>
@@ -1281,7 +1360,7 @@ function App() {
                           onClick={() => setActiveTheme(t.id)}
                           className={`p-3 rounded-xl border text-left flex items-center gap-2.5 transition-all ${
                             activeTheme === t.id 
-                              ? 'bg-brand-500/10 border-brand-500' 
+                              ? 'bg-brand-500-10 border-brand-500' 
                               : 'bg-dark-950 border-dark-850 hover:border-dark-700'
                           }`}
                         >
@@ -1309,7 +1388,7 @@ function App() {
                           onClick={() => setActiveMode(m.id)}
                           className={`p-3 rounded-xl border text-center font-semibold text-xs transition-all ${
                             activeMode === m.id 
-                              ? 'bg-brand-500/10 border-brand-500' 
+                              ? 'bg-brand-500-10 border-brand-500' 
                               : 'bg-dark-950 border-dark-850 hover:border-dark-700'
                           }`}
                         >

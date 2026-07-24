@@ -25,7 +25,23 @@ namespace AronErpPm.Api.Models
 
         public string? Description { get; set; }
 
-        public int TaskLevel { get; set; } // 1, 2, or 3
+        public int TaskLevel { get; set; } // 1, 2, 3, or 4
+
+        [MaxLength(50)]
+        public string? AIMCode { get; set; } // e.g. RD.011, BP.080, BR.100, TE.040
+
+        [MaxLength(50)]
+        public string? Module { get; set; } // e.g. PO, AP, GL, AR, INV, OM, RICEFW
+
+        [MaxLength(100)]
+        public string? KeyUser { get; set; }
+
+        [MaxLength(50)]
+        public string? Party { get; set; }
+
+        [Required]
+        [MaxLength(30)]
+        public string VisibilityScope { get; set; } = "PUBLIC"; // PUBLIC, VENDOR_INTERNAL, PRIVATE_TEAM
 
         public int? ParentTaskId { get; set; }
         [ForeignKey("ParentTaskId")]
@@ -60,11 +76,105 @@ namespace AronErpPm.Api.Models
 
         public bool IsVisibleToAll { get; set; } = true; // Visibility option to hide tasks from others
 
+        [Column("is_manual_progress")]
+        public bool IsManualProgress { get; set; } = false;
+
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
         public DateTime? UpdatedDate { get; set; }
 
         public ICollection<Task> SubTasks { get; set; } = new List<Task>();
+    }
+
+    // 5. Sub-Task Management (SharePoint Task Model linked to Activity Task)
+    [Table("sub_tasks")]
+    public class SubTask
+    {
+        [Key]
+        [Column("sub_task_id")]
+        public int SubTaskId { get; set; }
+
+        [Column("project_id")]
+        public int ProjectId { get; set; }
+        [ForeignKey("ProjectId")]
+        public Project? Project { get; set; }
+
+        [Column("activity_id")]
+        public int ActivityId { get; set; }
+        [ForeignKey("ActivityId")]
+        public Task? Activity { get; set; }
+
+        [Column("created_by_user_id")]
+        public int CreatedByUserId { get; set; }
+        [ForeignKey("CreatedByUserId")]
+        public User? CreatedByUser { get; set; }
+
+        [Column("category")]
+        [MaxLength(50)]
+        public string? Category { get; set; }
+
+        [Column("module")]
+        [MaxLength(50)]
+        public string? Module { get; set; }
+
+        [Column("doc_code")]
+        [MaxLength(50)]
+        public string? DocCode { get; set; }
+
+        [Column("task_name")]
+        [Required]
+        [MaxLength(250)]
+        public string TaskName { get; set; } = string.Empty;
+
+        [Column("description")]
+        public string? Description { get; set; }
+
+        [Column("assignee_member_id")]
+        public int? AssigneeMemberId { get; set; }
+        [ForeignKey("AssigneeMemberId")]
+        public ProjectMember? AssigneeMember { get; set; }
+
+        [Column("reviewer_member_id")]
+        public int? ReviewerMemberId { get; set; }
+        [ForeignKey("ReviewerMemberId")]
+        public ProjectMember? ReviewerMember { get; set; }
+
+        [Column("key_user")]
+        [MaxLength(100)]
+        public string? KeyUser { get; set; }
+
+        [Column("party")]
+        [MaxLength(50)]
+        public string? Party { get; set; }
+
+        [Column("start_date")]
+        public DateTime? StartDate { get; set; }
+
+        [Column("end_date")]
+        public DateTime? EndDate { get; set; }
+
+        [Column("deadline")]
+        public DateTime? Deadline { get; set; }
+
+        [Column("status")]
+        [MaxLength(50)]
+        public string Status { get; set; } = "1. Mới tạo";
+
+        [Column("progress_percent", TypeName = "decimal(5,2)")]
+        public decimal ProgressPercent { get; set; } = 0.00m;
+
+        [Column("weight")]
+        public int Weight { get; set; } = 1;
+
+        [Column("attachment_url")]
+        [MaxLength(500)]
+        public string? AttachmentUrl { get; set; }
+
+        [Column("created_date")]
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+
+        [Column("updated_date")]
+        public DateTime? UpdatedDate { get; set; }
     }
 
     // 2. Task Dependencies (Predecessors & Successors)

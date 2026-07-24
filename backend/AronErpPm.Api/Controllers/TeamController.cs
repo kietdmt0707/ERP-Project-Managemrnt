@@ -33,6 +33,10 @@ namespace AronErpPm.Api.Controllers
                 .Include(t => t.FunctionalTeams)
                 .ToListAsync();
 
+            var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == "GlobalRole")?.Value;
+            var projectRoleClaim = User.Claims.FirstOrDefault(c => c.Type == $"ProjectRole_{projectId}")?.Value;
+            var isAuthorizedCost = globalRoleClaim == "SYSTEM_ADMIN" || globalRoleClaim == "DIRECTOR" || globalRoleClaim == "PM" || projectRoleClaim == "PM" || projectRoleClaim == "PC";
+
             var members = await _context.ProjectMembers
                 .Where(pm => pm.ProjectId == projectId)
                 .Include(pm => pm.User)
@@ -53,7 +57,7 @@ namespace AronErpPm.Api.Controllers
                     Phone = pm.User != null ? pm.User.Phone : "",
                     Title = pm.User != null ? pm.User.Title : "",
                     AvatarPath = pm.User != null ? pm.User.AvatarPath : "",
-                    DailyRate = pm.DailyRate, // Returned for PM / Admin display checking
+                    DailyRate = isAuthorizedCost ? pm.DailyRate : null,
                     pm.IsActive
                 }).ToListAsync();
 
@@ -207,6 +211,56 @@ namespace AronErpPm.Api.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(member);
+        }
+
+        // DELETE: api/team/member/{projectMemberId}
+        [HttpDelete("member/{projectMemberId}")]
+        public async Task<IActionResult> DeleteMember(int projectMemberId)
+        {
+            var member = await _context.ProjectMembers.FindAsync(projectMemberId);
+            if (member == null) return NotFound("Không tìm thấy thành viên dự án.");
+
+            var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role || c.Type == "role")?.Value;
+            var projectRoleClaim = User.Claims.FirstOrDefault(c => c.Type == $"ProjectRole_{member.ProjectId}")?.Value;
+
+            var hasAccess = globalRoleClaim == "SYSTEM_ADMIN" || projectRoleClaim == "PM" || projectRoleClaim == "PC";
+            if (!hasAccess)
+            {
+                return Forbid("Chỉ PM, PC hoặc Admin mới có quyền xóa thành viên khỏi dự án.");
+            }
+
+            _context.ProjectMembers.Remove(member);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Đã xóa thành viên khỏi đội dự án thành công." });
+        }
+
+        // DELETE: api/team/functional/{functionalTeamId}
+        [HttpDelete("functional/{functionalTeamId}")]
+        public async Task<IActionResult> DeleteFunctionalTeam(int functionalTeamId)
+        {
+            var ft = await _context.FunctionalTeams.Include(f => f.Team).FirstOrDefaultAsync(f => f.FunctionalTeamId == functionalTeamId);
+            if (ft == null) return NotFound("Không tìm thấy đội chức năng.");
+
+            var projectId = ft.Team?.ProjectId ?? 0;
+            var globalRoleClaim = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role || c.Type == "role")?.Value;
+            var projectRoleClaim = User.Claims.FirstOrDefault(c => c.Type == $"ProjectRole_{projectId}")?.Value;
+
+            var hasAccess = globalRoleClaim == "SYSTEM_ADMIN" || projectRoleClaim == "PM" || projectRoleClaim == "PC";
+            if (!hasAccess)
+            {
+                return Forbid("Chỉ PM, PC hoặc Admin mới có quyền xóa đội chức năng.");
+            }
+
+            // Unassign members from this functional team
+            var members = await _context.ProjectMembers.Where(pm => pm.FunctionalTeamId == functionalTeamId).ToListAsync();
+            foreach (var m in members)
+            {
+                m.FunctionalTeamId = null;
+            }
+
+            _context.FunctionalTeams.Remove(ft);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Đã xóa đội chức năng thành công." });
         }
 
         private string HashPassword(string password)

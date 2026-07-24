@@ -28,6 +28,9 @@ export interface AuthResponse {
   fullName: string;
   email: string;
   phone?: string;
+  avatarPath?: string;
+  annualLeaveDays?: number;
+  carryOverDays?: number;
   globalRole: string;
   permissionsJson?: string;
   projectRoles: UserRole[];
@@ -127,8 +130,45 @@ export interface TaskNode {
   progressPercent: number;
   status: string;
   isVisibleToAll: boolean;
+  visibilityScope: string | null;
+  aimCode: string | null;
+  module?: string | null;
+  keyUser?: string | null;
+  party?: string | null;
+  isManualProgress?: boolean;
+  subTaskCount?: number;
   subTasks: TaskNode[];
   predecessorTaskIds: number[];
+}
+
+export interface SubTaskDto {
+  subTaskId?: number;
+  projectId: number;
+  activityId: number;
+  activityCode?: string;
+  activityName?: string;
+  createdByUserId?: number;
+  createdByName?: string;
+  category?: string;
+  module?: string;
+  docCode?: string;
+  taskName: string;
+  description?: string;
+  assigneeMemberId?: number;
+  assigneeName?: string;
+  reviewerMemberId?: number;
+  reviewerName?: string;
+  keyUser?: string;
+  party?: string;
+  startDate?: string;
+  endDate?: string;
+  deadline?: string;
+  status?: string;
+  progressPercent?: number;
+  weight?: number;
+  attachmentUrl?: string;
+  createdDate?: string;
+  updatedDate?: string;
 }
 
 export const taskService = {
@@ -153,6 +193,86 @@ export const taskService = {
       throw new Error(errText || 'Lưu task thất bại.');
     }
     return response.json();
+  },
+
+  async toggleProgressMode(taskId: number, isManualProgress: boolean, manualProgressPercent?: number): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/task/${taskId}/progress-mode`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ isManualProgress, manualProgressPercent })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Lỗi khi thay đổi chế độ tiến độ.');
+    }
+    return response.json();
+  },
+
+  async deleteTask(taskId: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/task/${taskId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+
+    if (!response.ok) {
+      const errObj = await response.json().catch(() => null);
+      throw new Error(errObj?.message || 'Xóa Task thất bại.');
+    }
+  }
+};
+
+export const subTaskService = {
+  async getSubTasks(projectId: number, activityId?: number): Promise<SubTaskDto[]> {
+    let url = `${API_BASE_URL}/subtask?projectId=${projectId}`;
+    if (activityId) url += `&activityId=${activityId}`;
+
+    const response = await fetch(url, {
+      headers: getHeaders()
+    });
+
+    if (!response.ok) throw new Error('Không thể tải danh sách Sub-Tasks.');
+    return response.json();
+  },
+
+  async createSubTask(dto: Partial<SubTaskDto>): Promise<SubTaskDto> {
+    const response = await fetch(`${API_BASE_URL}/subtask`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(dto)
+    });
+
+    if (!response.ok) {
+      const errObj = await response.json().catch(() => null);
+      throw new Error(errObj?.message || 'Tạo Sub-Task thất bại.');
+    }
+    return response.json();
+  },
+
+  async updateSubTask(subTaskId: number, dto: Partial<SubTaskDto>): Promise<SubTaskDto> {
+    const response = await fetch(`${API_BASE_URL}/subtask/${subTaskId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(dto)
+    });
+
+    if (!response.ok) {
+      const errObj = await response.json().catch(() => null);
+      throw new Error(errObj?.message || 'Cập nhật Sub-Task thất bại.');
+    }
+    return response.json();
+  },
+
+  async deleteSubTask(subTaskId: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/subtask/${subTaskId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+
+    if (!response.ok) {
+      const errObj = await response.json().catch(() => null);
+      throw new Error(errObj?.message || 'Xóa Sub-Task thất bại.');
+    }
   }
 };
 
@@ -291,6 +411,7 @@ export interface BusinessTripDto {
   members?: Array<{
     tripMemberId: number;
     projectMemberId: number;
+    isGroupLeader: boolean;
     fullName: string;
     email: string;
     phone: string;
@@ -357,6 +478,13 @@ export const projectService = {
     }
     return response.json();
   },
+  async getProjectById(projectId: number): Promise<ProjectDto> {
+    const response = await fetch(`${API_BASE_URL}/project/${projectId}`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải thông tin dự án.');
+    return response.json();
+  },
   async updateProject(projectId: number, project: ProjectDto): Promise<ProjectDto> {
     const response = await fetch(`${API_BASE_URL}/project/${projectId}`, {
       method: 'PUT',
@@ -366,6 +494,18 @@ export const projectService = {
     if (!response.ok) {
       const errText = await response.text();
       throw new Error(errText || 'Cập nhật cấu hình dự án thất bại.');
+    }
+    return response.json();
+  },
+  async updateSharepointLink(projectId: number, link: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/project/${projectId}/sharepoint-link`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ link })
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Cập nhật liên kết dự án thất bại.');
     }
     return response.json();
   },
@@ -391,8 +531,34 @@ export const projectService = {
       throw new Error(errText || 'Xóa dự án thất bại.');
     }
     return response.json();
+  },
+  async getCalendarSettings(projectId: number): Promise<ProjectCalendarSettings> {
+    const response = await fetch(`${API_BASE_URL}/project/${projectId}/calendar`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải cấu hình lịch dự án.');
+    return response.json();
+  },
+  async saveCalendarSettings(settings: ProjectCalendarSettings): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/project/${settings.projectId}/calendar`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(settings)
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Cập nhật lịch làm việc dự án thất bại.');
+    }
+    return response.json();
   }
 };
+
+export interface ProjectCalendarSettings {
+  projectId: number;
+  workDaysOfWeek: string; // e.g. "MON,TUE,WED,THU,FRI"
+  standardHoursPerDay: number;
+  holidaysJson: string; // JSON string array e.g. '["2026-01-01","2026-04-30"]'
+}
 
 export const teamService = {
   async getTeams(projectId: number): Promise<{ teams: any[], members: TeamMemberDto[], roles: any[], functionalTeams: any[] }> {
@@ -429,6 +595,26 @@ export const teamService = {
       throw new Error(errText || 'Gán/tạo thành viên thất bại.');
     }
     return response.json();
+  },
+  async deleteMember(projectMemberId: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/team/member/${projectMemberId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Xóa thành viên thất bại.');
+    }
+  },
+  async deleteFunctionalTeam(functionalTeamId: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/team/functional/${functionalTeamId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Xóa đội chức năng thất bại.');
+    }
   }
 };
 
@@ -449,20 +635,233 @@ export const businessTripService = {
     if (!response.ok) throw new Error('Tạo lịch công tác thất bại.');
     return response.json();
   },
-  async addTripMember(tripId: number, projectMemberId: number): Promise<any> {
+  async addTripMember(tripId: number, payload: { projectMemberId: number, isGroupLeader: boolean }): Promise<any> {
     const response = await fetch(`${API_BASE_URL}/businesstrip/${tripId}/member`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify(projectMemberId)
+      body: JSON.stringify(payload)
     });
+    if (!response.ok) throw new Error('Thêm thành viên thất bại.');
     return response.json();
   },
-  async addTripExpense(tripId: number, expense: { expenseType: string, amountPlanned: number, amountActual: number, notes?: string }): Promise<any> {
+  async addTripExpense(tripId: number, expense: { expenseType: string, amountPlanned: number, amountActual: number, notes?: string, claimantMemberId?: number, justification?: string }): Promise<any> {
     const response = await fetch(`${API_BASE_URL}/businesstrip/${tripId}/expense`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(expense)
     });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw {
+        status: response.status,
+        message: errorData.message || 'Thêm chi phí thất bại.',
+        isSoftWarning: errorData.isSoftWarning,
+        limitAmount: errorData.limitAmount,
+        overAmount: errorData.overAmount
+      };
+    }
+    return response.json();
+  }
+};
+
+export interface TravelRegion {
+  regionId?: number;
+  regionCode: string;
+  regionName: string;
+  provincesIncluded: string;
+}
+
+export interface TravelExpensePolicy {
+  policyId: number;
+  projectId?: number;
+  regionCode: string;
+  roleCode: string;
+  perDiemAllowance: number;
+  maxHotelRate: number;
+  transportAllowance?: number;
+  pocketAllowance?: number;
+  currency: string;
+  flightTicketClass?: string;
+  isActive: boolean;
+  updatedAt: string;
+}
+
+export const travelPolicyService = {
+  async getPolicies(projectId?: number): Promise<TravelExpensePolicy[]> {
+    const url = projectId ? `${API_BASE_URL}/travelpolicy?projectId=${projectId}` : `${API_BASE_URL}/travelpolicy`;
+    const response = await fetch(url, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải quy định công tác phí.');
+    return response.json();
+  },
+  async getRegions(): Promise<TravelRegion[]> {
+    const response = await fetch(`${API_BASE_URL}/travelpolicy/regions`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải danh sách vùng địa lý.');
+    return response.json();
+  },
+  async createRegion(region: TravelRegion): Promise<TravelRegion> {
+    const response = await fetch(`${API_BASE_URL}/travelpolicy/region`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(region)
+    });
+    if (!response.ok) throw new Error('Không thể lưu vùng địa lý.');
+    return response.json();
+  },
+  async createPolicy(policy: Partial<TravelExpensePolicy>): Promise<TravelExpensePolicy> {
+    const response = await fetch(`${API_BASE_URL}/travelpolicy`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(policy)
+    });
+    if (!response.ok) throw new Error('Không thể tạo quy định định mức.');
+    return response.json();
+  },
+  async updatePolicy(id: number, policy: Partial<TravelExpensePolicy>): Promise<TravelExpensePolicy> {
+    const response = await fetch(`${API_BASE_URL}/travelpolicy/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(policy)
+    });
+    if (!response.ok) throw new Error('Không thể cập nhật quy định công tác phí.');
+    return response.json();
+  },
+  async deletePolicy(id: number): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/travelpolicy/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể xóa quy định định mức.');
+    return response.json();
+  },
+  async clonePolicies(inflationPercentage: number): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/travelpolicy/clone`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ inflationPercentage })
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || 'Không thể nhân bản quy định.');
+    }
+    return response.json();
+  }
+};
+
+export interface TimesheetItem {
+  timesheetId: number;
+  projectId: number;
+  memberId: number;
+  memberName: string;
+  taskId?: number;
+  taskCode: string;
+  taskTitle: string;
+  workDate: string;
+  hoursWorked: number;
+  description: string;
+  status: string;
+  approvedByName?: string;
+  approvalDate?: string;
+  createdDate: string;
+}
+
+export const timesheetService = {
+  async getTimesheets(projectId: number): Promise<TimesheetItem[]> {
+    const response = await fetch(`${API_BASE_URL}/timesheet?projectId=${projectId}`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải báo cáo ngày công.');
+    return response.json();
+  },
+  async createTimesheet(data: { projectId: number; taskId?: number; workDate: string; hoursWorked: number; description?: string }): Promise<TimesheetItem> {
+    const response = await fetch(`${API_BASE_URL}/timesheet`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Lưu khai báo ngày công thất bại.');
+    }
+    return response.json();
+  },
+  async createBulkTimesheets(items: Array<{ projectId: number; taskId?: number; workDate: string; hoursWorked: number; description?: string }>): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/timesheet/bulk`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(items)
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Lưu ma trận tuần thất bại.');
+    }
+    return response.json();
+  },
+  async updateTimesheet(id: number, data: Partial<TimesheetItem>): Promise<TimesheetItem> {
+    const response = await fetch(`${API_BASE_URL}/timesheet/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error('Không thể cập nhật báo cáo ngày công.');
+    return response.json();
+  },
+  async deleteTimesheet(id: number): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/timesheet/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể xóa báo cáo ngày công.');
+    return response.json();
+  }
+};
+
+export interface OracleInstanceDto {
+  instanceId?: number;
+  projectId: number;
+  instanceName: string;
+  oracleVersion: string;
+  instanceStatus: string;
+  lastRefreshDate?: string;
+  description?: string;
+  updatedDate?: string;
+}
+
+export const oracleInstanceService = {
+  async getInstances(projectId: number): Promise<OracleInstanceDto[]> {
+    const response = await fetch(`${API_BASE_URL}/oracleinstance?projectId=${projectId}`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải danh sách môi trường Oracle.');
+    return response.json();
+  },
+  async createInstance(data: Partial<OracleInstanceDto>): Promise<OracleInstanceDto> {
+    const response = await fetch(`${API_BASE_URL}/oracleinstance`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error('Thêm môi trường thất bại.');
+    return response.json();
+  },
+  async updateInstance(id: number, data: Partial<OracleInstanceDto>): Promise<OracleInstanceDto> {
+    const response = await fetch(`${API_BASE_URL}/oracleinstance/${id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error('Cập nhật môi trường thất bại.');
+    return response.json();
+  },
+  async deleteInstance(id: number): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/oracleinstance/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Xóa môi trường thất bại.');
     return response.json();
   }
 };
@@ -474,6 +873,9 @@ export interface UserDto {
   fullName: string;
   email: string;
   phone?: string;
+  avatarPath?: string;
+  annualLeaveDays?: number;
+  carryOverDays?: number;
   isActive: boolean;
   expiryDate?: string;
   globalRoleId?: number;
@@ -496,8 +898,8 @@ export const userService = {
       body: JSON.stringify(user)
     });
     if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(errText || 'Tạo người dùng thất bại.');
+      const errObj = await response.json().catch(() => null);
+      throw new Error(errObj?.message || 'Tạo người dùng thất bại.');
     }
     return response.json();
   },
@@ -508,8 +910,8 @@ export const userService = {
       body: JSON.stringify(user)
     });
     if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(errText || 'Cập nhật người dùng thất bại.');
+      const errObj = await response.json().catch(() => null);
+      throw new Error(errObj?.message || 'Cập nhật người dùng thất bại.');
     }
     return response.json();
   },

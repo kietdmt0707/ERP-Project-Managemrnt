@@ -18,6 +18,9 @@ namespace AronErpPm.Api.DTOs
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string? Phone { get; set; }
+        public string? AvatarPath { get; set; }
+        public int AnnualLeaveDays { get; set; }
+        public int CarryOverDays { get; set; }
         public string GlobalRole { get; set; } = string.Empty;
         public string? PermissionsJson { get; set; }
         public List<ProjectRoleDto> ProjectRoles { get; set; } = new List<ProjectRoleDto>();
@@ -61,9 +64,24 @@ namespace AronErpPm.Api.DTOs
         public decimal ProgressPercent { get; set; }
         public string Status { get; set; } = string.Empty; // NOT_STARTED, IN_PROGRESS, PENDING_APPROVAL, COMPLETED, DELAYED
         public bool IsVisibleToAll { get; set; }
+        public string? VisibilityScope { get; set; }
+        public string? AIMCode { get; set; }
+        public string? Module { get; set; }
+        public string? KeyUser { get; set; }
+        public string? Party { get; set; }
+        public bool IsManualProgress { get; set; }
+        public int SubTaskCount { get; set; }
 
         public List<TaskTreeNodeDto> SubTasks { get; set; } = new List<TaskTreeNodeDto>();
         public List<int> PredecessorTaskIds { get; set; } = new List<int>();
+    }
+
+    public class ProjectCalendarSettingsDto
+    {
+        public int ProjectId { get; set; }
+        public string WorkDaysOfWeek { get; set; } = "MON,TUE,WED,THU,FRI";
+        public int StandardHoursPerDay { get; set; } = 8;
+        public string HolidaysJson { get; set; } = "[]";
     }
 
     // Approval Request DTO

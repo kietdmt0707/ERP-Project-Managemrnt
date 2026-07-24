@@ -87,21 +87,23 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.SetIsOriginAllowed(_ => true)
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseRouting();
 app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();
+app.MapControllers().RequireCors("AllowAll");
 
 // Auto-migration (Simulated during local runs)
 using (var scope = app.Services.CreateScope())
@@ -132,31 +134,6 @@ using (var scope = app.Services.CreateScope())
         ("ALTER TABLE users ADD COLUMN IF NOT EXISTS globalroleid INT;", "Add globalroleid to users"),
         ("CREATE TABLE IF NOT EXISTS project_scope_options (optionid SERIAL PRIMARY KEY, value VARCHAR(100) NOT NULL, description VARCHAR(250) NOT NULL, isactive BOOLEAN DEFAULT TRUE, createddate TIMESTAMP WITH TIME ZONE DEFAULT NOW());", "Create project_scope_options table"),
         (@"
-            INSERT INTO roles (rolecode, rolename, description, isactive, permissionsjson, hierarchylevel)
-            SELECT 'SYSTEM_ADMIN', 'Hệ thống Admin', 'Quản trị viên toàn quyền hệ thống', true, '{""Projects"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""RICEFW"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Gantt"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Team"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Approvals"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Costs"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Users"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Settings"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""MasterData"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true}}', 1
-            WHERE NOT EXISTS (SELECT 1 FROM roles WHERE rolecode = 'SYSTEM_ADMIN');
-        ", "Seed SYSTEM_ADMIN role"),
-        (@"
-            INSERT INTO roles (rolecode, rolename, description, isactive, permissionsjson, hierarchylevel)
-            SELECT 'PM', 'Project Manager', 'Quản trị dự án cấp cao', true, '{""Projects"":{""View"":true,""Create"":false,""Edit"":true,""Delete"":false},""RICEFW"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Gantt"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Team"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Approvals"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Costs"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":true},""Users"":{""View"":true,""Create"":false,""Edit"":false,""Delete"":false},""Settings"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false},""MasterData"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false}}', 2
-            WHERE NOT EXISTS (SELECT 1 FROM roles WHERE rolecode = 'PM');
-        ", "Seed PM role"),
-        (@"
-            INSERT INTO roles (rolecode, rolename, description, isactive, permissionsjson, hierarchylevel)
-            SELECT 'PC', 'Project Coordinator', 'Điều phối viên dự án', true, '{""Projects"":{""View"":true,""Create"":false,""Edit"":true,""Delete"":false},""RICEFW"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Gantt"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Team"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Approvals"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Costs"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Users"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false},""Settings"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false},""MasterData"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false}}', 3
-            WHERE NOT EXISTS (SELECT 1 FROM roles WHERE rolecode = 'PC');
-        ", "Seed PC role"),
-        (@"
-            INSERT INTO roles (rolecode, rolename, description, isactive, permissionsjson, hierarchylevel)
-            SELECT 'LEADER', 'Team Lead', 'Trưởng nhóm phân hệ', true, '{""Projects"":{""View"":true,""Create"":false,""Edit"":false,""Delete"":false},""RICEFW"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Gantt"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Team"":{""View"":true,""Create"":false,""Edit"":false,""Delete"":false},""Approvals"":{""View"":true,""Create"":true,""Edit"":false,""Delete"":false},""Costs"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Users"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false},""Settings"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false},""MasterData"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false}}', 4
-            WHERE NOT EXISTS (SELECT 1 FROM roles WHERE rolecode = 'LEADER');
-        ", "Seed LEADER role"),
-        (@"
-            INSERT INTO roles (rolecode, rolename, description, isactive, permissionsjson, hierarchylevel)
-            SELECT 'MEMBER', 'Team Member', 'Thành viên triển khai', true, '{""Projects"":{""View"":true,""Create"":false,""Edit"":false,""Delete"":false},""RICEFW"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Gantt"":{""View"":true,""Create"":false,""Edit"":false,""Delete"":false},""Team"":{""View"":true,""Create"":false,""Edit"":false,""Delete"":false},""Approvals"":{""View"":true,""Create"":true,""Edit"":false,""Delete"":false},""Costs"":{""View"":true,""Create"":true,""Edit"":true,""Delete"":false},""Users"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false},""Settings"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false},""MasterData"":{""View"":false,""Create"":false,""Edit"":false,""Delete"":false}}', 5
-            WHERE NOT EXISTS (SELECT 1 FROM roles WHERE rolecode = 'MEMBER');
-        ", "Seed MEMBER role"),
-        (@"
             INSERT INTO project_scope_options (value, description, isactive)
             SELECT 'EBS_FIN', 'Oracle EBS Financials (GL, AP, AR, FA, CM)', true
             WHERE NOT EXISTS (SELECT 1 FROM project_scope_options WHERE value = 'EBS_FIN');
@@ -180,7 +157,103 @@ using (var scope = app.Services.CreateScope())
             UPDATE users 
             SET globalroleid = (SELECT roleid FROM roles WHERE rolecode = 'SYSTEM_ADMIN' LIMIT 1) 
             WHERE (username = 'admin' OR username = 'sysadmin') AND globalroleid IS NULL;
-        ", "Assign default SYSTEM_ADMIN globalrole to admin users")
+        ", "Assign default SYSTEM_ADMIN globalrole to admin users"),
+        ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS sharepointfolderid TEXT;", "Add sharepointfolderid to projects"),
+        ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS baselinebudget DECIMAL(18,2) DEFAULT 0.00;", "Add baselinebudget to projects"),
+        ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS actualcost DECIMAL(18,2) DEFAULT 0.00;", "Add actualcost to projects"),
+        ("ALTER TABLE teams ADD COLUMN IF NOT EXISTS teamtype VARCHAR(50) DEFAULT 'ARON';", "Add teamtype to teams"),
+        ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS aimcode VARCHAR(50);", "Add aimcode to tasks"),
+        ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS visibilityscope VARCHAR(30) DEFAULT 'PUBLIC';", "Add visibilityscope to tasks"),
+        ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS taskid INT;", "Add taskid to expenses"),
+        ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS siteid INT;", "Add siteid to expenses"),
+        (@"
+            CREATE TABLE IF NOT EXISTS business_trip_members (
+                business_trip_member_id SERIAL PRIMARY KEY,
+                business_trip_id INT NOT NULL,
+                member_id INT NOT NULL,
+                is_group_leader BOOLEAN DEFAULT FALSE
+            );
+        ", "Create business_trip_members table if not exists"),
+        ("ALTER TABLE business_trip_members ADD COLUMN IF NOT EXISTS isgroupleader BOOLEAN DEFAULT FALSE;", "Add isgroupleader to business_trip_members"),
+        ("ALTER TABLE users ADD COLUMN IF NOT EXISTS annualleavedays INT DEFAULT 12;", "Add annualleavedays to users"),
+        ("ALTER TABLE users ADD COLUMN IF NOT EXISTS carryoverdays INT DEFAULT 0;", "Add carryoverdays to users"),
+        ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS isoverlimit BOOLEAN DEFAULT FALSE;", "Add isoverlimit to expenses"),
+        ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS justification TEXT;", "Add justification to expenses"),
+        ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS overlimitamount DECIMAL(18,2) DEFAULT 0.00;", "Add overlimitamount to expenses"),
+        ("ALTER TABLE travel_expense_policies ADD COLUMN IF NOT EXISTS project_id INT;", "Add project_id to travel_expense_policies"),
+        ("ALTER TABLE travel_expense_policies ADD COLUMN IF NOT EXISTS transport_allowance DECIMAL(12,2) DEFAULT 0.00;", "Add transport_allowance to travel_expense_policies"),
+        ("ALTER TABLE travel_expense_policies ADD COLUMN IF NOT EXISTS pocket_allowance DECIMAL(12,2) DEFAULT 0.00;", "Add pocket_allowance to travel_expense_policies"),
+        ("ALTER TABLE travel_expense_policies ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'VND';", "Add currency to travel_expense_policies"),
+        ("ALTER TABLE travel_expense_policies ADD COLUMN IF NOT EXISTS flight_ticket_class VARCHAR(50);", "Add flight_ticket_class to travel_expense_policies"),
+        ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS is_manual_progress BOOLEAN DEFAULT FALSE;", "Add is_manual_progress to tasks"),
+        ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS workdaysofweek VARCHAR(100) DEFAULT 'MON,TUE,WED,THU,FRI';", "Add workdaysofweek to projects"),
+        ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS standardhoursperday INT DEFAULT 8;", "Add standardhoursperday to projects"),
+        ("ALTER TABLE projects ADD COLUMN IF NOT EXISTS holidaysjson TEXT DEFAULT '[]';", "Add holidaysjson to projects"),
+        ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS module VARCHAR(50);", "Add module to tasks"),
+        ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS keyuser VARCHAR(100);", "Add keyuser to tasks"),
+        ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS party VARCHAR(50);", "Add party to tasks"),
+        (@"
+            CREATE TABLE IF NOT EXISTS sub_tasks (
+                sub_task_id SERIAL PRIMARY KEY,
+                project_id INT NOT NULL,
+                activity_id INT NOT NULL,
+                created_by_user_id INT NOT NULL,
+                category VARCHAR(50),
+                module VARCHAR(50),
+                doc_code VARCHAR(50),
+                task_name VARCHAR(250) NOT NULL,
+                description TEXT,
+                assignee_member_id INT,
+                reviewer_member_id INT,
+                key_user VARCHAR(100),
+                party VARCHAR(50),
+                start_date TIMESTAMP,
+                end_date TIMESTAMP,
+                deadline TIMESTAMP,
+                status VARCHAR(50) DEFAULT '1. Mới tạo',
+                progress_percent DECIMAL(5,2) DEFAULT 0.00,
+                weight INT DEFAULT 1,
+                attachment_url VARCHAR(500),
+                created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_date TIMESTAMP
+            );
+        ", "Create sub_tasks table"),
+        (@"
+            CREATE TABLE IF NOT EXISTS travel_regions (
+                region_id SERIAL PRIMARY KEY,
+                region_code VARCHAR(20) UNIQUE NOT NULL,
+                region_name VARCHAR(100) NOT NULL,
+                provinces_included TEXT NOT NULL
+            );
+        ", "Create travel_regions table"),
+        (@"
+            CREATE TABLE IF NOT EXISTS travel_expense_policies (
+                policy_id SERIAL PRIMARY KEY,
+                project_id INT,
+                region_code VARCHAR(20) NOT NULL,
+                role_code VARCHAR(20) NOT NULL,
+                per_diem_allowance DECIMAL(12,2) NOT NULL,
+                max_hotel_rate DECIMAL(12,2) NOT NULL,
+                transport_allowance DECIMAL(12,2) DEFAULT 0.00,
+                pocket_allowance DECIMAL(12,2) DEFAULT 0.00,
+                currency VARCHAR(10) DEFAULT 'VND',
+                flight_ticket_class VARCHAR(50),
+                is_active BOOLEAN DEFAULT TRUE,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        ", "Create travel_expense_policies table"),
+        (@"
+            CREATE TABLE IF NOT EXISTS oracle_instances (
+                instance_id SERIAL PRIMARY KEY,
+                project_id INT NOT NULL,
+                instance_name VARCHAR(50) NOT NULL,
+                oracle_version VARCHAR(50) NOT NULL,
+                instance_status VARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
+                last_refresh_date TIMESTAMP,
+                description VARCHAR(500),
+                updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        ", "Create oracle_instances table")
     };
 
     foreach (var migration in migrations)
@@ -240,6 +313,49 @@ using (var scope = app.Services.CreateScope())
                 CreatedDate = DateTime.UtcNow
             };
             db.Users.Add(sysadmin);
+            db.SaveChanges();
+        }
+
+        // 3. Seed Travel Regions
+        if (!db.TravelRegions.Any())
+        {
+            db.TravelRegions.AddRange(new List<AronErpPm.Api.Models.TravelRegion>
+            {
+                new AronErpPm.Api.Models.TravelRegion { RegionCode = "TIERS_1", RegionName = "Vùng 1 (Hà Nội, HCM)", ProvincesIncluded = "Hà Nội, Hồ Chí Minh" },
+                new AronErpPm.Api.Models.TravelRegion { RegionCode = "TIERS_2", RegionName = "Vùng 2 (Cần Thơ, Đà Nẵng, Hải Phòng)", ProvincesIncluded = "Cần Thơ, Đà Nẵng, Hải Phòng" },
+                new AronErpPm.Api.Models.TravelRegion { RegionCode = "TIERS_3", RegionName = "Vùng 3 (Các tỉnh thành còn lại)", ProvincesIncluded = "Bình Dương, Đồng Nai, Long An, Bà Rịa - Vũng Tàu, Tây Ninh, Hải Dương, Hưng Yên, Bắc Ninh, Vĩnh Phúc" },
+                new AronErpPm.Api.Models.TravelRegion { RegionCode = "TIERS_INT_1", RegionName = "Vùng 4 Quốc Tế (Đông Nam Á - Singapore, Thái Lan, Malaysia...)", ProvincesIncluded = "Singapore, Thailand, Malaysia, Indonesia, Philippines, Cambodia, Laos" },
+                new AronErpPm.Api.Models.TravelRegion { RegionCode = "TIERS_INT_2", RegionName = "Vùng 5 Quốc Tế (Âu, Mỹ, Nhật, Hàn, Úc...)", ProvincesIncluded = "USA, Japan, Korea, Germany, UK, France, Australia" }
+            });
+            db.SaveChanges();
+        }
+
+        // 4. Seed Travel Expense Policies
+        if (!db.TravelExpensePolicies.Any())
+        {
+            db.TravelExpensePolicies.AddRange(new List<AronErpPm.Api.Models.TravelExpensePolicy>
+            {
+                // Vùng 1
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_1", RoleCode = "MEMBER", PerDiemAllowance = 250000m, MaxHotelRate = 400000m, Currency = "VND" },
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_1", RoleCode = "LEADER", PerDiemAllowance = 250000m, MaxHotelRate = 500000m, Currency = "VND" },
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_1", RoleCode = "PM", PerDiemAllowance = 300000m, MaxHotelRate = 700000m, Currency = "VND" },
+                // Vùng 2
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_2", RoleCode = "MEMBER", PerDiemAllowance = 180000m, MaxHotelRate = 350000m, Currency = "VND" },
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_2", RoleCode = "LEADER", PerDiemAllowance = 180000m, MaxHotelRate = 450000m, Currency = "VND" },
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_2", RoleCode = "PM", PerDiemAllowance = 220000m, MaxHotelRate = 600000m, Currency = "VND" },
+                // Vùng 3
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_3", RoleCode = "MEMBER", PerDiemAllowance = 120000m, MaxHotelRate = 250000m, Currency = "VND" },
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_3", RoleCode = "LEADER", PerDiemAllowance = 120000m, MaxHotelRate = 350000m, Currency = "VND" },
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_3", RoleCode = "PM", PerDiemAllowance = 150000m, MaxHotelRate = 500000m, Currency = "VND" },
+                // Vùng 4 Quốc Tế (Đông Nam Á - USD)
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_INT_1", RoleCode = "MEMBER", PerDiemAllowance = 45m, MaxHotelRate = 90m, Currency = "USD" },
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_INT_1", RoleCode = "LEADER", PerDiemAllowance = 55m, MaxHotelRate = 120m, Currency = "USD" },
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_INT_1", RoleCode = "PM", PerDiemAllowance = 70m, MaxHotelRate = 160m, Currency = "USD" },
+                // Vùng 5 Quốc Tế (Âu / Mỹ / Nhật - USD)
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_INT_2", RoleCode = "MEMBER", PerDiemAllowance = 75m, MaxHotelRate = 150m, Currency = "USD" },
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_INT_2", RoleCode = "LEADER", PerDiemAllowance = 90m, MaxHotelRate = 200m, Currency = "USD" },
+                new AronErpPm.Api.Models.TravelExpensePolicy { RegionCode = "TIERS_INT_2", RoleCode = "PM", PerDiemAllowance = 120m, MaxHotelRate = 280m, Currency = "USD" }
+            });
             db.SaveChanges();
         }
     }

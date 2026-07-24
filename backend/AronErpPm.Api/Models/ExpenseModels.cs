@@ -14,7 +14,6 @@ namespace AronErpPm.Api.Models
         [ForeignKey("ProjectId")]
         public Project? Project { get; set; }
 
-        [Required]
         [MaxLength(50)]
         public string TripCode { get; set; } = string.Empty;
 
@@ -35,7 +34,6 @@ namespace AronErpPm.Api.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal AdvanceAmount { get; set; } = 0.00m;
 
-        [Required]
         [MaxLength(20)]
         public string Status { get; set; } = "DRAFT"; // DRAFT, SUBMITTED, APPROVED, REJECTED
 
@@ -63,6 +61,8 @@ namespace AronErpPm.Api.Models
         public int ProjectMemberId { get; set; }
         [ForeignKey("ProjectMemberId")]
         public ProjectMember? ProjectMember { get; set; }
+
+        public bool IsGroupLeader { get; set; } = false;
     }
 
     // 3. Expense Claims
@@ -74,6 +74,14 @@ namespace AronErpPm.Api.Models
         public int TripId { get; set; }
         [ForeignKey("TripId")]
         public BusinessTrip? BusinessTrip { get; set; }
+
+        public int? TaskId { get; set; }
+        [ForeignKey("TaskId")]
+        public Task? Task { get; set; }
+
+        public int? SiteId { get; set; }
+        [ForeignKey("SiteId")]
+        public ProjectSite? ProjectSite { get; set; }
 
         public int ClaimantMemberId { get; set; }
         [ForeignKey("ClaimantMemberId")]
@@ -92,7 +100,6 @@ namespace AronErpPm.Api.Models
         [MaxLength(500)]
         public string? ReceiptPath { get; set; } // Path/URL to invoice upload
 
-        [Required]
         [MaxLength(20)]
         public string Status { get; set; } = "DRAFT"; // DRAFT, SUBMITTED, APPROVED, REJECTED
 
@@ -103,6 +110,24 @@ namespace AronErpPm.Api.Models
         [MaxLength(500)]
         public string? Notes { get; set; }
 
+        public bool IsOverLimit { get; set; } = false;
+
+        [MaxLength(500)]
+        public string? Justification { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal OverLimitAmount { get; set; } = 0.00m;
+
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+    }
+
+    public class CreateBusinessTripDto
+    {
+        public int ProjectId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Destination { get; set; } = string.Empty;
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public decimal AdvanceAmount { get; set; }
     }
 }

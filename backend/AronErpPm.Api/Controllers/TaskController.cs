@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using AronErpPm.Api.Data;
 using AronErpPm.Api.DTOs;
 using AronErpPm.Api.Models;
+using System.Security.Claims;
 
 namespace AronErpPm.Api.Controllers
 {
@@ -44,6 +45,21 @@ namespace AronErpPm.Api.Controllers
                 .Where(d => taskIds.Contains(d.SuccessorTaskId))
                 .ToListAsync();
 
+            // Retrieve subtask counts per activity (safely wrapped)
+            var subtaskCounts = new Dictionary<int, int>();
+            try
+            {
+                subtaskCounts = await _context.SubTasks
+                    .Where(st => st.ProjectId == projectId)
+                    .GroupBy(st => st.ActivityId)
+                    .Select(g => new { ActivityId = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(g => g.ActivityId, g => g.Count);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TaskController] SubTask count query warning: {ex.Message}");
+            }
+
             // Map flat list to tree DTOs
             var flatDtos = allTasks.Select(t => new TaskTreeNodeDto
             {
@@ -66,22 +82,46 @@ namespace AronErpPm.Api.Controllers
                 ProgressPercent = t.ProgressPercent,
                 Status = t.Status,
                 IsVisibleToAll = t.IsVisibleToAll,
+                VisibilityScope = t.VisibilityScope,
+                AIMCode = t.AIMCode,
+                Module = t.Module,
+                KeyUser = t.KeyUser,
+                Party = t.Party,
+                IsManualProgress = t.IsManualProgress,
+                SubTaskCount = subtaskCounts.ContainsKey(t.TaskId) ? subtaskCounts[t.TaskId] : 0,
                 PredecessorTaskIds = dependencies
                     .Where(d => d.SuccessorTaskId == t.TaskId)
                     .Select(d => d.PredecessorTaskId)
                     .ToList()
             }).ToList();
 
-            // Check Visibility constraints for the current user
+            // Check Visibility constraints for the current user (Cross-visibility security)
             var username = User.Identity?.Name;
             var userMember = await _context.ProjectMembers
                 .Include(pm => pm.Role)
-                .FirstOrDefaultAsync(pm => pm.ProjectId == projectId && pm.User!.Username == username);
+                .Include(pm => pm.FunctionalTeam).ThenInclude(ft => ft!.Team)
+                .FirstOrDefaultAsync(pm => pm.ProjectId == projectId && pm.User!.Username.ToLower() == username.ToLower());
 
-            // If normal member, filter out private tasks they are not assigned to
-            if (userMember != null && userMember.Role?.RoleCode == "MEMBER")
+            if (userMember != null)
             {
-                flatDtos = flatDtos.Where(t => t.IsVisibleToAll || t.AssigneeMemberId == userMember.ProjectMemberId).ToList();
+                var userTeamType = userMember.FunctionalTeam?.Team?.TeamType ?? "ARON";
+                
+                // If the user belongs to the Client Team (Khách hàng), they can only see PUBLIC tasks or tasks assigned to them
+                if (userTeamType == "CLIENT")
+                {
+                    // Retrieve task visibility scope from DB entities to check
+                    var visibleTaskIds = allTasks
+                        .Where(t => t.VisibilityScope == "PUBLIC" || t.AssigneeMemberId == userMember.ProjectMemberId)
+                        .Select(t => t.TaskId)
+                        .ToHashSet();
+
+                    flatDtos = flatDtos.Where(t => visibleTaskIds.Contains(t.TaskId)).ToList();
+                }
+                // If normal member, filter out private tasks they are not assigned to
+                else if (userMember.Role?.RoleCode == "MEMBER")
+                {
+                    flatDtos = flatDtos.Where(t => t.IsVisibleToAll || t.AssigneeMemberId == userMember.ProjectMemberId).ToList();
+                }
             }
 
             // Build Hierarchical Tree
@@ -112,7 +152,9 @@ namespace AronErpPm.Api.Controllers
         public async Task<IActionResult> SaveTask([FromBody] TaskTreeNodeDto dto)
         {
             var username = User.Identity?.Name;
-            
+            var globalRole = User.FindFirst("GlobalRole")?.Value ?? User.FindFirst(ClaimTypes.Role)?.Value;
+            var isSysAdmin = globalRole == "SYSTEM_ADMIN" || globalRole == "SYSADMIN" || (username != null && username.ToLower() == "admin");
+
             // Validate Project
             var project = await _context.Projects.FindAsync(dto.ProjectId);
             if (project == null) return NotFound("Dự án không tồn tại.");
@@ -120,29 +162,23 @@ namespace AronErpPm.Api.Controllers
             // Check project role of the user
             var userMember = await _context.ProjectMembers
                 .Include(pm => pm.Role)
-                .FirstOrDefaultAsync(pm => pm.ProjectId == dto.ProjectId && pm.User!.Username == username);
+                .FirstOrDefaultAsync(pm => pm.ProjectId == dto.ProjectId && username != null && pm.User!.Username.ToLower() == username.ToLower());
 
-            if (userMember == null)
+            if (!isSysAdmin && userMember == null)
             {
-                return Forbid("Bạn không phải thành viên của dự án này.");
+                return StatusCode(403, new { message = "Bạn không phải thành viên của dự án này." });
             }
 
-            var roleCode = userMember.Role?.RoleCode;
+            var roleCode = userMember?.Role?.RoleCode;
 
-            // PERMISSION CHECK RULES
-            // 1. Admin/PM can do anything (create/edit all levels)
-            // 2. Leader can only create/update Level 2 and Level 3 tasks
-            // 3. Member can only update progress/status of Level 2/3 tasks, or create subtasks if assigned
-            // 4. Director has Read-only access
-
-            if (roleCode == "DIRECTOR")
+            if (!isSysAdmin && roleCode == "DIRECTOR")
             {
-                return Forbid("Tài khoản Giám đốc dự án chỉ có quyền xem báo cáo.");
+                return StatusCode(403, new { message = "Tài khoản Giám đốc dự án chỉ có quyền xem báo cáo." });
             }
 
-            if (dto.TaskLevel == 1 && roleCode != "PM" && username != "admin")
+            if (dto.TaskLevel == 1 && !isSysAdmin && roleCode != "PM" && roleCode != "PC")
             {
-                return Forbid("Chỉ PM (Admin) mới có quyền chỉnh sửa Task Cấp 1 (Giai đoạn).");
+                return StatusCode(403, new { message = "Chỉ PM hoặc PC mới có quyền tạo/chỉnh sửa Task Cấp 1 (Giai đoạn)." });
             }
 
             Models.Task? task;
@@ -169,7 +205,12 @@ namespace AronErpPm.Api.Controllers
                     DurationPlanned = dto.DurationPlanned,
                     ProgressPercent = dto.ProgressPercent,
                     Status = dto.Status,
-                    IsVisibleToAll = dto.IsVisibleToAll
+                    IsVisibleToAll = dto.IsVisibleToAll,
+                    VisibilityScope = dto.VisibilityScope ?? "PUBLIC",
+                    AIMCode = dto.AIMCode,
+                    Module = dto.Module,
+                    KeyUser = dto.KeyUser,
+                    Party = dto.Party
                 };
 
                 _context.Tasks.Add(task);
@@ -211,6 +252,11 @@ namespace AronErpPm.Api.Controllers
                     task.ProgressPercent = dto.ProgressPercent;
                     task.Status = dto.Status;
                     task.IsVisibleToAll = dto.IsVisibleToAll;
+                    task.VisibilityScope = dto.VisibilityScope ?? "PUBLIC";
+                    task.AIMCode = dto.AIMCode;
+                    task.Module = dto.Module;
+                    task.KeyUser = dto.KeyUser;
+                    task.Party = dto.Party;
                 }
                 
                 task.UpdatedDate = DateTime.UtcNow;
@@ -244,5 +290,94 @@ namespace AronErpPm.Api.Controllers
 
             return Ok(new { message = "Lưu Task thành công!", taskId = task.TaskId });
         }
+
+        // PUT: api/task/{id}/progress-mode
+        [HttpPut("{id}/progress-mode")]
+        public async Task<IActionResult> ToggleProgressMode(int id, [FromBody] ToggleProgressModeDto dto)
+        {
+            var task = await _context.Tasks.FindAsync(id);
+            if (task == null) return NotFound("Không tìm thấy Task.");
+
+            task.IsManualProgress = dto.IsManualProgress;
+            if (dto.IsManualProgress && dto.ManualProgressPercent.HasValue)
+            {
+                task.ProgressPercent = Math.Clamp(dto.ManualProgressPercent.Value, 0, 100);
+            }
+            task.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Đã cập nhật chế độ tiến độ thành công!", isManualProgress = task.IsManualProgress, progressPercent = task.ProgressPercent });
+        }
+
+        // DELETE: api/task/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteTask(int id)
+        {
+            var username = User.Identity?.Name;
+            var globalRole = User.FindFirst("GlobalRole")?.Value ?? User.FindFirst(ClaimTypes.Role)?.Value;
+            var isSysAdmin = globalRole == "SYSTEM_ADMIN" || globalRole == "SYSADMIN" || (username != null && username.ToLower() == "admin");
+
+            var task = await _context.Tasks.FindAsync(id);
+            if (task == null) return NotFound("Không tìm thấy Task.");
+
+            // Check project role of the user
+            if (!isSysAdmin)
+            {
+                var userMember = await _context.ProjectMembers
+                    .Include(pm => pm.Role)
+                    .FirstOrDefaultAsync(pm => pm.ProjectId == task.ProjectId && username != null && pm.User!.Username.ToLower() == username.ToLower());
+
+                if (userMember == null) return StatusCode(403, new { message = "Bạn không phải thành viên của dự án này." });
+
+                var roleCode = userMember.Role?.RoleCode;
+                if (roleCode != "PM" && roleCode != "PC")
+                {
+                    return StatusCode(403, new { message = "Chỉ PM hoặc PC mới có quyền xóa Task trong Master Plan." });
+                }
+            }
+
+            // Recursive function to remove task and all sub-nodes
+            async System.Threading.Tasks.Task RemoveTaskRecursive(int taskId)
+            {
+                var childTasks = await _context.Tasks.Where(t => t.ParentTaskId == taskId).ToListAsync();
+                foreach (var child in childTasks)
+                {
+                    await RemoveTaskRecursive(child.TaskId);
+                }
+
+                // Delete associated subtasks
+                var subtasks = await _context.SubTasks.Where(st => st.ActivityId == taskId).ToListAsync();
+                if (subtasks.Any())
+                {
+                    _context.SubTasks.RemoveRange(subtasks);
+                }
+
+                // Delete dependencies
+                var deps = await _context.TaskDependencies
+                    .Where(d => d.PredecessorTaskId == taskId || d.SuccessorTaskId == taskId)
+                    .ToListAsync();
+                if (deps.Any())
+                {
+                    _context.TaskDependencies.RemoveRange(deps);
+                }
+
+                var tDelete = await _context.Tasks.FindAsync(taskId);
+                if (tDelete != null)
+                {
+                    _context.Tasks.Remove(tDelete);
+                }
+            }
+
+            await RemoveTaskRecursive(id);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Xóa Task và các dữ liệu liên quan thành công!" });
+        }
+    }
+
+    public class ToggleProgressModeDto
+    {
+        public bool IsManualProgress { get; set; }
+        public decimal? ManualProgressPercent { get; set; }
     }
 }

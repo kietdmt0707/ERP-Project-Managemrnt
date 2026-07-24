@@ -30,6 +30,13 @@ namespace AronErpPm.Api.Models
         public string? LogoPath { get; set; }
 
         public string? SharepointFolderLink { get; set; }
+        public string? SharepointFolderId { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal BaselineBudget { get; set; } = 0.00m;
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal ActualCost { get; set; } = 0.00m;
 
         public bool IsActive { get; set; } = true;
         
@@ -42,6 +49,13 @@ namespace AronErpPm.Api.Models
         public string? CurrentPhase { get; set; } = "Analyze"; // Analyze, Design, Build, Transition, Go-Live
         
         public string? ModulesScope { get; set; } // GL, AP, AR, FA, PO, INV, OM
+
+        [MaxLength(100)]
+        public string WorkDaysOfWeek { get; set; } = "MON,TUE,WED,THU,FRI";
+
+        public int StandardHoursPerDay { get; set; } = 8;
+
+        public string HolidaysJson { get; set; } = "[]";
 
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
@@ -96,6 +110,10 @@ namespace AronErpPm.Api.Models
         [Required]
         [MaxLength(150)]
         public string TeamName { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(50)]
+        public string TeamType { get; set; } = "ARON"; // ARON, CLIENT, PARTNER
 
         public int? ParentTeamId { get; set; }
         [ForeignKey("ParentTeamId")]
@@ -176,6 +194,9 @@ namespace AronErpPm.Api.Models
         public string? Phone { get; set; }
 
         public string? AvatarPath { get; set; }
+
+        public int AnnualLeaveDays { get; set; } = 12;
+        public int CarryOverDays { get; set; } = 0;
 
         public bool IsActive { get; set; } = true;
 

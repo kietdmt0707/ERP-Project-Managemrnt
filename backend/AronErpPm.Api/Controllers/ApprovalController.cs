@@ -14,11 +14,13 @@ namespace AronErpPm.Api.Controllers
     {
         private readonly AronDbContext _context;
         private readonly IEmailService _emailService;
+        private readonly ISharepointService _sharepointService;
 
-        public ApprovalController(AronDbContext context, IEmailService emailService)
+        public ApprovalController(AronDbContext context, IEmailService emailService, ISharepointService sharepointService)
         {
             _context = context;
             _emailService = emailService;
+            _sharepointService = sharepointService;
         }
 
         // 1. Submit Request to trigger 3-Level Workflow
@@ -75,13 +77,18 @@ namespace AronErpPm.Api.Controllers
             var step2ApproverId = pmMember?.ProjectMemberId ?? dirMember?.ProjectMemberId ?? step1ApproverId;
             var step3ApproverId = dirMember?.ProjectMemberId ?? step2ApproverId;
 
+            // Self-approval bypass check: If the initiator is the PM of the project
+            var isInitiatorPm = member.Role?.RoleCode == "PM";
+
             // Step 1 Record
             var step1 = new ApprovalStep
             {
                 WorkflowId = workflow.WorkflowId,
                 StepNumber = 1,
                 ApproverMemberId = step1ApproverId,
-                StepStatus = "PENDING",
+                StepStatus = isInitiatorPm ? "APPROVED" : "PENDING",
+                ActionDate = isInitiatorPm ? DateTime.UtcNow : (DateTime?)null,
+                Comments = isInitiatorPm ? "Tự động duyệt (Khởi tạo bởi PM)" : null,
                 SecureToken = EmailService.GenerateSecureToken(),
                 TokenExpiry = DateTime.UtcNow.AddHours(24)
             };
@@ -92,12 +99,14 @@ namespace AronErpPm.Api.Controllers
                 WorkflowId = workflow.WorkflowId,
                 StepNumber = 2,
                 ApproverMemberId = step2ApproverId,
-                StepStatus = "PENDING",
+                StepStatus = isInitiatorPm ? "APPROVED" : "PENDING",
+                ActionDate = isInitiatorPm ? DateTime.UtcNow : (DateTime?)null,
+                Comments = isInitiatorPm ? "Tự động duyệt (Khởi tạo bởi PM)" : null,
                 SecureToken = EmailService.GenerateSecureToken(),
                 TokenExpiry = DateTime.UtcNow.AddHours(48)
             };
 
-            // Step 3 Record
+            // Step 3 Record (Project Director)
             var step3 = new ApprovalStep
             {
                 WorkflowId = workflow.WorkflowId,
@@ -108,11 +117,54 @@ namespace AronErpPm.Api.Controllers
                 TokenExpiry = DateTime.UtcNow.AddHours(72)
             };
 
-            _context.ApprovalSteps.AddRange(step1, step2, step3);
+            if (request.TargetType.ToUpper() == "TIMESHEET")
+            {
+                if (isInitiatorPm)
+                {
+                    // PM submitting timesheet -> Requires Director approval (Step 3)
+                    _context.ApprovalSteps.AddRange(step1, step2, step3);
+                    workflow.CurrentStepNumber = 3;
+                    workflow.WorkflowStatus = "PENDING";
+                    _context.ApprovalWorkflows.Update(workflow);
+                }
+                else
+                {
+                    _context.ApprovalSteps.AddRange(step1, step2);
+                }
+            }
+            else
+            {
+                // Financial Travel & Expenses -> 3 Steps
+                _context.ApprovalSteps.AddRange(step1, step2, step3);
+
+                if (isInitiatorPm)
+                {
+                    workflow.CurrentStepNumber = 3;
+                    _context.ApprovalWorkflows.Update(workflow);
+                }
+            }
             await _context.SaveChangesAsync();
 
-            // Trigger Email to Level 1 Approver
-            var currentApprover = leaderMember ?? pmMember;
+            // Trigger Email to the correct starting step approver
+            ProjectMember? currentApprover = null;
+            int stepIdToSend = step1.StepId;
+            string tokenToSend = step1.SecureToken!;
+
+            if (isInitiatorPm)
+            {
+                currentApprover = dirMember;
+                var savedStep3 = await _context.ApprovalSteps.FirstOrDefaultAsync(s => s.WorkflowId == workflow.WorkflowId && s.StepNumber == 3);
+                if (savedStep3 != null)
+                {
+                    stepIdToSend = savedStep3.StepId;
+                    tokenToSend = savedStep3.SecureToken!;
+                }
+            }
+            else
+            {
+                currentApprover = leaderMember ?? pmMember;
+            }
+
             if (currentApprover?.User != null)
             {
                 await _emailService.SendApprovalEmailAsync(
@@ -123,15 +175,15 @@ namespace AronErpPm.Api.Controllers
                     workflow.TargetType,
                     request.Description,
                     request.Amount,
-                    step1.StepId,
-                    step1.SecureToken!
+                    stepIdToSend,
+                    tokenToSend
                 );
             }
 
-            // Update Target item status to "PENDING_APPROVAL" or "SUBMITTED"
+            // Update Target item status to "SUBMITTED"
             await UpdateTargetItemStatusAsync(workflow.TargetType, workflow.TargetId, "SUBMITTED");
 
-            return Ok(new { message = "Gửi yêu cầu phê duyệt thành công! Luồng phê duyệt 3 cấp đã được kích hoạt.", workflowId = workflow.WorkflowId });
+            return Ok(new { message = isInitiatorPm ? "Timesheet đã được chuyển tới Giám Đốc (Director) phê duyệt!" : "Gửi yêu cầu phê duyệt thành công! Luồng phê duyệt đã được kích hoạt.", workflowId = workflow.WorkflowId });
         }
 
         // 2. One-click Email Quick Approval API (Returns beautiful HTML pages)
@@ -170,18 +222,17 @@ namespace AronErpPm.Api.Controllers
                 step.Comments = "Phê duyệt nhanh qua Email";
                 _context.ApprovalSteps.Update(step);
 
-                if (step.StepNumber < 3)
+                var nextStep = await _context.ApprovalSteps
+                    .Include(s => s.ApproverMember).ThenInclude(m => m!.User)
+                    .FirstOrDefaultAsync(s => s.WorkflowId == workflow.WorkflowId && s.StepNumber == step.StepNumber + 1);
+
+                if (nextStep != null)
                 {
                     // Move to Next Step
                     workflow.CurrentStepNumber = step.StepNumber + 1;
                     _context.ApprovalWorkflows.Update(workflow);
 
-                    // Send email to next approver
-                    var nextStep = await _context.ApprovalSteps
-                        .Include(s => s.ApproverMember).ThenInclude(m => m!.User)
-                        .FirstOrDefaultAsync(s => s.WorkflowId == workflow.WorkflowId && s.StepNumber == workflow.CurrentStepNumber);
-
-                    if (nextStep?.ApproverMember?.User != null)
+                    if (nextStep.ApproverMember?.User != null)
                     {
                         await _emailService.SendApprovalEmailAsync(
                             nextStep.ApproverMember.User.Email,
@@ -268,26 +319,79 @@ namespace AronErpPm.Api.Controllers
                     item.Status = status;
                     if (status == "APPROVED") item.ApprovalDate = DateTime.UtcNow;
                     _context.Timesheets.Update(item);
+                    await _context.SaveChangesAsync();
+                    if (status == "APPROVED")
+                    {
+                        await RecalculateProjectActualCostAsync(item.ProjectId);
+                    }
                 }
             }
             else if (targetType == "TRIP")
             {
-                var item = await _context.BusinessTrips.FindAsync(targetId);
+                var item = await _context.BusinessTrips
+                    .Include(t => t.CreatedByMember).ThenInclude(m => m!.User)
+                    .FirstOrDefaultAsync(t => t.TripId == targetId);
+
                 if (item != null)
                 {
                     item.Status = status;
                     _context.BusinessTrips.Update(item);
+                    await _context.SaveChangesAsync();
+
+                    if (status == "APPROVED" && item.CreatedByMember?.User != null)
+                    {
+                        await _sharepointService.SyncTripToOutlookCalendarAsync(
+                            item.Title,
+                            item.Destination,
+                            item.StartDate,
+                            item.EndDate,
+                            item.CreatedByMember.User.Email
+                        );
+                    }
                 }
             }
             else if (targetType == "EXPENSE")
             {
-                var item = await _context.Expenses.FindAsync(targetId);
+                var item = await _context.Expenses.Include(e => e.BusinessTrip).FirstOrDefaultAsync(e => e.ExpenseId == targetId);
                 if (item != null)
                 {
                     item.Status = status;
                     _context.Expenses.Update(item);
+                    await _context.SaveChangesAsync();
+                    if (status == "APPROVED" && item.BusinessTrip != null)
+                    {
+                        await RecalculateProjectActualCostAsync(item.BusinessTrip.ProjectId);
+                    }
                 }
             }
+        }
+
+        private async System.Threading.Tasks.Task RecalculateProjectActualCostAsync(int projectId)
+        {
+            var project = await _context.Projects.FindAsync(projectId);
+            if (project == null) return;
+
+            // 1. Sum of all approved expenses
+            var totalExpenses = await _context.Expenses
+                .Where(e => e.BusinessTrip!.ProjectId == projectId && e.Status == "APPROVED")
+                .SumAsync(e => e.AmountActual);
+
+            // 2. Sum of all approved timesheet costs
+            var totalTimesheets = await _context.Timesheets
+                .Include(t => t.Member)
+                .Where(t => t.ProjectId == projectId && t.Status == "APPROVED")
+                .ToListAsync();
+
+            decimal timesheetSum = 0;
+            foreach (var ts in totalTimesheets)
+            {
+                var rate = ts.Member?.DailyRate ?? 150.00m;
+                timesheetSum += (ts.HoursWorked / 8m) * rate;
+            }
+
+            project.ActualCost = totalExpenses + timesheetSum;
+            _context.Projects.Update(project);
+            await _context.SaveChangesAsync();
         }
 
         // HTML Renders

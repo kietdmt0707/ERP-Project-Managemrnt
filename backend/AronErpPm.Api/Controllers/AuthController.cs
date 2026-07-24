@@ -149,6 +149,9 @@ namespace AronErpPm.Api.Controllers
                 FullName = user.FullName,
                 Email = user.Email,
                 Phone = user.Phone,
+                AvatarPath = user.AvatarPath,
+                AnnualLeaveDays = user.AnnualLeaveDays,
+                CarryOverDays = user.CarryOverDays,
                 GlobalRole = globalRole,
                 PermissionsJson = permissionsJson,
                 ProjectRoles = projectRoles
