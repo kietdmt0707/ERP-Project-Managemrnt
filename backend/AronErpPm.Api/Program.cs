@@ -11,6 +11,9 @@ Environment.SetEnvironmentVariable("DOTNET_USE_POLLING_FILE_WATCHER", "1");
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Enable legacy timestamp behavior for Npgsql to fix DateTimeKind.Unspecified errors globally
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 // Add services to the container.
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
