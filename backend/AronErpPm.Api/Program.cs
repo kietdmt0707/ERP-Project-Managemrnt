@@ -367,10 +367,10 @@ try
             });
             db.SaveChanges();
         }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Error seeding roles/sysadmin: {ex.Message}");
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error seeding roles/sysadmin: {ex.Message}");
+        }
     }
 }
 catch (Exception ex)
