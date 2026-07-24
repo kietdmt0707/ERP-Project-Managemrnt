@@ -20,8 +20,8 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 // Register HttpContextAccessor to read user claims in RLS interceptor
 builder.Services.AddHttpContextAccessor();
 
-// Register Custom Db Connection Interceptor for Row-Level Security
-builder.Services.AddScoped<SessionContextInterceptor>();
+// Register Custom Db Connection Interceptor for Row-Level Security (Singleton to allow safe DI resolution in DbContext options)
+builder.Services.AddSingleton<SessionContextInterceptor>();
 
 // Configure Entity Framework Core with PostgreSQL and RLS Interceptor
 builder.Services.AddDbContext<AronDbContext>((serviceProvider, options) =>
