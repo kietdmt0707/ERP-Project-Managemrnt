@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { taskService, projectService, teamService, TaskNode, ProjectCalendarSettings, TeamMemberDto } from '../services/api';
-import { Calendar, ChevronRight, ChevronDown, CheckCircle2, AlertTriangle, Play, HelpCircle, Plus, EyeOff, Settings, Users, Clock, FileText, Maximize2, Minimize2, Edit3 } from 'lucide-react';
+import { Calendar, ChevronRight, ChevronDown, CheckCircle2, AlertTriangle, Play, HelpCircle, Plus, EyeOff, Settings, Users, Clock, FileText, Maximize2, Minimize2, Edit3, Check, UserCheck, Briefcase } from 'lucide-react';
 
 interface GanttChartProps {
   projectId: number;
@@ -17,8 +17,9 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
   // Layout Fullview State
   const [isWideView, setIsWideView] = useState<boolean>(false);
 
-  // Project Members for Resource Assignment dropdown
+  // Project Members & Functional Teams for Resource Assignment
   const [projectMembers, setProjectMembers] = useState<TeamMemberDto[]>([]);
+  const [functionalTeams, setFunctionalTeams] = useState<any[]>([]);
 
   // Project Calendar Settings & Engine
   const [calendarSettings, setCalendarSettings] = useState<ProjectCalendarSettings>({
@@ -45,13 +46,16 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
   const [createStartDate, setCreateStartDate] = useState<string>('');
   const [createDuration, setCreateDuration] = useState<number>(10);
   const [createEndDate, setCreateEndDate] = useState<string>('');
-  const [createAssigneeMemberId, setCreateAssigneeMemberId] = useState<number | undefined>(undefined);
-  const [createKeyUser, setCreateKeyUser] = useState<string>('');
-  const [createParty, setCreateParty] = useState<string>('');
   const [createStatus, setCreateStatus] = useState<string>('NOT_STARTED');
   const [createProgressPercent, setCreateProgressPercent] = useState<number>(0);
   const [createPredecessorId, setCreatePredecessorId] = useState<number | undefined>(undefined);
   const [createSubmitting, setCreateSubmitting] = useState<boolean>(false);
+
+  // Multi-Assignment States (1 or multiple Teams, 1 or multiple Individuals, 1 or multiple Key Users)
+  const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+  const [selectedMemberNames, setSelectedMemberNames] = useState<string[]>([]);
+  const [selectedPrimaryMemberId, setSelectedPrimaryMemberId] = useState<number | undefined>(undefined);
+  const [selectedKeyUsers, setSelectedKeyUsers] = useState<string[]>([]);
 
   useEffect(() => {
     loadTasks();
@@ -91,8 +95,9 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
   const loadTeamMembers = async () => {
     try {
       const data = await teamService.getTeams(projectId);
-      if (data && data.members) {
-        setProjectMembers(data.members.filter(m => m.isActive));
+      if (data) {
+        if (data.members) setProjectMembers(data.members.filter(m => m.isActive));
+        if (data.functionalTeams) setFunctionalTeams(data.functionalTeams);
       }
     } catch (err) {
       console.warn('Failed to load project members for resource dropdown.');
@@ -223,6 +228,38 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
     }));
   };
 
+  // Helper to split comma-separated strings cleanly
+  const splitStringList = (str?: string): string[] => {
+    if (!str) return [];
+    return str.split(',').map(s => s.trim()).filter(Boolean);
+  };
+
+  // Toggle selection for Team Badges
+  const toggleTeamSelection = (teamName: string) => {
+    setSelectedTeams(prev => 
+      prev.includes(teamName) ? prev.filter(t => t !== teamName) : [...prev, teamName]
+    );
+  };
+
+  // Toggle selection for Member Badges
+  const toggleMemberSelection = (memberName: string, memberId?: number) => {
+    setSelectedMemberNames(prev => {
+      if (prev.includes(memberName)) {
+        return prev.filter(m => m !== memberName);
+      } else {
+        if (!selectedPrimaryMemberId && memberId) setSelectedPrimaryMemberId(memberId);
+        return [...prev, memberName];
+      }
+    });
+  };
+
+  // Toggle selection for Key User Badges
+  const toggleKeyUserSelection = (keyUserName: string) => {
+    setSelectedKeyUsers(prev => 
+      prev.includes(keyUserName) ? prev.filter(k => k !== keyUserName) : [...prev, keyUserName]
+    );
+  };
+
   // Open Modal for NEW Task Creation
   const handleOpenCreateTaskModal = (level: number, parentTask?: TaskNode) => {
     setEditingTaskId(null);
@@ -240,12 +277,15 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
     setCreateDuration(initialDuration);
     setCreateEndDate(addWorkingDays(today, initialDuration));
     
-    setCreateAssigneeMemberId(undefined);
-    setCreateKeyUser('');
-    setCreateParty('');
     setCreateStatus('NOT_STARTED');
     setCreateProgressPercent(0);
     setCreatePredecessorId(undefined);
+
+    setSelectedTeams([]);
+    setSelectedMemberNames([]);
+    setSelectedPrimaryMemberId(undefined);
+    setSelectedKeyUsers([]);
+
     setActiveTabModal('info');
     setIsCreatingTask(true);
   };
@@ -268,12 +308,20 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
     setCreateStartDate(sDate);
     setCreateEndDate(eDate);
     setCreateDuration(dur);
-    setCreateAssigneeMemberId(task.assigneeMemberId || undefined);
-    setCreateKeyUser(task.keyUser || '');
-    setCreateParty(task.party || '');
     setCreateStatus(task.status || 'NOT_STARTED');
     setCreateProgressPercent(task.progressPercent || 0);
     setCreatePredecessorId(task.predecessorTaskIds && task.predecessorTaskIds.length > 0 ? task.predecessorTaskIds[0] : undefined);
+
+    // Multi-assignment list parsing
+    const parsedTeams = splitStringList(task.party || task.assigneeTeam);
+    const parsedMembers = splitStringList(task.assigneeName);
+    const parsedKeyUsers = splitStringList(task.keyUser);
+
+    setSelectedTeams(parsedTeams);
+    setSelectedMemberNames(parsedMembers);
+    setSelectedPrimaryMemberId(task.assigneeMemberId || undefined);
+    setSelectedKeyUsers(parsedKeyUsers);
+
     setActiveTabModal('info');
     setIsCreatingTask(true);
   };
@@ -287,6 +335,10 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
 
     setCreateSubmitting(true);
     try {
+      const combinedAssigneeNames = selectedMemberNames.join(', ');
+      const combinedPartyNames = selectedTeams.join(', ');
+      const combinedKeyUsers = selectedKeyUsers.join(', ');
+
       await taskService.saveTask({
         taskId: editingTaskId || 0,
         projectId,
@@ -304,9 +356,10 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
         visibilityScope: 'PUBLIC',
         aimCode: createAimCode,
         module: createModule,
-        assigneeMemberId: createAssigneeMemberId,
-        keyUser: createKeyUser,
-        party: createParty,
+        assigneeMemberId: selectedPrimaryMemberId,
+        assigneeName: combinedAssigneeNames,
+        keyUser: combinedKeyUsers,
+        party: combinedPartyNames,
         predecessorTaskIds: createPredecessorId ? [createPredecessorId] : []
       });
 
@@ -364,6 +417,29 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
       default:
         return <span className="bg-dark-700 text-dark-300 border border-dark-600 text-xs px-2 py-0.5 rounded-full w-fit">Chưa chạy</span>;
     }
+  };
+
+  // Render multi-assignment badges on grid cells
+  const renderBadgesList = (rawText?: string, defaultColor: 'brand' | 'blue' | 'emerald' | 'amber' = 'brand') => {
+    const list = splitStringList(rawText);
+    if (list.length === 0) return <span className="text-dark-500 text-xs">-</span>;
+
+    const colorClasses = {
+      brand: 'bg-brand-500/10 text-brand-400 border-brand-500/20',
+      blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+      emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+      amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    }[defaultColor];
+
+    return (
+      <div className="flex flex-wrap gap-1 items-center">
+        {list.map((item, idx) => (
+          <span key={idx} className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${colorClasses}`}>
+            {item}
+          </span>
+        ))}
+      </div>
+    );
   };
 
   // Render a task node in the Tree Grid recursively
@@ -430,24 +506,19 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
             {formatDate(task.endDatePlanned)}
           </td>
 
-          {/* Người phụ trách (PIC) */}
-          <td className="py-3 px-4 border-r border-dark-800 text-xs text-dark-300">
-            {task.assigneeName ? (
-              <div>
-                <p className="text-dark-100 font-medium">{task.assigneeName}</p>
-                <p className="text-[10px] text-brand-400">{task.assigneeTeam || 'ARON'}</p>
-              </div>
-            ) : '-'}
+          {/* Người phụ trách (PIC - Multi Members / Badges) */}
+          <td className="py-3 px-4 border-r border-dark-800 text-xs">
+            {renderBadgesList(task.assigneeName, 'brand')}
           </td>
 
-          {/* Đại diện Khách hàng */}
-          <td className="py-3 px-3 border-r border-dark-800 text-xs text-dark-300">
-            {task.keyUser || '-'}
+          {/* Đại diện Khách hàng (Multi Key Users) */}
+          <td className="py-3 px-3 border-r border-dark-800 text-xs">
+            {renderBadgesList(task.keyUser, 'amber')}
           </td>
 
-          {/* Đơn vị / Nhóm */}
-          <td className="py-3 px-3 border-r border-dark-800 text-xs text-dark-300">
-            {task.party || '-'}
+          {/* Đơn vị / Nhóm (Multi Teams / Parties) */}
+          <td className="py-3 px-3 border-r border-dark-800 text-xs">
+            {renderBadgesList(task.party || task.assigneeTeam, 'blue')}
           </td>
 
           {/* Ghi chú / Mô tả */}
@@ -517,6 +588,16 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
     );
   };
 
+  // Available Teams List for Multi-select
+  const availableTeams = [
+    'Ban Dự Án',
+    ...functionalTeams.map(ft => `Team ${ft.functionalTeamName}`),
+    'Đơn Vị Khách Hàng (Client S.I.S)',
+    'Đối Tác Triển Khai (Partner ARON)',
+    'Đối Tác Thứ 3 (Third Party Hạ Tầng / Data)'
+  ];
+  const uniqueAvailableTeams = Array.from(new Set(availableTeams));
+
   return (
     <div className="space-y-6">
       {/* Header section */}
@@ -526,7 +607,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
             <Calendar className="text-brand-500" /> Kế hoạch dự án - Master Plan
           </h2>
           <p className="text-xs text-dark-400 mt-1">
-            Phân cấp WBS 4 cấp liên kết Workday Calendar Engine. Chế độ Xem Rộng (Wide Screen) & Chỉnh sửa Task cho PM/PC
+            Phân cấp WBS 4 cấp liên kết Workday Calendar Engine. Chế độ Phân công Đa nhóm & Đa nhân sự linh hoạt
           </p>
         </div>
         
@@ -592,9 +673,9 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
                 <th rowSpan={2} className="py-3 px-3 text-center border-r border-dark-800 w-24">Cấp Độ</th>
                 <th rowSpan={2} className="py-3 px-3 text-center border-r border-dark-800 w-24">Số Ngày</th>
                 <th colSpan={2} className="py-2 px-3 text-center border-r border-dark-800 border-b border-dark-800">Thời Gian Kế Hoạch</th>
-                <th rowSpan={2} className="py-3 px-4 border-r border-dark-800 min-w-[160px]">Người Phụ Trách (PIC)</th>
-                <th rowSpan={2} className="py-3 px-3 border-r border-dark-800 min-w-[140px]">Đại Diện Khách Hàng</th>
-                <th rowSpan={2} className="py-3 px-3 border-r border-dark-800 min-w-[140px]">Đơn Vị / Nhóm</th>
+                <th rowSpan={2} className="py-3 px-4 border-r border-dark-800 min-w-[180px]">Người Phụ Trách (PIC)</th>
+                <th rowSpan={2} className="py-3 px-3 border-r border-dark-800 min-w-[150px]">Đại Diện Khách Hàng</th>
+                <th rowSpan={2} className="py-3 px-3 border-r border-dark-800 min-w-[150px]">Đơn Vị / Nhóm</th>
                 <th rowSpan={2} className="py-3 px-3 border-r border-dark-800 min-w-[160px]">Ghi Chú / Mô Tả</th>
                 <th rowSpan={2} className="py-3 px-3 border-r border-dark-800 w-28">Tiến Độ</th>
                 <th rowSpan={2} className="py-3 px-3 border-r border-dark-800 w-28">Trạng Thái</th>
@@ -620,10 +701,10 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
         </div>
       )}
 
-      {/* 3-TAB PRIMAVERA P6 STYLE TASK CREATION & FULL EDIT MODAL */}
+      {/* 3-TAB PRIMAVERA P6 STYLE TASK CREATION & FULL EDIT MODAL WITH FLEXIBLE MULTI-ASSIGNMENT */}
       {isCreatingTask && (
         <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <form onSubmit={handleCreateTask} className="bg-dark-900 border border-dark-800 max-w-2xl w-full p-6 rounded-2xl shadow-2xl space-y-5 animate-slide-up">
+          <form onSubmit={handleCreateTask} className="bg-dark-900 border border-dark-800 max-w-2xl w-full p-6 rounded-2xl shadow-2xl space-y-5 animate-slide-up max-h-[90vh] overflow-y-auto">
             
             {/* Modal Header */}
             <div className="flex justify-between items-center border-b border-dark-800 pb-3">
@@ -862,70 +943,121 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId, userRole }) =
               </div>
             )}
 
-            {/* TAB 3: NHÂN SỰ & ĐỘI NGŨ DỰ ÁN (PROJECT TEAM MAPPING) */}
+            {/* TAB 3: NHÂN SỰ & ĐỘI NGŨ DỰ ÁN (FLEXIBLE MULTI-ASSIGNMENT FOR TEAMS & INDIVIDUALS) */}
             {activeTabModal === 'resource' && (
-              <div className="space-y-4 animate-fade-in">
-                <div className="space-y-1">
-                  <label className="text-xs text-dark-300 font-semibold flex items-center justify-between">
-                    <span>Người Phụ Trách (PIC):</span>
-                    <span className="text-[10px] text-brand-400">Từ [Đội Ngũ Dự Án]</span>
-                  </label>
-                  <select
-                    value={createAssigneeMemberId || ''}
-                    onChange={(e) => setCreateAssigneeMemberId(e.target.value ? Number(e.target.value) : undefined)}
-                    className="w-full bg-dark-950 border border-dark-750 text-xs p-2.5 rounded-xl text-white focus:outline-none focus:border-brand-500"
-                  >
-                    <option value="">-- Chọn Nhân Sự Triển Khai --</option>
-                    {projectMembers.map(m => (
-                      <option key={m.projectMemberId} value={m.projectMemberId}>
-                        {m.fullName || m.username} ({m.roleName || 'Member'}) - {m.functionalTeamName || 'ARON'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs text-dark-300 font-semibold flex items-center justify-between">
-                      <span>Đại Diện Khách Hàng (Client Key User):</span>
-                      <span className="text-[10px] text-brand-400">Từ [Đội Ngũ Dự Án]</span>
+              <div className="space-y-5 animate-fade-in">
+                
+                {/* 1. SECTION: CHỌN 1 HOẶC NHIỀU ĐỘI / NHÓM (TEAMS & PARTIES) */}
+                <div className="space-y-2 bg-dark-950 p-4 rounded-xl border border-dark-800">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Briefcase size={14} className="text-brand-400" />
+                      1. Đội / Nhóm Thực Thi (Chọn 1 hoặc nhiều nhóm):
                     </label>
-                    <select
-                      value={createKeyUser}
-                      onChange={(e) => setCreateKeyUser(e.target.value)}
-                      className="w-full bg-dark-950 border border-dark-750 text-xs p-2.5 rounded-xl text-white focus:outline-none focus:border-brand-500"
-                    >
-                      <option value="">-- Chọn Key User đại diện S.I.S --</option>
-                      {projectMembers.map(m => (
-                        <option key={`keyuser-${m.projectMemberId}`} value={m.fullName || m.username}>
-                          {m.fullName || m.username} ({m.roleName || 'Key User'}) - {m.functionalTeamName || 'Client Team'}
-                        </option>
-                      ))}
-                    </select>
+                    <span className="text-[10px] text-brand-400 font-mono">Đã chọn: {selectedTeams.length} nhóm</span>
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-xs text-dark-300 font-semibold flex items-center justify-between">
-                      <span>Đơn Vị / Nhóm Thực Thi (Third Party / Partner):</span>
-                      <span className="text-[10px] text-brand-400">Từ [Đội Ngũ Dự Án]</span>
-                    </label>
-                    <select
-                      value={createParty}
-                      onChange={(e) => setCreateParty(e.target.value)}
-                      className="w-full bg-dark-950 border border-dark-750 text-xs p-2.5 rounded-xl text-white focus:outline-none focus:border-brand-500"
-                    >
-                      <option value="">-- Chọn Nhóm Đơn Vị Phụ Trách --</option>
-                      <option value="Client (S.I.S)">Khách Hàng (Client S.I.S)</option>
-                      <option value="Partner (ARON)">Đơn Vị Triển Khai (Partner ARON)</option>
-                      <option value="Third Party (Hạ tầng / Data)">Bên Thứ 3 (Third Party Hạ Tầng / Data)</option>
-                      {projectMembers.map(m => (
-                        <option key={`party-${m.projectMemberId}`} value={`${m.fullName || m.username} (${m.functionalTeamName || 'Team'})`}>
-                          {m.fullName || m.username} - {m.functionalTeamName || 'Team'}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {uniqueAvailableTeams.map((teamName, idx) => {
+                      const isSelected = selectedTeams.includes(teamName);
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => toggleTeamSelection(teamName)}
+                          className={`text-xs px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 border transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-blue-600/20 text-blue-300 border-blue-500/50 shadow-md shadow-blue-500/10'
+                              : 'bg-dark-900 hover:bg-dark-800 text-dark-300 border-dark-750'
+                          }`}
+                        >
+                          <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center text-[10px] ${
+                            isSelected ? 'bg-blue-500 border-blue-400 text-white' : 'border-dark-600'
+                          }`}>
+                            {isSelected && <Check size={10} />}
+                          </span>
+                          {teamName}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
+
+                {/* 2. SECTION: CHỌN 1 HOẶC NHIỀU CÁ NHÂN PHỤ TRÁCH (INDIVIDUAL PICS) */}
+                <div className="space-y-2 bg-dark-950 p-4 rounded-xl border border-dark-800">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <UserCheck size={14} className="text-brand-400" />
+                      2. Cá Nhân Phụ Trách - PIC (Chọn 1 hoặc nhiều người):
+                    </label>
+                    <span className="text-[10px] text-brand-400 font-mono">Đã chọn: {selectedMemberNames.length} người</span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {projectMembers.map((m) => {
+                      const mName = m.fullName || m.username;
+                      const isSelected = selectedMemberNames.includes(mName);
+                      return (
+                        <button
+                          key={m.projectMemberId}
+                          type="button"
+                          onClick={() => toggleMemberSelection(mName, m.projectMemberId)}
+                          className={`text-xs px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 border transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-brand-600/20 text-brand-300 border-brand-500/50 shadow-md shadow-brand-500/10'
+                              : 'bg-dark-900 hover:bg-dark-800 text-dark-300 border-dark-750'
+                          }`}
+                        >
+                          <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center text-[10px] ${
+                            isSelected ? 'bg-brand-500 border-brand-400 text-white' : 'border-dark-600'
+                          }`}>
+                            {isSelected && <Check size={10} />}
+                          </span>
+                          <span>{mName}</span>
+                          <span className="text-[10px] opacity-75 font-normal">({m.functionalTeamName || 'ARON'})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. SECTION: CHỌN 1 HOẶC NHIỀU KEY USER KHÁCH HÀNG */}
+                <div className="space-y-2 bg-dark-950 p-4 rounded-xl border border-dark-800">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                      <Users size={14} className="text-amber-400" />
+                      3. Đại Diện Khách Hàng - Client Key User (Chọn 1 hoặc nhiều):
+                    </label>
+                    <span className="text-[10px] text-amber-400 font-mono">Đã chọn: {selectedKeyUsers.length} người</span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {projectMembers.map((m) => {
+                      const mName = m.fullName || m.username;
+                      const isSelected = selectedKeyUsers.includes(mName);
+                      return (
+                        <button
+                          key={`ku-${m.projectMemberId}`}
+                          type="button"
+                          onClick={() => toggleKeyUserSelection(mName)}
+                          className={`text-xs px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1.5 border transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-md shadow-amber-500/10'
+                              : 'bg-dark-900 hover:bg-dark-800 text-dark-300 border-dark-750'
+                          }`}
+                        >
+                          <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center text-[10px] ${
+                            isSelected ? 'bg-amber-500 border-amber-400 text-white' : 'border-dark-600'
+                          }`}>
+                            {isSelected && <Check size={10} />}
+                          </span>
+                          <span>{mName}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
               </div>
             )}
 

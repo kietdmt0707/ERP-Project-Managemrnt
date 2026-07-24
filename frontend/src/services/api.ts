@@ -595,6 +595,26 @@ export const teamService = {
       throw new Error(errText || 'Gán/tạo thành viên thất bại.');
     }
     return response.json();
+  },
+  async deleteMember(projectMemberId: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/team/member/${projectMemberId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Xóa thành viên thất bại.');
+    }
+  },
+  async deleteFunctionalTeam(functionalTeamId: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/team/functional/${functionalTeamId}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(errText || 'Xóa đội chức năng thất bại.');
+    }
   }
 };
 

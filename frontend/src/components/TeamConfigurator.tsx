@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { teamService, TeamMemberDto } from '../services/api';
-import { Users, Plus, UserPlus, Briefcase } from 'lucide-react';
+import { Users, Plus, UserPlus, Briefcase, Trash2, Edit3 } from 'lucide-react';
 
 interface TeamConfiguratorProps {
   projectId: number;
@@ -25,6 +25,7 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
   // Modals / forms
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [showTeamModal, setShowTeamModal] = useState(false);
+  const [isEditingMember, setIsEditingMember] = useState(false);
 
   // Member form
   const [username, setUsername] = useState('');
@@ -51,14 +52,42 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
       setLoading(true);
       const res = await teamService.getTeams(projectId);
       setData(res);
-      if (res.roles.length > 0) {
-        setRoleId(res.roles[res.roles.length - 1].roleId); // Default to lowest role (Member)
+      if (res.roles.length > 0 && roleId === 0) {
+        setRoleId(res.roles[res.roles.length - 1].roleId);
       }
     } catch (err: any) {
       setError(err.message || 'Lỗi tải cơ cấu đội dự án.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOpenAddMember = () => {
+    setIsEditingMember(false);
+    setUsername('');
+    setFullName('');
+    setEmail('');
+    setPhone('');
+    setTitle('');
+    setFunctionalTeamId(undefined);
+    setDailyRate(150);
+    if (data.roles.length > 0) {
+      setRoleId(data.roles[data.roles.length - 1].roleId);
+    }
+    setShowMemberModal(true);
+  };
+
+  const handleOpenEditMember = (m: TeamMemberDto) => {
+    setIsEditingMember(true);
+    setUsername(m.username);
+    setFullName(m.fullName);
+    setEmail(m.email);
+    setPhone(m.phone || '');
+    setTitle(m.title || '');
+    setRoleId(m.roleId);
+    setFunctionalTeamId(m.functionalTeamId || undefined);
+    setDailyRate(m.dailyRate || 150);
+    setShowMemberModal(true);
   };
 
   const handleMemberSubmit = async (e: React.FormEvent) => {
@@ -75,22 +104,34 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
         title,
         roleId,
         functionalTeamId,
-        dailyRate: (userRole === 'PM' || userRole === 'DIRECTOR') ? dailyRate : undefined
+        dailyRate: (userRole === 'PM' || userRole === 'DIRECTOR' || userRole === 'SYSTEM_ADMIN') ? dailyRate : undefined
       });
       setShowMemberModal(false);
-      // Reset
-      setUsername('');
-      setFullName('');
-      setEmail('');
-      setPhone('');
-      setTitle('');
-      setFunctionalTeamId(undefined);
-      setDailyRate(150);
       loadTeamData();
     } catch (err: any) {
-      setError(err.message || 'Gán thành viên thất bại.');
+      setError(err.message || 'Gán/Cập nhật thành viên thất bại.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteMember = async (projectMemberId: number, name: string) => {
+    if (!window.confirm(`Xác nhận xóa thành viên "${name}" khỏi dự án?`)) return;
+    try {
+      await teamService.deleteMember(projectMemberId);
+      loadTeamData();
+    } catch (err: any) {
+      alert(err.message || 'Xóa thành viên thất bại.');
+    }
+  };
+
+  const handleDeleteFunctionalTeam = async (ftId: number, name: string) => {
+    if (!window.confirm(`Xác nhận xóa đội chức năng "Team ${name}"?`)) return;
+    try {
+      await teamService.deleteFunctionalTeam(ftId);
+      loadTeamData();
+    } catch (err: any) {
+      alert(err.message || 'Xóa đội chức năng thất bại.');
     }
   };
 
@@ -123,8 +164,9 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
     }
   };
 
-  const isCostVisible = userRole === 'PM' || userRole === 'DIRECTOR';
-  const canManageTeam = userRole === 'PM' || userRole === 'DIRECTOR' || userRole === 'PC';
+  const isCostVisible = userRole === 'PM' || userRole === 'DIRECTOR' || userRole === 'SYSTEM_ADMIN';
+  const canManageTeam = userRole === 'PM' || userRole === 'DIRECTOR' || userRole === 'PC' || userRole === 'SYSTEM_ADMIN';
+  const canDeleteTeam = userRole === 'PM' || userRole === 'DIRECTOR' || userRole === 'SYSTEM_ADMIN' || userRole === 'PC';
 
   return (
     <div className="space-y-6">
@@ -134,7 +176,7 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
             <Users className="text-brand-500" /> Quản Lý Đội Dự Án & Cơ Cấu Phân Quyền
           </h2>
           <p className="text-xs text-dark-400 mt-1">
-            Khai báo đội ARON, Khách hàng, Partner, đội chức năng (FIN, Tech...) và gán vai trò nhân sự
+            Khai báo đội ARON, Khách hàng, Partner, đội chức năng (FIN, Tech...) và gán vai trò nhân sự (Dành cho PM & PC)
           </p>
         </div>
         {canManageTeam && (
@@ -146,7 +188,7 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
               <Plus size={14} /> Khai Báo Đội/Team
             </button>
             <button
-              onClick={() => setShowMemberModal(true)}
+              onClick={handleOpenAddMember}
               className="bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl flex items-center gap-1.5 transition-all shadow-lg shadow-brand-600/10"
             >
               <UserPlus size={14} /> Đăng Ký Nhân Sự
@@ -179,8 +221,17 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
                   </div>
                   <div className="pl-4 space-y-1.5 border-l border-dark-800">
                     {t.functionalTeams.map((ft: any) => (
-                      <div key={ft.functionalTeamId} className="text-dark-400 hover:text-white transition-colors py-0.5">
-                        ⚙️ Team {ft.functionalTeamName}
+                      <div key={ft.functionalTeamId} className="flex items-center justify-between text-dark-400 hover:text-white transition-colors py-0.5 group">
+                        <span>⚙️ Team {ft.functionalTeamName}</span>
+                        {canDeleteTeam && (
+                          <button
+                            onClick={() => handleDeleteFunctionalTeam(ft.functionalTeamId, ft.functionalTeamName)}
+                            className="opacity-0 group-hover:opacity-100 text-rose-400 hover:text-rose-300 transition-opacity p-0.5"
+                            title="Xóa Đội Chức Năng"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
                       </div>
                     ))}
                     {t.functionalTeams.length === 0 && (
@@ -210,6 +261,7 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
                     <th className="pb-3">Đội chức năng</th>
                     <th className="pb-3">Vai trò dự án</th>
                     {isCostVisible && <th className="pb-3 text-right">Daily Rate</th>}
+                    {canManageTeam && <th className="pb-3 text-right">Thao tác</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-dark-900">
@@ -250,6 +302,26 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
                           ${m.dailyRate?.toFixed(2)}/day
                         </td>
                       )}
+                      {canManageTeam && (
+                        <td className="py-3 text-right space-x-2">
+                          <button
+                            onClick={() => handleOpenEditMember(m)}
+                            className="text-brand-400 hover:text-brand-300 font-medium text-[11px]"
+                            title="Chỉnh sửa thông tin"
+                          >
+                            <Edit3 size={13} className="inline" /> Sửa
+                          </button>
+                          {canDeleteTeam && (
+                            <button
+                              onClick={() => handleDeleteMember(m.projectMemberId, m.fullName || m.username)}
+                              className="text-rose-400 hover:text-rose-300 font-medium text-[11px]"
+                              title="Xóa khỏi đội dự án"
+                            >
+                              <Trash2 size={13} className="inline" /> Xóa
+                            </button>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -259,13 +331,13 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
         </div>
       )}
 
-      {/* Add Member Modal */}
+      {/* Add / Edit Member Modal */}
       {showMemberModal && (
         <div className="fixed inset-0 bg-dark-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-lg glass-panel p-6 rounded-2xl border border-dark-800 shadow-2xl space-y-4 animate-slide-up">
             <div className="flex justify-between items-center border-b border-dark-850 pb-3">
               <h3 className="text-md font-bold text-white flex items-center gap-2">
-                <UserPlus className="text-brand-500" /> Đăng Ký Thành Viên Dự Án
+                <UserPlus className="text-brand-500" /> {isEditingMember ? 'Cập Nhật Nhân Sự Dự Án' : 'Đăng Ký Thành Viên Dự Án'}
               </h3>
               <button onClick={() => setShowMemberModal(false)} className="text-xs text-dark-400 hover:text-white">Đóng</button>
             </div>
@@ -278,19 +350,21 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
                     type="text" 
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="VD: john_consultant"
-                    className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                    placeholder="VD: kiettm"
+                    disabled={isEditingMember}
+                    className="w-full bg-dark-900 border border-dark-800 text-xs p-2.5 rounded-xl text-white disabled:opacity-60"
                     required
                   />
                 </div>
+
                 <div className="space-y-1">
-                  <label className="text-xs text-dark-300 font-semibold">Họ và Tên:</label>
+                  <label className="text-xs text-dark-300 font-semibold">Họ và tên (*):</label>
                   <input 
                     type="text" 
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="VD: Nguyễn Văn A"
-                    className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                    placeholder="VD: Dương Minh Tuấn Kiệt"
+                    className="w-full bg-dark-900 border border-dark-800 text-xs p-2.5 rounded-xl text-white"
                     required
                   />
                 </div>
@@ -298,51 +372,57 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs text-dark-300 font-semibold">Email liên hệ (*):</label>
+                  <label className="text-xs text-dark-300 font-semibold">Email làm việc (*):</label>
                   <input 
                     type="email" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="VD: john@aron.vn"
-                    className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                    placeholder="VD: kietdmt@aron.com.vn"
+                    className="w-full bg-dark-900 border border-dark-800 text-xs p-2.5 rounded-xl text-white"
                     required
                   />
                 </div>
+
                 <div className="space-y-1">
-                  <label className="text-xs text-dark-300 font-semibold">Điện thoại:</label>
+                  <label className="text-xs text-dark-300 font-semibold">Số điện thoại / Zalo:</label>
                   <input 
                     type="text" 
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="SĐT liên hệ"
-                    className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                    placeholder="VD: 0901234567"
+                    className="w-full bg-dark-900 border border-dark-800 text-xs p-2.5 rounded-xl text-white"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs text-dark-300 font-semibold">Vai Trò Phân Quyền (Roles):</label>
-                  <select 
-                    value={roleId}
-                    onChange={(e) => setRoleId(Number(e.target.value))}
-                    className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                  <label className="text-xs text-dark-300 font-semibold">Đội chức năng (Functional Team):</label>
+                  <select
+                    value={functionalTeamId || ''}
+                    onChange={(e) => setFunctionalTeamId(e.target.value ? Number(e.target.value) : undefined)}
+                    className="w-full bg-dark-900 border border-dark-800 text-xs p-2.5 rounded-xl text-white"
                   >
-                    {data.roles.map(r => (
-                      <option key={r.roleId} value={r.roleId}>{r.roleName}</option>
+                    <option value="">-- Chưa xếp team --</option>
+                    {data.functionalTeams.map((ft: any) => (
+                      <option key={ft.functionalTeamId} value={ft.functionalTeamId}>
+                        Team {ft.functionalTeamName}
+                      </option>
                     ))}
                   </select>
                 </div>
+
                 <div className="space-y-1">
-                  <label className="text-xs text-dark-300 font-semibold">Nhóm Chức Năng (Team):</label>
-                  <select 
-                    value={functionalTeamId || ''}
-                    onChange={(e) => setFunctionalTeamId(e.target.value ? Number(e.target.value) : undefined)}
-                    className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                  <label className="text-xs text-dark-300 font-semibold">Vai trò phân quyền (*):</label>
+                  <select
+                    value={roleId}
+                    onChange={(e) => setRoleId(Number(e.target.value))}
+                    className="w-full bg-dark-900 border border-dark-800 text-xs p-2.5 rounded-xl text-white"
                   >
-                    <option value="">-- Chưa xếp team --</option>
-                    {data.functionalTeams.map(ft => (
-                      <option key={ft.functionalTeamId} value={ft.functionalTeamId}>{ft.functionalTeamName}</option>
+                    {data.roles.map((r: any) => (
+                      <option key={r.roleId} value={r.roleId}>
+                        {r.roleName} ({r.roleCode})
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -350,27 +430,33 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
 
               {isCostVisible && (
                 <div className="space-y-1">
-                  <label className="text-xs text-dark-300 font-semibold">Giá Cost Ngày Công (Daily Rate - USD):</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-3 text-dark-500 font-bold">$</span>
-                    <input 
-                      type="number" 
-                      value={dailyRate}
-                      onChange={(e) => setDailyRate(parseFloat(e.target.value) || 0)}
-                      className="w-full bg-dark-900 border border-dark-800 text-xs p-3 pl-7 rounded-xl text-white focus:outline-none focus:border-brand-500"
-                      required
-                    />
-                  </div>
+                  <label className="text-xs text-dark-300 font-semibold">Chi phí Daily Rate ($/ngày):</label>
+                  <input 
+                    type="number" 
+                    step="10"
+                    value={dailyRate}
+                    onChange={(e) => setDailyRate(Number(e.target.value))}
+                    className="w-full bg-dark-900 border border-dark-800 text-xs p-2.5 rounded-xl text-white font-mono"
+                  />
                 </div>
               )}
 
-              <button 
-                type="submit"
-                disabled={submitting}
-                className="w-full bg-brand-600 hover:bg-brand-500 text-white p-3 rounded-xl text-xs font-bold transition-all"
-              >
-                {submitting ? 'Đang lưu...' : 'Gán/Thêm Thành Viên Vào Dự Án'}
-              </button>
+              <div className="flex gap-2 justify-end pt-4 border-t border-dark-850">
+                <button
+                  type="button"
+                  onClick={() => setShowMemberModal(false)}
+                  className="bg-dark-800 hover:bg-dark-700 text-white text-xs py-2 px-4 rounded-xl"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold py-2 px-4 rounded-xl disabled:opacity-50"
+                >
+                  {submitting ? 'Đang lưu...' : (isEditingMember ? 'Cập Nhật Thành Viên' : 'Đăng Ký Thành Viên')}
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -382,58 +468,70 @@ export const TeamConfigurator: React.FC<TeamConfiguratorProps> = ({ projectId, u
           <div className="w-full max-w-md glass-panel p-6 rounded-2xl border border-dark-800 shadow-2xl space-y-4 animate-slide-up">
             <div className="flex justify-between items-center border-b border-dark-850 pb-3">
               <h3 className="text-md font-bold text-white flex items-center gap-2">
-                <Briefcase className="text-brand-500" /> Khai Báo Đội/Nhóm Mới
+                <Briefcase className="text-brand-500" /> Khai Báo Đội / Team Dự Án
               </h3>
               <button onClick={() => setShowTeamModal(false)} className="text-xs text-dark-400 hover:text-white">Đóng</button>
             </div>
 
             <form onSubmit={handleTeamSubmit} className="space-y-4">
-              <div className="flex items-center gap-2 pb-2">
-                <input 
-                  type="checkbox"
-                  id="isFunctional"
-                  checked={isFunctional}
-                  onChange={e => setIsFunctional(e.target.checked)}
-                  className="rounded bg-dark-900 border-dark-800 text-brand-500 focus:ring-brand-500"
-                />
-                <label htmlFor="isFunctional" className="text-xs text-dark-300 font-semibold">Đây là Team chức năng (Ví dụ: Team Tech, Team FIN...)</label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs text-dark-200 font-semibold cursor-pointer">
+                  <input 
+                    type="checkbox"
+                    checked={isFunctional}
+                    onChange={(e) => setIsFunctional(e.target.checked)}
+                    className="accent-brand-500 h-4 w-4 rounded"
+                  />
+                  <span>Đây là Đội Chức Năng (ví dụ: Team FIN, Team Tech, Team DBA...)</span>
+                </label>
               </div>
 
-              {isFunctional && (
+              {isFunctional ? (
                 <div className="space-y-1">
-                  <label className="text-xs text-dark-300 font-semibold">Thuộc Đội dự án nào:</label>
-                  <select 
+                  <label className="text-xs text-dark-300 font-semibold">Trực thuộc Khối / Đội dự án (*):</label>
+                  <select
                     value={parentTeamId || ''}
                     onChange={(e) => setParentTeamId(e.target.value ? Number(e.target.value) : undefined)}
-                    className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                    className="w-full bg-dark-900 border border-dark-800 text-xs p-2.5 rounded-xl text-white"
                     required
                   >
-                    <option value="">-- Chọn đội dự án --</option>
-                    {data.teams.map(t => (
-                      <option key={t.teamId} value={t.teamId}>{t.teamName}</option>
+                    <option value="">-- Chọn Khối Dự Án --</option>
+                    {data.teams.map((t: any) => (
+                      <option key={t.teamId} value={t.teamId}>
+                        {t.teamName}
+                      </option>
                     ))}
                   </select>
                 </div>
-              )}
+              ) : null}
 
               <div className="space-y-1">
-                <label className="text-xs text-dark-300 font-semibold">Tên Đội / Nhóm:</label>
+                <label className="text-xs text-dark-300 font-semibold">Tên Đội / Team mới (*):</label>
                 <input 
                   type="text" 
                   value={newTeamName}
                   onChange={(e) => setNewTeamName(e.target.value)}
-                  placeholder={isFunctional ? "VD: Tech, DBA, AP..." : "VD: Đội ARON, Đội Khách Hàng..."}
-                  className="w-full bg-dark-900 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                  placeholder={isFunctional ? "VD: Team PO-INV, Team FIN..." : "VD: Đơn Vị Khách Hàng, ARON Partner..."}
+                  className="w-full bg-dark-900 border border-dark-800 text-xs p-2.5 rounded-xl text-white"
                   required
                 />
               </div>
 
-              <button 
-                type="submit"
-                className="w-full bg-brand-600 hover:bg-brand-500 text-white p-3 rounded-xl text-xs font-bold transition-all"
-              >
-                Tạo Đội/Nhóm
-              </button>
+              <div className="flex gap-2 justify-end pt-4 border-t border-dark-850">
+                <button
+                  type="button"
+                  onClick={() => setShowTeamModal(false)}
+                  className="bg-dark-800 hover:bg-dark-700 text-white text-xs py-2 px-4 rounded-xl"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold py-2 px-4 rounded-xl"
+                >
+                  Lưu Khai Báo
+                </button>
+              </div>
             </form>
           </div>
         </div>
