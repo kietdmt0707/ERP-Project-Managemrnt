@@ -144,7 +144,7 @@ export const LeaveManagement: React.FC = () => {
         return;
       }
 
-      const response = await fetch(`/api/leave/${approve ? 'approve' : 'reject'}/${approvalId}`, {
+      const response = await fetch(`${API_BASE_URL}/leave/${approve ? 'approve' : 'reject'}/${approvalId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
