@@ -88,11 +88,26 @@ namespace AronErpPm.Api.Controllers
             var activeProjects = new List<object>();
             foreach (var pm in projectMemberships)
             {
-                var approver = await _context.ProjectMembers
-                    .Include(pm2 => pm2.User)
-                    .Include(pm2 => pm2.Role)
-                    .Where(pm2 => pm2.ProjectId == pm.ProjectId && pm2.Role != null && pm2.Role.RoleCode == "PM" && pm2.IsActive)
-                    .FirstOrDefaultAsync();
+                ProjectMember? approver = null;
+                var requesterRole = pm.Role?.RoleCode ?? "MEMBER";
+
+                if (requesterRole == "PM")
+                {
+                    approver = await _context.ProjectMembers
+                        .Include(pm2 => pm2.User)
+                        .Include(pm2 => pm2.Role)
+                        .Where(pm2 => pm2.ProjectId == pm.ProjectId && pm2.Role != null && pm2.Role.RoleCode == "DIRECTOR" && pm2.IsActive)
+                        .FirstOrDefaultAsync();
+                }
+
+                if (approver == null)
+                {
+                    approver = await _context.ProjectMembers
+                        .Include(pm2 => pm2.User)
+                        .Include(pm2 => pm2.Role)
+                        .Where(pm2 => pm2.ProjectId == pm.ProjectId && pm2.Role != null && pm2.Role.RoleCode == "PM" && pm2.IsActive)
+                        .FirstOrDefaultAsync();
+                }
 
                 activeProjects.Add(new
                 {
