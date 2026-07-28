@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Plus, RefreshCw } from 'lucide-react';
+import { API_BASE_URL } from '../services/api';
 
 interface LeaveHistoryItem {
   leaveId: number;
@@ -51,7 +52,7 @@ export const LeaveManagement: React.FC = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('aron_pm_token');
-      const response = await fetch('/api/leave/dashboard', {
+      const response = await fetch(`${API_BASE_URL}/leave/dashboard`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -105,7 +106,7 @@ export const LeaveManagement: React.FC = () => {
         projectIds: selectedProjects
       };
 
-      const response = await fetch('/api/leave/request', {
+      const response = await fetch(`${API_BASE_URL}/leave/request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
