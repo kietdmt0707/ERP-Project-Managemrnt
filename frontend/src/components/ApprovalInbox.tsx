@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Check, XCircle, Search, Clock, FileText, User, LayoutList, ChevronRight, DollarSign } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Check, XCircle, Search, Clock, FileText, User, LayoutList, ChevronRight } from 'lucide-react';
 import { approvalService, projectService } from '../services/api';
 
 interface ApprovalInboxProps {
@@ -221,7 +221,7 @@ export function ApprovalInbox({ isOpen, onClose, onApprovalProcessed }: Approval
               )}
 
               {/* Render Items */}
-              {(activeTab === 'pending' ? pendingItems : historyItems).map((item, idx) => (
+              {(activeTab === 'pending' ? pendingItems : historyItems).map((item) => (
                 <div
                   key={item.stepId}
                   onClick={() => setSelectedItem(item)}
