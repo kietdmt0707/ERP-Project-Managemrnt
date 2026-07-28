@@ -369,7 +369,7 @@ namespace AronErpPm.Api.Controllers
             if (targetType == "TIMESHEET")
             {
                 var ts = await _context.Timesheets.FindAsync(targetId);
-                return (ts?.TaskDescription ?? "Timesheet", 0);
+                return (ts?.Description ?? "Timesheet", 0);
             }
             else if (targetType == "TRIP")
             {
@@ -379,7 +379,8 @@ namespace AronErpPm.Api.Controllers
             else if (targetType == "EXPENSE")
             {
                 var exp = await _context.Expenses.FindAsync(targetId);
-                return (exp?.ExpenseDescription ?? "Chi phí đề xuất", exp?.AmountActual ?? 0);
+                var desc = exp != null ? $"Chi phí: {exp.ExpenseType}" + (string.IsNullOrEmpty(exp.Notes) ? "" : $" - {exp.Notes}") : "Chi phí đề xuất";
+                return (desc, exp?.AmountActual ?? 0);
             }
             return ("Yêu cầu phê duyệt", 0);
         }
@@ -594,7 +595,7 @@ namespace AronErpPm.Api.Controllers
                     TargetId = step.Workflow.TargetId,
                     Description = details.description,
                     Amount = details.amount,
-                    step.CreatedDate,
+                    CreatedDate = step.Workflow.CreatedDate,
                     AllSteps = allSteps
                 });
             }
