@@ -76,30 +76,31 @@ namespace AronErpPm.Api.Controllers
             }
 
             // Fetch history
-            var history = await _context.LeaveRequests
+            var leaveRequests = await _context.LeaveRequests
                 .Where(r => r.UserId == user.UserId)
                 .OrderByDescending(r => r.CreatedDate)
-                .Select(r => new
-                {
-                    r.LeaveId,
-                    r.StartDate,
-                    r.EndDate,
-                    r.TotalDays,
-                    r.Reason,
-                    r.Status,
-                    r.CreatedDate,
-                    ProjectApprovals = _context.LeaveProjectApprovals
-                        .Where(a => a.LeaveId == r.LeaveId)
-                        .Select(a => new
-                        {
-                            a.ApprovalId,
-                            a.ProjectId,
-                            Project = new { ProjectName = a.Project != null ? a.Project.ProjectName : "Dự án ẩn" },
-                            a.Status,
-                            a.Comments
-                        })
-                })
+                .Include(r => r.ProjectApprovals)
+                    .ThenInclude(pa => pa.Project)
                 .ToListAsync();
+
+            var history = leaveRequests.Select(r => new
+            {
+                r.LeaveId,
+                r.StartDate,
+                r.EndDate,
+                r.TotalDays,
+                r.Reason,
+                r.Status,
+                r.CreatedDate,
+                ProjectApprovals = r.ProjectApprovals.Select(a => new
+                {
+                    a.ApprovalId,
+                    a.ProjectId,
+                    Project = new { ProjectName = a.Project != null ? a.Project.ProjectName : "Dự án ẩn" },
+                    a.Status,
+                    a.Comments
+                }).ToList()
+            }).ToList();
 
             return Ok(new
             {
