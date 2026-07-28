@@ -48,7 +48,7 @@ namespace AronErpPm.Api.Controllers
             decimal totalAvailable = (annualLeaveDays + carryOverDays) - usedLeaveDays;
 
             // Get user's active projects to populate check boxes on frontend
-            var activeProjects = await _context.ProjectMembers
+            var activeProjectsQuery = await _context.ProjectMembers
                 .Where(pm => pm.UserId == user.UserId && pm.IsActive)
                 .Select(pm => new
                 {
@@ -58,15 +58,42 @@ namespace AronErpPm.Api.Controllers
                     ApproverName = _context.ProjectMembers
                         .Where(pm2 => pm2.ProjectId == pm.ProjectId && pm2.Role != null && pm2.Role.RoleCode == "PM" && pm2.IsActive)
                         .Select(pm2 => pm2.User != null ? pm2.User.FullName : "System Admin")
-                        .FirstOrDefault() ?? "Admin System (Mặc định)"
+                        .FirstOrDefault()
                 })
                 .ToListAsync();
+
+            var activeProjects = activeProjectsQuery.Select(p => new
+            {
+                p.ProjectId,
+                p.ProjectName,
+                p.RoleCode,
+                ApproverName = p.ApproverName ?? "Admin System (Mặc định)"
+            }).ToList();
 
             // Fetch history
             var history = await _context.LeaveRequests
                 .Where(r => r.UserId == user.UserId)
-                .Include(r => r.ProjectApprovals).ThenInclude(pa => pa.Project)
                 .OrderByDescending(r => r.CreatedDate)
+                .Select(r => new
+                {
+                    r.LeaveId,
+                    r.StartDate,
+                    r.EndDate,
+                    r.TotalDays,
+                    r.Reason,
+                    r.Status,
+                    r.CreatedDate,
+                    ProjectApprovals = _context.LeaveProjectApprovals
+                        .Where(a => a.LeaveId == r.LeaveId)
+                        .Select(a => new
+                        {
+                            a.ApprovalId,
+                            a.ProjectId,
+                            Project = new { ProjectName = a.Project != null ? a.Project.ProjectName : "Dự án ẩn" },
+                            a.Status,
+                            a.Comments
+                        }).ToList()
+                })
                 .ToListAsync();
 
             return Ok(new
