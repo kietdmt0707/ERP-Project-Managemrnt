@@ -300,7 +300,32 @@ try
                 description VARCHAR(500),
                 updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
-        ", "Create oracle_instances table")
+        ", "Create oracle_instances table"),
+        (@"
+            CREATE TABLE IF NOT EXISTS leave_requests (
+                leave_id SERIAL PRIMARY KEY,
+                user_id INT NOT NULL,
+                start_date TIMESTAMP NOT NULL,
+                end_date TIMESTAMP NOT NULL,
+                total_days DECIMAL(5,2) NOT NULL,
+                reason VARCHAR(500) NOT NULL,
+                status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+                created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        ", "Create leave_requests table"),
+        (@"
+            CREATE TABLE IF NOT EXISTS leave_project_approvals (
+                approval_id SERIAL PRIMARY KEY,
+                leave_id INT NOT NULL,
+                project_id INT NOT NULL,
+                approver_member_id INT NOT NULL,
+                status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
+                action_date TIMESTAMP,
+                comments VARCHAR(500),
+                secure_token VARCHAR(255),
+                token_expiry TIMESTAMP WITH TIME ZONE
+            );
+        ", "Create leave_project_approvals table")
     };
 
     foreach (var migration in migrations)
