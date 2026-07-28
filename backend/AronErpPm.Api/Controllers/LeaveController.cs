@@ -92,7 +92,7 @@ namespace AronErpPm.Api.Controllers
                             Project = new { ProjectName = a.Project != null ? a.Project.ProjectName : "Dự án ẩn" },
                             a.Status,
                             a.Comments
-                        }).ToList()
+                        })
                 })
                 .ToListAsync();
 
