@@ -62,6 +62,15 @@ namespace AronErpPm.Api.Controllers
                                     && pm.FunctionalTeamId == member.FunctionalTeamId 
                                     && pm.Role!.RoleCode == "LEADER" && pm.IsActive);
                 
+                // Fallback: If no strict team leader is found, just grab any active LEADER in the project
+                if (leaderMember == null)
+                {
+                    leaderMember = await _context.ProjectMembers
+                        .Include(pm => pm.User)
+                        .FirstOrDefaultAsync(pm => pm.ProjectId == request.ProjectId 
+                                        && pm.Role!.RoleCode == "LEADER" && pm.IsActive);
+                }
+                
                 // Step 2: Project PM
                 var pmMember = await _context.ProjectMembers
                     .Include(pm => pm.User)
@@ -160,11 +169,16 @@ namespace AronErpPm.Api.Controllers
                     {
                         stepIdToSend = savedStep3.StepId;
                         tokenToSend = savedStep3.SecureToken!;
+                        // Make sure we grab the actual assigned user for Step 3
+                        currentApprover = await _context.ProjectMembers.Include(pm => pm.User)
+                            .FirstOrDefaultAsync(pm => pm.ProjectMemberId == savedStep3.ApproverMemberId);
                     }
                 }
                 else
                 {
-                    currentApprover = leaderMember ?? pmMember;
+                    // Grab the exact user assigned to Step 1
+                    currentApprover = await _context.ProjectMembers.Include(pm => pm.User)
+                        .FirstOrDefaultAsync(pm => pm.ProjectMemberId == step1ApproverId);
                 }
 
                 if (currentApprover?.User != null)
