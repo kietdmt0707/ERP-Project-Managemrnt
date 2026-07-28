@@ -31,6 +31,7 @@ export interface AuthResponse {
   avatarPath?: string;
   annualLeaveDays?: number;
   carryOverDays?: number;
+  seniorityYears?: number;
   globalRole: string;
   permissionsJson?: string;
   projectRoles: UserRole[];
@@ -915,6 +916,7 @@ export interface UserDto {
   avatarPath?: string;
   annualLeaveDays?: number;
   carryOverDays?: number;
+  seniorityYears?: number;
   isActive: boolean;
   expiryDate?: string;
   globalRoleId?: number;

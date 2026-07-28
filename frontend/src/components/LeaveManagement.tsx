@@ -9,6 +9,7 @@ interface LeaveHistoryItem {
   totalDays: number;
   reason: string;
   status: string;
+  cancelStatus?: string;
   createdDate: string;
   projectApprovals: Array<{
     approvalId: number;
