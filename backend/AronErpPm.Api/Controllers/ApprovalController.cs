@@ -280,6 +280,22 @@ namespace AronErpPm.Api.Controllers
 
                     // Update Target item status to APPROVED
                     await UpdateTargetItemStatusAsync(workflow.TargetType, workflow.TargetId, "APPROVED");
+
+                    // Send Final Notification
+                    if (workflow.SubmitterMember?.User != null)
+                    {
+                        var details = await GetTargetItemDetailsAsync(workflow.TargetType, workflow.TargetId);
+                        await _emailService.SendFinalResultEmailAsync(
+                            workflow.SubmitterMember.User.Email,
+                            workflow.SubmitterMember.User.FullName,
+                            workflow.Project?.ProjectName ?? "Dự án",
+                            workflow.TargetType,
+                            details.description,
+                            details.amount,
+                            true,
+                            null
+                        );
+                    }
                 }
 
                 await _context.SaveChangesAsync();
@@ -326,10 +342,46 @@ namespace AronErpPm.Api.Controllers
 
                 // Update Target item status to REJECTED
                 await UpdateTargetItemStatusAsync(workflow.TargetType, workflow.TargetId, "REJECTED");
+
+                // Send Final Notification
+                if (workflow.SubmitterMember?.User != null)
+                {
+                    var details = await GetTargetItemDetailsAsync(workflow.TargetType, workflow.TargetId);
+                    await _emailService.SendFinalResultEmailAsync(
+                        workflow.SubmitterMember.User.Email,
+                        workflow.SubmitterMember.User.FullName,
+                        workflow.Project?.ProjectName ?? "Dự án",
+                        workflow.TargetType,
+                        details.description,
+                        details.amount,
+                        false,
+                        reason
+                    );
+                }
             }
 
             await _context.SaveChangesAsync();
             return RenderHtmlResponse(true, "Đã từ chối phê duyệt yêu cầu thành công.");
+        }
+
+        private async Task<(string description, decimal amount)> GetTargetItemDetailsAsync(string targetType, int targetId)
+        {
+            if (targetType == "TIMESHEET")
+            {
+                var ts = await _context.Timesheets.FindAsync(targetId);
+                return (ts?.TaskDescription ?? "Timesheet", 0);
+            }
+            else if (targetType == "TRIP")
+            {
+                var trip = await _context.BusinessTrips.FindAsync(targetId);
+                return ($"Công tác: {trip?.Title} - {trip?.Destination}", 0);
+            }
+            else if (targetType == "EXPENSE")
+            {
+                var exp = await _context.Expenses.FindAsync(targetId);
+                return (exp?.ExpenseDescription ?? "Chi phí đề xuất", exp?.AmountActual ?? 0);
+            }
+            return ("Yêu cầu phê duyệt", 0);
         }
 
         // Helper to update statuses of timesheets, expenses or trips
@@ -498,6 +550,224 @@ namespace AronErpPm.Api.Controllers
                 StatusCode = 200
             };
         }
+        [Authorize]
+        [HttpGet("pending")]
+        public async Task<IActionResult> GetPendingApprovals()
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username)) return Unauthorized();
+
+            var pendingSteps = await _context.ApprovalSteps
+                .Include(s => s.Workflow).ThenInclude(w => w!.Project)
+                .Include(s => s.Workflow).ThenInclude(w => w!.SubmitterMember).ThenInclude(m => m!.User)
+                .Where(s => s.ApproverMember!.User!.Username == username && s.StepStatus == "PENDING")
+                .OrderByDescending(s => s.CreatedDate)
+                .ToListAsync();
+
+            var result = new List<object>();
+            foreach(var step in pendingSteps)
+            {
+                var details = await GetTargetItemDetailsAsync(step.Workflow!.TargetType, step.Workflow.TargetId);
+                
+                // Get all steps for this workflow to show multi-level status
+                var allSteps = await _context.ApprovalSteps
+                    .Include(x => x.ApproverMember).ThenInclude(x => x!.Role)
+                    .Include(x => x.ApproverMember).ThenInclude(x => x!.User)
+                    .Where(x => x.WorkflowId == step.WorkflowId)
+                    .OrderBy(x => x.StepNumber)
+                    .Select(x => new {
+                        x.StepNumber,
+                        Role = x.ApproverMember!.Role!.RoleCode,
+                        ApproverName = x.ApproverMember!.User!.FullName,
+                        x.StepStatus,
+                        x.ActionDate,
+                        x.Comments
+                    })
+                    .ToListAsync();
+
+                result.Add(new {
+                    step.StepId,
+                    step.WorkflowId,
+                    ProjectName = step.Workflow.Project?.ProjectName,
+                    SubmitterName = step.Workflow.SubmitterMember?.User?.FullName,
+                    TargetType = step.Workflow.TargetType,
+                    TargetId = step.Workflow.TargetId,
+                    Description = details.description,
+                    Amount = details.amount,
+                    step.CreatedDate,
+                    AllSteps = allSteps
+                });
+            }
+
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet("history")]
+        public async Task<IActionResult> GetApprovalHistory([FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate, [FromQuery] int? projectId, [FromQuery] string? search)
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username)) return Unauthorized();
+
+            var query = _context.ApprovalSteps
+                .Include(s => s.Workflow).ThenInclude(w => w!.Project)
+                .Include(s => s.Workflow).ThenInclude(w => w!.SubmitterMember).ThenInclude(m => m!.User)
+                .Include(s => s.ApproverMember).ThenInclude(m => m!.User)
+                .Where(s => s.ApproverMember!.User!.Username == username && s.StepStatus != "PENDING");
+
+            if (fromDate.HasValue)
+                query = query.Where(s => s.ActionDate >= fromDate.Value.ToUniversalTime());
+            if (toDate.HasValue)
+                query = query.Where(s => s.ActionDate <= toDate.Value.ToUniversalTime().AddDays(1).AddTicks(-1));
+            if (projectId.HasValue)
+                query = query.Where(s => s.Workflow!.ProjectId == projectId.Value);
+            if (!string.IsNullOrEmpty(search))
+            {
+                search = search.ToLower();
+                query = query.Where(s => 
+                    s.Workflow!.SubmitterMember!.User!.FullName.ToLower().Contains(search) || 
+                    s.Workflow!.SubmitterMember!.User!.Email.ToLower().Contains(search));
+            }
+
+            var historySteps = await query.OrderByDescending(s => s.ActionDate).Take(50).ToListAsync();
+
+            var result = new List<object>();
+            foreach(var step in historySteps)
+            {
+                var details = await GetTargetItemDetailsAsync(step.Workflow!.TargetType, step.Workflow.TargetId);
+                result.Add(new {
+                    step.StepId,
+                    step.WorkflowId,
+                    ProjectName = step.Workflow.Project?.ProjectName,
+                    SubmitterName = step.Workflow.SubmitterMember?.User?.FullName,
+                    TargetType = step.Workflow.TargetType,
+                    TargetId = step.Workflow.TargetId,
+                    Description = details.description,
+                    Amount = details.amount,
+                    step.StepStatus,
+                    step.ActionDate,
+                    step.Comments
+                });
+            }
+
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpPost("action/{stepId}")]
+        public async Task<IActionResult> SubmitApprovalAction(int stepId, [FromBody] ApprovalActionDto actionDto)
+        {
+            var username = User.Identity?.Name;
+            
+            var step = await _context.ApprovalSteps
+                .Include(s => s.Workflow).ThenInclude(w => w!.Project)
+                .Include(s => s.Workflow).ThenInclude(w => w!.SubmitterMember).ThenInclude(m => m!.User)
+                .Include(s => s.ApproverMember).ThenInclude(m => m!.User)
+                .FirstOrDefaultAsync(s => s.StepId == stepId);
+
+            if (step == null) return NotFound(new { message = "Không tìm thấy bước phê duyệt này." });
+            if (step.ApproverMember?.User?.Username != username) return StatusCode(403, new { message = "Bạn không có quyền xử lý bước này." });
+            if (step.StepStatus != "PENDING") return BadRequest(new { message = $"Yêu cầu này đã được xử lý (Trạng thái: {step.StepStatus})" });
+
+            var workflow = step.Workflow;
+            if (workflow == null) return BadRequest(new { message = "Không tìm thấy Workflow liên quan." });
+
+            if (actionDto.Action.ToUpper() == "APPROVE")
+            {
+                step.StepStatus = "APPROVED";
+                step.ActionDate = DateTime.UtcNow;
+                step.Comments = actionDto.Reason ?? "Phê duyệt từ Cổng Portal";
+                _context.ApprovalSteps.Update(step);
+
+                var nextStep = await _context.ApprovalSteps
+                    .Include(s => s.ApproverMember).ThenInclude(m => m!.User)
+                    .FirstOrDefaultAsync(s => s.WorkflowId == workflow.WorkflowId && s.StepNumber == step.StepNumber + 1);
+
+                if (nextStep != null)
+                {
+                    workflow.CurrentStepNumber = step.StepNumber + 1;
+                    _context.ApprovalWorkflows.Update(workflow);
+
+                    if (nextStep.ApproverMember?.User != null)
+                    {
+                        var details = await GetTargetItemDetailsAsync(workflow.TargetType, workflow.TargetId);
+                        await _emailService.SendApprovalEmailAsync(
+                            nextStep.ApproverMember.User.Email,
+                            nextStep.ApproverMember.User.FullName,
+                            workflow.SubmitterMember!.User!.FullName,
+                            workflow.Project?.ProjectName ?? "ARON ERP Project",
+                            workflow.TargetType,
+                            details.description,
+                            details.amount,
+                            nextStep.StepId,
+                            nextStep.SecureToken!
+                        );
+                    }
+                }
+                else
+                {
+                    workflow.WorkflowStatus = "APPROVED";
+                    workflow.UpdatedDate = DateTime.UtcNow;
+                    _context.ApprovalWorkflows.Update(workflow);
+                    await UpdateTargetItemStatusAsync(workflow.TargetType, workflow.TargetId, "APPROVED");
+
+                    // Send Final Notification
+                    if (workflow.SubmitterMember?.User != null)
+                    {
+                        var details = await GetTargetItemDetailsAsync(workflow.TargetType, workflow.TargetId);
+                        await _emailService.SendFinalResultEmailAsync(
+                            workflow.SubmitterMember.User.Email,
+                            workflow.SubmitterMember.User.FullName,
+                            workflow.Project?.ProjectName ?? "Dự án",
+                            workflow.TargetType,
+                            details.description,
+                            details.amount,
+                            true,
+                            step.Comments
+                        );
+                    }
+                }
+            }
+            else if (actionDto.Action.ToUpper() == "REJECT")
+            {
+                if (string.IsNullOrEmpty(actionDto.Reason)) return BadRequest(new { message = "Vui lòng nhập lý do từ chối." });
+
+                step.StepStatus = "REJECTED";
+                step.ActionDate = DateTime.UtcNow;
+                step.Comments = actionDto.Reason;
+                _context.ApprovalSteps.Update(step);
+
+                workflow.WorkflowStatus = "REJECTED";
+                workflow.UpdatedDate = DateTime.UtcNow;
+                _context.ApprovalWorkflows.Update(workflow);
+                await UpdateTargetItemStatusAsync(workflow.TargetType, workflow.TargetId, "REJECTED");
+
+                // Send Final Notification
+                if (workflow.SubmitterMember?.User != null)
+                {
+                    var details = await GetTargetItemDetailsAsync(workflow.TargetType, workflow.TargetId);
+                    await _emailService.SendFinalResultEmailAsync(
+                        workflow.SubmitterMember.User.Email,
+                        workflow.SubmitterMember.User.FullName,
+                        workflow.Project?.ProjectName ?? "Dự án",
+                        workflow.TargetType,
+                        details.description,
+                        details.amount,
+                        false,
+                        actionDto.Reason
+                    );
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Đã xử lý yêu cầu thành công." });
+        }
+    }
+
+    public class ApprovalActionDto
+    {
+        public string Action { get; set; } = string.Empty; // APPROVE or REJECT
+        public string? Reason { get; set; }
     }
 
     public class FileRequestDto

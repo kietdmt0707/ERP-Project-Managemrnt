@@ -341,6 +341,45 @@ export const approvalService = {
       throw new Error(errText || 'Gửi phê duyệt thất bại.');
     }
     return response.json();
+  },
+
+  async getPending(): Promise<any[]> {
+    const response = await fetch(`${API_BASE_URL}/approval/pending`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Lấy danh sách chờ duyệt thất bại.');
+    return response.json();
+  },
+
+  async getHistory(params?: { fromDate?: string; toDate?: string; projectId?: number; search?: string }): Promise<any[]> {
+    let url = `${API_BASE_URL}/approval/history?`;
+    if (params) {
+      const qs = new URLSearchParams();
+      if (params.fromDate) qs.append('fromDate', params.fromDate);
+      if (params.toDate) qs.append('toDate', params.toDate);
+      if (params.projectId) qs.append('projectId', params.projectId.toString());
+      if (params.search) qs.append('search', params.search);
+      url += qs.toString();
+    }
+    
+    const response = await fetch(url, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Lấy lịch sử phê duyệt thất bại.');
+    return response.json();
+  },
+
+  async submitAction(stepId: number, action: 'APPROVE' | 'REJECT', reason?: string): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE_URL}/approval/action/${stepId}`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ action, reason })
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => null);
+      throw new Error(err?.message || 'Xử lý phê duyệt thất bại.');
+    }
+    return response.json();
   }
 };
 

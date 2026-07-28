@@ -14,7 +14,8 @@ import { LeaveManagement } from './components/LeaveManagement';
 import { TravelPolicyConfig } from './components/TravelPolicyConfig';
 import { OracleEnvironmentManager } from './components/OracleEnvironmentManager';
 import { SubTaskManager } from './components/SubTaskManager';
-import { Calendar, FileText, CheckSquare, DollarSign, LogOut, ArrowRight, Server, ShieldAlert, Users, Sliders, Briefcase, Plane, Folder, Eye, EyeOff, Clipboard as ClipboardIcon } from 'lucide-react';
+import { Calendar, FileText, CheckSquare, DollarSign, LogOut, ArrowRight, Server, ShieldAlert, Users, Sliders, Briefcase, Plane, Folder, Eye, EyeOff, Clipboard as ClipboardIcon, Bell } from 'lucide-react';
+import { ApprovalInbox } from './components/ApprovalInbox';
 
 function App() {
   const [currentUser, setCurrentUser] = useState<AuthResponse | null>(null);
@@ -79,6 +80,29 @@ function App() {
   const [profileConfirmPassword, setProfileConfirmPassword] = useState('');
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
+
+  // Approval Inbox States
+  const [showApprovalInbox, setShowApprovalInbox] = useState(false);
+  const [pendingApprovalCount, setPendingApprovalCount] = useState(0);
+
+  const loadPendingApprovalsCount = async () => {
+    if (!currentUser) return;
+    try {
+      const data = await import('./services/api').then(m => m.approvalService.getPending());
+      setPendingApprovalCount(data.length);
+    } catch (e) {
+      console.error('Failed to load pending approvals count', e);
+    }
+  };
+
+  useEffect(() => {
+    if (currentUser) {
+      loadPendingApprovalsCount();
+      // Poll every 5 minutes
+      const interval = setInterval(loadPendingApprovalsCount, 5 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [currentUser]);
 
   const handleOpenProfile = () => {
     if (currentUser) {
@@ -605,8 +629,20 @@ function App() {
               </p>
             </button>
             <button 
+              onClick={() => setShowApprovalInbox(true)}
+              className="p-2 relative hover:bg-dark-800 rounded-lg text-dark-400 hover:text-brand-400 transition-colors"
+              title="Hộp thư phê duyệt"
+            >
+              <Bell size={18} />
+              {pendingApprovalCount > 0 && (
+                <span className="absolute top-1 right-1 w-3.5 h-3.5 bg-rose-500 rounded-full border border-dark-900 flex items-center justify-center text-[8px] font-bold text-white shadow-[0_0_10px_rgba(244,63,94,0.5)] animate-pulse">
+                  {pendingApprovalCount > 9 ? '9+' : pendingApprovalCount}
+                </span>
+              )}
+            </button>
+            <button 
               onClick={handleLogout}
-              className="p-2 hover:bg-dark-800 rounded-lg text-dark-400 hover:text-white transition-colors"
+              className="p-2 hover:bg-dark-800 rounded-lg text-dark-400 hover:text-rose-400 transition-colors ml-1"
               title="Đăng xuất"
             >
               <LogOut size={16} />
@@ -1412,6 +1448,12 @@ function App() {
         </div>
       )}
       </div>
+      {/* Notification Inbox Modal */}
+      <ApprovalInbox 
+        isOpen={showApprovalInbox} 
+        onClose={() => setShowApprovalInbox(false)} 
+        onApprovalProcessed={loadPendingApprovalsCount}
+      />
     </div>
   );
 }

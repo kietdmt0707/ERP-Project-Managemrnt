@@ -15,6 +15,7 @@ namespace AronErpPm.Api.Services
     {
         Task SendApprovalEmailAsync(string toEmail, string approverName, string requesterName, string projectName, string targetType, string description, decimal amount, int stepId, string secureToken);
         Task SendPasswordResetEmailAsync(string toEmail, string fullName, string resetLink);
+        Task SendFinalResultEmailAsync(string toEmail, string toName, string projectName, string targetType, string description, decimal amount, bool isApproved, string? comments);
     }
 
     public class EmailService : IEmailService
@@ -203,6 +204,112 @@ namespace AronErpPm.Api.Services
 
             _logger.LogInformation($"[MOCK PASSWORD RESET EMAIL SENT] To: {toEmail}\nSubject: [{appName}] Password Reset\nBody:\n{htmlBody}\n");
             await Task.CompletedTask;
+        }
+
+        public async Task SendFinalResultEmailAsync(
+            string toEmail, 
+            string toName, 
+            string projectName, 
+            string targetType, 
+            string description, 
+            decimal amount, 
+            bool isApproved, 
+            string? comments)
+        {
+            var settings = await _context.SystemSettings.FirstOrDefaultAsync();
+            var appName = settings?.AppName ?? "ARON Project Management";
+            var logoUrl = settings?.LogoUrl ?? "https://raw.githubusercontent.com/vitejs/vite/main/packages/vite/src/node/logo.png";
+            var webPortalUrl = _configuration["ApiSettings:WebPortalUrl"] ?? "https://erp-project-managemrnt-sage.vercel.app";
+
+            var statusText = isApproved ? "ĐÃ ĐƯỢC PHÊ DUYỆT" : "BỊ TỪ CHỐI";
+            var statusColor = isApproved ? "#198754" : "#dc3545";
+            
+            var htmlBody = $@"
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #ffffff; color: #333333;'>
+                    <div style='text-align: center; padding-bottom: 20px; border-bottom: 2px solid #00d2ff;'>
+                        <img src='{logoUrl}' alt='Logo' style='max-height: 50px; margin-bottom: 10px;' />
+                        <h2 style='color: #0d6efd; margin: 0;'>{appName.ToUpper()}</h2>
+                    </div>
+                    
+                    <p style='font-size: 15px;'>Chào <strong>{toName}</strong>,</p>
+                    <p>Yêu cầu phê duyệt của bạn trong dự án <strong>{projectName}</strong> có kết quả cập nhật mới nhất:</p>
+                    
+                    <div style='text-align: center; margin: 20px 0;'>
+                        <h3 style='color: {statusColor}; font-size: 20px; margin: 0;'>KẾT QUẢ: {statusText}</h3>
+                    </div>
+
+                    <table style='width: 100%; border-collapse: collapse; margin: 20px 0;'>
+                        <tr>
+                            <td style='padding: 10px; border-bottom: 1px solid #eeeeee; font-weight: bold; width: 35%;'>Hạng mục:</td>
+                            <td style='padding: 10px; border-bottom: 1px solid #eeeeee;'>{targetType}</td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 10px; border-bottom: 1px solid #eeeeee; font-weight: bold;'>Chi tiết:</td>
+                            <td style='padding: 10px; border-bottom: 1px solid #eeeeee;'>{description}</td>
+                        </tr>";
+
+            if (amount > 0)
+            {
+                htmlBody += $@"
+                        <tr>
+                            <td style='padding: 10px; border-bottom: 1px solid #eeeeee; font-weight: bold;'>Số tiền đề xuất:</td>
+                            <td style='padding: 10px; border-bottom: 1px solid #eeeeee; color: #dc3545; font-weight: bold; font-size: 16px;'>{amount:N0} VNĐ</td>
+                        </tr>";
+            }
+
+            if (!string.IsNullOrEmpty(comments))
+            {
+                htmlBody += $@"
+                        <tr>
+                            <td style='padding: 10px; border-bottom: 1px solid #eeeeee; font-weight: bold;'>Ghi chú của người duyệt:</td>
+                            <td style='padding: 10px; border-bottom: 1px solid #eeeeee; color: #856404; background-color: #fff3cd; border-radius: 4px;'>{comments}</td>
+                        </tr>";
+            }
+
+            htmlBody += $@"
+                    </table>
+
+                    <div style='text-align: center; margin: 30px 0; background-color: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #e9ecef;'>
+                        <a href='{webPortalUrl}/approvals' style='background-color: #0d6efd; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; font-size: 14px;'>XEM TRÊN PORTAL</a>
+                    </div>
+
+                    <hr style='border: 0; border-top: 1px solid #eeeeee; margin-top: 30px;' />
+                    <p style='font-size: 11px; color: #999999; text-align: center;'>Email này được tự động gửi từ hệ thống {appName}.</p>
+                </div>";
+
+            var hasSmtp = settings != null && !string.IsNullOrEmpty(settings.SmtpHost) && !string.IsNullOrEmpty(settings.SmtpUsername);
+
+            if (hasSmtp)
+            {
+                try
+                {
+                    using (var mail = new MailMessage())
+                    {
+                        var senderEmail = !string.IsNullOrEmpty(settings!.SmtpSenderEmail) ? settings.SmtpSenderEmail : settings.SmtpUsername;
+                        mail.From = new MailAddress(senderEmail!, appName);
+                        mail.To.Add(toEmail);
+                        mail.Subject = $"[{appName}] Kết quả phê duyệt: {targetType} - {projectName}";
+                        mail.Body = htmlBody;
+                        mail.IsBodyHtml = true;
+
+                        using (var smtp = new SmtpClient(settings.SmtpHost, settings.SmtpPort))
+                        {
+                            smtp.Credentials = new NetworkCredential(settings.SmtpUsername, settings.SmtpPassword);
+                            smtp.EnableSsl = settings.SmtpEnableSsl;
+                            smtp.Timeout = 10000;
+                            await smtp.SendMailAsync(mail);
+                        }
+                    }
+                    _logger.LogInformation($"[REAL EMAIL SENT] To: {toEmail} via SMTP {settings.SmtpHost}");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Failed to send real email via SMTP {settings.SmtpHost}. Falling back to mock logging.");
+                }
+            }
+
+            _logger.LogInformation($"[MOCK EMAIL SENT] To: {toEmail}\nSubject: [{appName}] Kết quả phê duyệt: {targetType}\nBody:\n{htmlBody}\n");
         }
 
         public static string GenerateSecureToken()
