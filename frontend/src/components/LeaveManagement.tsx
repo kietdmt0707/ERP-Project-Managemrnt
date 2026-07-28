@@ -136,35 +136,6 @@ export const LeaveManagement: React.FC = () => {
     }
   };
 
-  const handleApproveReject = async (approvalId: number, approve: boolean) => {
-    try {
-      const token = localStorage.getItem('aron_pm_token');
-      const comments = prompt(approve ? "Nhập ghi chú phê duyệt (Tùy chọn):" : "Nhập lý do từ chối (Bắt buộc):");
-      if (!approve && !comments) {
-        alert("Bạn phải nhập lý do từ chối.");
-        return;
-      }
-
-      const response = await fetch(`${API_BASE_URL}/leave/${approve ? 'approve' : 'reject'}/${approvalId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ comments })
-      });
-
-      if (response.ok) {
-        alert("Xử lý phê duyệt thành công!");
-        loadLeaveData();
-      } else {
-        alert("Lỗi khi xử lý phê duyệt.");
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   const handleCancelRequest = async (leaveId: number) => {
     try {
       const token = localStorage.getItem('aron_pm_token');
@@ -412,11 +383,9 @@ export const LeaveManagement: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             {app.status === 'PENDING' ? (
-                              <div className="flex gap-1.5">
-                                <button type="button" onClick={() => handleApproveReject(app.approvalId, true)} className="text-[10px] text-emerald-600 hover:text-emerald-500 font-bold hover:underline">Duyệt</button>
-                                <span className="text-[#E6E1D6]">|</span>
-                                <button type="button" onClick={() => handleApproveReject(app.approvalId, false)} className="text-[10px] text-rose-600 hover:text-rose-500 font-bold hover:underline">Từ chối</button>
-                              </div>
+                              <span className="font-mono text-[9px] font-bold text-amber-600">
+                                ⌛ Chờ duyệt
+                              </span>
                             ) : (
                               <span className={`font-mono text-[9px] font-bold ${
                                 app.status === 'APPROVED' ? 'text-emerald-600' : 'text-rose-600'
