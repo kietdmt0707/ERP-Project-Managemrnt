@@ -220,94 +220,204 @@ namespace AronErpPm.Api.Controllers
                 .Include(s => s.ApproverMember).ThenInclude(m => m!.User)
                 .FirstOrDefaultAsync(s => s.SecureToken == token);
 
-            if (step == null)
+            if (step != null)
             {
-                return RenderHtmlResponse(false, "Token phê duyệt không hợp lệ.");
-            }
-
-            if (step.TokenExpiry < DateTime.UtcNow)
-            {
-                return RenderHtmlResponse(false, "Yêu cầu phê duyệt này đã hết hạn (quá 24 giờ).");
-            }
-
-            if (step.StepStatus != "PENDING")
-            {
-                return RenderHtmlResponse(false, $"Bước phê duyệt này đã được xử lý từ trước với trạng thái: <strong>{step.StepStatus}</strong>.");
-            }
-
-            var workflow = step.Workflow;
-            if (workflow == null) return BadRequest("Không tìm thấy thông tin workflow.");
-
-            if (action.ToUpper() == "APPROVE")
-            {
-                // Approve current step
-                step.StepStatus = "APPROVED";
-                step.ActionDate = DateTime.UtcNow;
-                step.Comments = "Phê duyệt nhanh qua Email";
-                _context.ApprovalSteps.Update(step);
-
-                var nextStep = await _context.ApprovalSteps
-                    .Include(s => s.ApproverMember).ThenInclude(m => m!.User)
-                    .FirstOrDefaultAsync(s => s.WorkflowId == workflow.WorkflowId && s.StepNumber == step.StepNumber + 1);
-
-                if (nextStep != null)
+                if (step.TokenExpiry < DateTime.UtcNow)
                 {
-                    // Move to Next Step
-                    workflow.CurrentStepNumber = step.StepNumber + 1;
-                    _context.ApprovalWorkflows.Update(workflow);
-
-                    if (nextStep.ApproverMember?.User != null)
-                    {
-                        await _emailService.SendApprovalEmailAsync(
-                            nextStep.ApproverMember.User.Email,
-                            nextStep.ApproverMember.User.FullName,
-                            workflow.SubmitterMember!.User!.FullName,
-                            workflow.Project?.ProjectName ?? "ARON ERP Project",
-                            workflow.TargetType,
-                            $"Tiếp tục phê duyệt Cấp {nextStep.StepNumber} cho yêu cầu ID #{workflow.TargetId}",
-                            0,
-                            nextStep.StepId,
-                            nextStep.SecureToken!
-                        );
-                    }
+                    return RenderHtmlResponse(false, "Yêu cầu phê duyệt này đã hết hạn (quá 24 giờ).");
                 }
-                else
+
+                if (step.StepStatus != "PENDING")
                 {
-                    // Fully Approved!
-                    workflow.WorkflowStatus = "APPROVED";
+                    return RenderHtmlResponse(false, $"Bước phê duyệt này đã được xử lý từ trước với trạng thái: <strong>{step.StepStatus}</strong>.");
+                }
+
+                var workflow = step.Workflow;
+                if (workflow == null) return BadRequest("Không tìm thấy thông tin workflow.");
+
+                if (action.ToUpper() == "APPROVE")
+                {
+                    // Approve current step
+                    step.StepStatus = "APPROVED";
+                    step.ActionDate = DateTime.UtcNow;
+                    step.Comments = "Phê duyệt nhanh qua Email";
+                    _context.ApprovalSteps.Update(step);
+
+                    var nextStep = await _context.ApprovalSteps
+                        .Include(s => s.ApproverMember).ThenInclude(m => m!.User)
+                        .FirstOrDefaultAsync(s => s.WorkflowId == workflow.WorkflowId && s.StepNumber == workflow.CurrentStepNumber + 1);
+
+                    if (nextStep != null)
+                    {
+                        workflow.CurrentStepNumber++;
+                        _context.ApprovalWorkflows.Update(workflow);
+
+                        // Trigger Email to Next Approver
+                        if (nextStep.ApproverMember?.User != null)
+                        {
+                            await _emailService.SendApprovalEmailAsync(
+                                nextStep.ApproverMember.User.Email,
+                                nextStep.ApproverMember.User.FullName,
+                                workflow.SubmitterMember?.User?.FullName ?? "Unknown",
+                                workflow.Project?.ProjectName ?? "ARON ERP",
+                                workflow.TargetType,
+                                "Tiếp tục phê duyệt workflow",
+                                0,
+                                nextStep.StepId,
+                                nextStep.SecureToken!
+                            );
+                        }
+                    }
+                    else
+                    {
+                        workflow.WorkflowStatus = "APPROVED";
+                        workflow.UpdatedDate = DateTime.UtcNow;
+                        _context.ApprovalWorkflows.Update(workflow);
+                        await UpdateTargetItemStatusAsync(workflow.TargetType, workflow.TargetId, "APPROVED");
+
+                        // Final email
+                        if (workflow.SubmitterMember?.User != null)
+                        {
+                            await _emailService.SendFinalResultEmailAsync(
+                                workflow.SubmitterMember.User.Email,
+                                workflow.SubmitterMember.User.FullName,
+                                workflow.Project?.ProjectName ?? "ARON ERP",
+                                workflow.TargetType,
+                                "Hoàn tất phê duyệt",
+                                0,
+                                true,
+                                step.Comments
+                            );
+                        }
+                    }
+
+                    await _context.SaveChangesAsync();
+                    return RenderHtmlResponse(true, $"Phê duyệt {workflow.TargetType} thành công! Hồ sơ đã được lưu.");
+                }
+                else if (action.ToUpper() == "REJECT")
+                {
+                    step.StepStatus = "REJECTED";
+                    step.ActionDate = DateTime.UtcNow;
+                    step.Comments = "Từ chối nhanh qua Email";
+                    _context.ApprovalSteps.Update(step);
+
+                    workflow.WorkflowStatus = "REJECTED";
                     workflow.UpdatedDate = DateTime.UtcNow;
                     _context.ApprovalWorkflows.Update(workflow);
+                    await UpdateTargetItemStatusAsync(workflow.TargetType, workflow.TargetId, "REJECTED");
 
-                    // Update Target item status to APPROVED
-                    await UpdateTargetItemStatusAsync(workflow.TargetType, workflow.TargetId, "APPROVED");
-
-                    // Send Final Notification
                     if (workflow.SubmitterMember?.User != null)
                     {
-                        var details = await GetTargetItemDetailsAsync(workflow.TargetType, workflow.TargetId);
                         await _emailService.SendFinalResultEmailAsync(
                             workflow.SubmitterMember.User.Email,
                             workflow.SubmitterMember.User.FullName,
-                            workflow.Project?.ProjectName ?? "Dự án",
+                            workflow.Project?.ProjectName ?? "ARON ERP",
                             workflow.TargetType,
-                            details.description,
-                            details.amount,
-                            true,
-                            null
+                            "Bị từ chối phê duyệt",
+                            0,
+                            false,
+                            step.Comments
                         );
                     }
+
+                    await _context.SaveChangesAsync();
+                    return RenderHtmlResponse(true, $"Đã TỪ CHỐI {workflow.TargetType} thành công.");
+                }
+            }
+
+            // If not found in ApprovalSteps, check LeaveProjectApprovals
+            var leaveStep = await _context.LeaveProjectApprovals
+                .Include(a => a.LeaveRequest).ThenInclude(l => l!.User)
+                .Include(a => a.Project)
+                .FirstOrDefaultAsync(a => a.SecureToken == token);
+
+            if (leaveStep != null)
+            {
+                if (leaveStep.TokenExpiry < DateTime.UtcNow)
+                {
+                    return RenderHtmlResponse(false, "Yêu cầu phê duyệt này đã hết hạn (quá 24 giờ).");
                 }
 
-                await _context.SaveChangesAsync();
-                return RenderHtmlResponse(true, "Yêu cầu đã được phê duyệt thành công!");
-            }
-            else if (action.ToUpper() == "REJECT")
-            {
-                // Renders a simple HTML rejection form page requiring rejection reasons
-                return RenderRejectionForm(token);
+                if (leaveStep.Status != "PENDING")
+                {
+                    return RenderHtmlResponse(false, $"Bước phê duyệt này đã được xử lý từ trước với trạng thái: <strong>{leaveStep.Status}</strong>.");
+                }
+
+                var leave = leaveStep.LeaveRequest;
+                if (leave == null) return BadRequest("Không tìm thấy thông tin đơn nghỉ phép.");
+
+                if (action.ToUpper() == "APPROVE")
+                {
+                    leaveStep.Status = "APPROVED";
+                    leaveStep.ActionDate = DateTime.UtcNow;
+                    leaveStep.Comments = "Phê duyệt nhanh qua Email";
+                    _context.LeaveProjectApprovals.Update(leaveStep);
+                    await _context.SaveChangesAsync();
+
+                    var allApprovals = await _context.LeaveProjectApprovals
+                        .Where(a => a.LeaveId == leaveStep.LeaveId)
+                        .ToListAsync();
+
+                    if (allApprovals.All(a => a.Status == "APPROVED"))
+                    {
+                        leave.Status = "APPROVED";
+                        _context.LeaveRequests.Update(leave);
+
+                        var requester = leave.User;
+                        if (requester != null && !string.IsNullOrEmpty(requester.Email))
+                        {
+                            var requesterName = requester.FullName ?? requester.Username;
+                            var projectName = leaveStep.Project?.ProjectName ?? $"Project #{leaveStep.ProjectId}";
+                            await _emailService.SendFinalResultEmailAsync(
+                                requester.Email,
+                                requesterName,
+                                projectName,
+                                "Nghỉ phép",
+                                $"Xin nghỉ phép từ {leave.StartDate:dd/MM/yyyy} đến {leave.EndDate:dd/MM/yyyy}",
+                                0,
+                                true,
+                                leaveStep.Comments
+                            );
+                        }
+                    }
+                    await _context.SaveChangesAsync();
+                    return RenderHtmlResponse(true, $"Phê duyệt Nghỉ Phép thành công!");
+                }
+                else if (action.ToUpper() == "REJECT")
+                {
+                    leaveStep.Status = "REJECTED";
+                    leaveStep.ActionDate = DateTime.UtcNow;
+                    leaveStep.Comments = "Từ chối nhanh qua Email";
+                    _context.LeaveProjectApprovals.Update(leaveStep);
+
+                    leave.Status = "REJECTED";
+                    _context.LeaveRequests.Update(leave);
+
+                    var requester = leave.User;
+                    if (requester != null && !string.IsNullOrEmpty(requester.Email))
+                    {
+                        var requesterName = requester.FullName ?? requester.Username;
+                        var projectName = leaveStep.Project?.ProjectName ?? $"Project #{leaveStep.ProjectId}";
+                        await _emailService.SendFinalResultEmailAsync(
+                            requester.Email,
+                            requesterName,
+                            projectName,
+                            "Nghỉ phép",
+                            $"Xin nghỉ phép từ {leave.StartDate:dd/MM/yyyy} đến {leave.EndDate:dd/MM/yyyy}",
+                            0,
+                            false,
+                            leaveStep.Comments
+                        );
+                    }
+
+                    await _context.SaveChangesAsync();
+                    return RenderHtmlResponse(true, $"Đã TỪ CHỐI đơn Nghỉ Phép thành công.");
+                }
             }
 
-            return BadRequest();
+            return RenderHtmlResponse(false, "Token phê duyệt không hợp lệ.");
+
+
         }
 
         // Handles submission of Rejection from Quick HTML Form
@@ -323,45 +433,96 @@ namespace AronErpPm.Api.Controllers
                 .Include(s => s.Workflow)
                 .FirstOrDefaultAsync(s => s.SecureToken == token);
 
-            if (step == null || step.StepStatus != "PENDING")
+            if (step != null)
             {
-                return RenderHtmlResponse(false, "Token không hợp lệ hoặc đã được phê duyệt trước đó.");
-            }
-
-            step.StepStatus = "REJECTED";
-            step.ActionDate = DateTime.UtcNow;
-            step.Comments = reason;
-            _context.ApprovalSteps.Update(step);
-
-            var workflow = step.Workflow;
-            if (workflow != null)
-            {
-                workflow.WorkflowStatus = "REJECTED";
-                workflow.UpdatedDate = DateTime.UtcNow;
-                _context.ApprovalWorkflows.Update(workflow);
-
-                // Update Target item status to REJECTED
-                await UpdateTargetItemStatusAsync(workflow.TargetType, workflow.TargetId, "REJECTED");
-
-                // Send Final Notification
-                if (workflow.SubmitterMember?.User != null)
+                if (step.StepStatus != "PENDING")
                 {
-                    var details = await GetTargetItemDetailsAsync(workflow.TargetType, workflow.TargetId);
-                    await _emailService.SendFinalResultEmailAsync(
-                        workflow.SubmitterMember.User.Email,
-                        workflow.SubmitterMember.User.FullName,
-                        workflow.Project?.ProjectName ?? "Dự án",
-                        workflow.TargetType,
-                        details.description,
-                        details.amount,
-                        false,
-                        reason
-                    );
+                    return RenderHtmlResponse(false, "Token không hợp lệ hoặc đã được phê duyệt trước đó.");
                 }
+
+                step.StepStatus = "REJECTED";
+                step.ActionDate = DateTime.UtcNow;
+                step.Comments = reason;
+                _context.ApprovalSteps.Update(step);
+
+                var workflow = step.Workflow;
+                if (workflow != null)
+                {
+                    workflow.WorkflowStatus = "REJECTED";
+                    workflow.UpdatedDate = DateTime.UtcNow;
+                    _context.ApprovalWorkflows.Update(workflow);
+
+                    // Update Target item status to REJECTED
+                    await UpdateTargetItemStatusAsync(workflow.TargetType, workflow.TargetId, "REJECTED");
+
+                    // Send Final Notification
+                    if (workflow.SubmitterMember?.User != null)
+                    {
+                        var details = await GetTargetItemDetailsAsync(workflow.TargetType, workflow.TargetId);
+                        await _emailService.SendFinalResultEmailAsync(
+                            workflow.SubmitterMember.User.Email,
+                            workflow.SubmitterMember.User.FullName,
+                            workflow.Project?.ProjectName ?? "Dự án",
+                            workflow.TargetType,
+                            details.description,
+                            details.amount,
+                            false,
+                            reason
+                        );
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                return RenderHtmlResponse(true, "Đã từ chối phê duyệt yêu cầu thành công.");
             }
 
-            await _context.SaveChangesAsync();
-            return RenderHtmlResponse(true, "Đã từ chối phê duyệt yêu cầu thành công.");
+            // Check LeaveProjectApprovals
+            var leaveStep = await _context.LeaveProjectApprovals
+                .Include(a => a.LeaveRequest).ThenInclude(l => l!.User)
+                .Include(a => a.Project)
+                .FirstOrDefaultAsync(a => a.SecureToken == token);
+            
+            if (leaveStep != null)
+            {
+                if (leaveStep.Status != "PENDING")
+                {
+                    return RenderHtmlResponse(false, "Token không hợp lệ hoặc đã được phê duyệt trước đó.");
+                }
+
+                leaveStep.Status = "REJECTED";
+                leaveStep.ActionDate = DateTime.UtcNow;
+                leaveStep.Comments = reason;
+                _context.LeaveProjectApprovals.Update(leaveStep);
+
+                var leave = leaveStep.LeaveRequest;
+                if (leave != null)
+                {
+                    leave.Status = "REJECTED";
+                    _context.LeaveRequests.Update(leave);
+
+                    var requester = leave.User;
+                    if (requester != null && !string.IsNullOrEmpty(requester.Email))
+                    {
+                        var requesterName = requester.FullName ?? requester.Username;
+                        var projectName = leaveStep.Project?.ProjectName ?? $"Project #{leaveStep.ProjectId}";
+                        await _emailService.SendFinalResultEmailAsync(
+                            requester.Email,
+                            requesterName,
+                            projectName,
+                            "Nghỉ phép",
+                            $"Xin nghỉ phép từ {leave.StartDate:dd/MM/yyyy} đến {leave.EndDate:dd/MM/yyyy}",
+                            0,
+                            false,
+                            reason
+                        );
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                return RenderHtmlResponse(true, "Đã TỪ CHỐI đơn Nghỉ Phép thành công.");
+            }
+
+            return RenderHtmlResponse(false, "Token không hợp lệ.");
         }
 
         private async Task<(string description, decimal amount)> GetTargetItemDetailsAsync(string targetType, int targetId)

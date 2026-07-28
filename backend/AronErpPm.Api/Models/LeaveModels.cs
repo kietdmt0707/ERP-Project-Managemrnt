@@ -80,5 +80,12 @@ namespace AronErpPm.Api.Models
         [MaxLength(500)]
         [Column("comments")]
         public string? Comments { get; set; }
+
+        [MaxLength(255)]
+        [Column("secure_token")]
+        public string? SecureToken { get; set; }
+
+        [Column("token_expiry")]
+        public DateTime? TokenExpiry { get; set; }
     }
 }

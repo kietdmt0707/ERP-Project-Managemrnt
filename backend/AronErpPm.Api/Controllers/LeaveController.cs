@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AronErpPm.Api.Data;
 using AronErpPm.Api.Models;
+using AronErpPm.Api.Services;
 
 namespace AronErpPm.Api.Controllers
 {
@@ -16,10 +17,12 @@ namespace AronErpPm.Api.Controllers
     public class LeaveController : ControllerBase
     {
         private readonly AronDbContext _context;
+        private readonly IEmailService _emailService;
 
-        public LeaveController(AronDbContext context)
+        public LeaveController(AronDbContext context, IEmailService emailService)
         {
             _context = context;
+            _emailService = emailService;
         }
 
         // 1. Get Leave Dashboard Info (Carry-over algorithm included)
@@ -140,31 +143,90 @@ namespace AronErpPm.Api.Controllers
                 _context.LeaveRequests.Add(leaveRequest);
                 await _context.SaveChangesAsync();
 
-                // Create Parallel Approvals for each selected project PM
+                // Create Parallel Approvals for each selected project
                 foreach (var pId in dto.ProjectIds)
                 {
-                    // Find PM of this project
-                    var pmMember = await _context.ProjectMembers
+                    // 1. Find requester's role in this project
+                    var requesterMember = await _context.ProjectMembers
                         .Include(pm => pm.Role)
-                        .FirstOrDefaultAsync(pm => pm.ProjectId == pId && pm.Role!.RoleCode == "PM" && pm.IsActive);
+                        .Include(pm => pm.Project)
+                        .FirstOrDefaultAsync(pm => pm.ProjectId == pId && pm.UserId == user.UserId && pm.IsActive);
 
-                    // If no PM assigned, fallback to system administrator/PM member
-                    var approverId = pmMember?.ProjectMemberId;
-                    if (!approverId.HasValue)
+                    var requesterRole = requesterMember?.Role?.RoleCode ?? "MEMBER";
+                    var projectName = requesterMember?.Project?.ProjectName ?? $"Project #{pId}";
+                    var requesterName = user.FullName ?? user.Username;
+
+                    ProjectMember? approverMember = null;
+
+                    // 2. Role-based Routing
+                    if (requesterRole == "PM")
                     {
-                        var fallbackPm = await _context.ProjectMembers.FirstOrDefaultAsync(pm => pm.ProjectId == pId && pm.IsActive);
-                        approverId = fallbackPm?.ProjectMemberId ?? 1; // Fallback
+                        // PM requests leave -> send to DIRECTOR
+                        approverMember = await _context.ProjectMembers
+                            .Include(pm => pm.Role)
+                            .Include(pm => pm.User)
+                            .FirstOrDefaultAsync(pm => pm.ProjectId == pId && pm.Role!.RoleCode == "DIRECTOR" && pm.IsActive);
                     }
+                    else
+                    {
+                        // MEMBER, LEADER, PC requests leave -> send to PM
+                        approverMember = await _context.ProjectMembers
+                            .Include(pm => pm.Role)
+                            .Include(pm => pm.User)
+                            .FirstOrDefaultAsync(pm => pm.ProjectId == pId && pm.Role!.RoleCode == "PM" && pm.IsActive);
+                    }
+
+                    // 3. Fallbacks
+                    if (approverMember == null)
+                    {
+                        // Fallback to PM if DIRECTOR not found for PM
+                        approverMember = await _context.ProjectMembers
+                            .Include(pm => pm.Role)
+                            .Include(pm => pm.User)
+                            .FirstOrDefaultAsync(pm => pm.ProjectId == pId && pm.Role!.RoleCode == "PM" && pm.IsActive);
+                    }
+                    
+                    if (approverMember == null)
+                    {
+                        // Fallback to any active member (e.g. SysAdmin)
+                        approverMember = await _context.ProjectMembers
+                            .Include(pm => pm.User)
+                            .FirstOrDefaultAsync(pm => pm.ProjectId == pId && pm.IsActive);
+                    }
+
+                    var approverId = approverMember?.ProjectMemberId ?? 1;
+                    var approverName = approverMember?.User?.FullName ?? "Người quản lý";
+                    var approverEmail = approverMember?.User?.Email ?? "";
+                    
+                    var secureToken = EmailService.GenerateSecureToken();
 
                     var approval = new LeaveProjectApproval
                     {
                         LeaveId = leaveRequest.LeaveId,
                         ProjectId = pId,
-                        ApproverMemberId = approverId.Value,
-                        Status = "PENDING"
+                        ApproverMemberId = approverId,
+                        Status = "PENDING",
+                        SecureToken = secureToken,
+                        TokenExpiry = DateTime.UtcNow.AddDays(1) // 24 hours expiry
                     };
 
                     _context.LeaveProjectApprovals.Add(approval);
+
+                    // Send Email Notification
+                    if (!string.IsNullOrEmpty(approverEmail))
+                    {
+                        await _emailService.SendApprovalEmailAsync(
+                            approverEmail,
+                            approverName,
+                            requesterName,
+                            projectName,
+                            "Nghỉ phép",
+                            $"Xin nghỉ phép từ {dto.StartDate:dd/MM/yyyy} đến {dto.EndDate:dd/MM/yyyy} ({dto.TotalDays} ngày). Lý do: {dto.Reason}",
+                            0,
+                            approval.LeaveId, // Using leaveId as stepId context for now, QuickAction logic will handle it
+                            secureToken
+                        );
+                    }
                 }
 
                 await _context.SaveChangesAsync();
@@ -208,6 +270,25 @@ namespace AronErpPm.Api.Controllers
                 {
                     leave.Status = "APPROVED";
                     _context.LeaveRequests.Update(leave);
+
+                    // Send Final Approval Email
+                    var requester = await _context.Users.FindAsync(leave.UserId);
+                    var project = await _context.Projects.FindAsync(approval.ProjectId);
+                    if (requester != null && !string.IsNullOrEmpty(requester.Email))
+                    {
+                        var requesterName = requester.FullName ?? requester.Username;
+                        var projectName = project?.ProjectName ?? $"Project #{approval.ProjectId}";
+                        await _emailService.SendFinalResultEmailAsync(
+                            requester.Email,
+                            requesterName,
+                            projectName,
+                            "Nghỉ phép",
+                            $"Xin nghỉ phép từ {leave.StartDate:dd/MM/yyyy} đến {leave.EndDate:dd/MM/yyyy}",
+                            0,
+                            true,
+                            approval.Comments
+                        );
+                    }
                 }
                 await _context.SaveChangesAsync();
             }
@@ -237,6 +318,25 @@ namespace AronErpPm.Api.Controllers
             {
                 leave.Status = "REJECTED";
                 _context.LeaveRequests.Update(leave);
+
+                // Send Final Rejection Email
+                var requester = await _context.Users.FindAsync(leave.UserId);
+                var project = await _context.Projects.FindAsync(approval.ProjectId);
+                if (requester != null && !string.IsNullOrEmpty(requester.Email))
+                {
+                    var requesterName = requester.FullName ?? requester.Username;
+                    var projectName = project?.ProjectName ?? $"Project #{approval.ProjectId}";
+                    await _emailService.SendFinalResultEmailAsync(
+                        requester.Email,
+                        requesterName,
+                        projectName,
+                        "Nghỉ phép",
+                        $"Xin nghỉ phép từ {leave.StartDate:dd/MM/yyyy} đến {leave.EndDate:dd/MM/yyyy}",
+                        0,
+                        false,
+                        approval.Comments
+                    );
+                }
             }
 
             await _context.SaveChangesAsync();
