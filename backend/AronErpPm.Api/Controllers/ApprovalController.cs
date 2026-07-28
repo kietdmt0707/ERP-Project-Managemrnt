@@ -562,7 +562,7 @@ namespace AronErpPm.Api.Controllers
                 .Include(s => s.Workflow).ThenInclude(w => w!.Project)
                 .Include(s => s.Workflow).ThenInclude(w => w!.SubmitterMember).ThenInclude(m => m!.User)
                 .Where(s => s.ApproverMember!.User!.Username == username && s.StepStatus == "PENDING")
-                .OrderByDescending(s => s.CreatedDate)
+                .OrderByDescending(s => s.Workflow!.CreatedDate)
                 .ToListAsync();
 
             var result = new List<object>();
