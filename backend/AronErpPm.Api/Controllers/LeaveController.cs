@@ -48,27 +48,29 @@ namespace AronErpPm.Api.Controllers
             decimal totalAvailable = (annualLeaveDays + carryOverDays) - usedLeaveDays;
 
             // Get user's active projects to populate check boxes on frontend
-            var activeProjectsQuery = await _context.ProjectMembers
+            var projectMemberships = await _context.ProjectMembers
+                .Include(pm => pm.Project)
+                .Include(pm => pm.Role)
                 .Where(pm => pm.UserId == user.UserId && pm.IsActive)
-                .Select(pm => new
-                {
-                    pm.ProjectId,
-                    ProjectName = pm.Project != null ? pm.Project.ProjectName : "Dự án ẩn",
-                    RoleCode = pm.Role != null ? pm.Role.RoleCode : "MEMBER",
-                    ApproverName = _context.ProjectMembers
-                        .Where(pm2 => pm2.ProjectId == pm.ProjectId && pm2.Role != null && pm2.Role.RoleCode == "PM" && pm2.IsActive)
-                        .Select(pm2 => pm2.User != null ? pm2.User.FullName : "System Admin")
-                        .FirstOrDefault()
-                })
                 .ToListAsync();
 
-            var activeProjects = activeProjectsQuery.Select(p => new
+            var activeProjects = new List<object>();
+            foreach (var pm in projectMemberships)
             {
-                p.ProjectId,
-                p.ProjectName,
-                p.RoleCode,
-                ApproverName = p.ApproverName ?? "Admin System (Mặc định)"
-            }).ToList();
+                var approver = await _context.ProjectMembers
+                    .Include(pm2 => pm2.User)
+                    .Include(pm2 => pm2.Role)
+                    .Where(pm2 => pm2.ProjectId == pm.ProjectId && pm2.Role != null && pm2.Role.RoleCode == "PM" && pm2.IsActive)
+                    .FirstOrDefaultAsync();
+
+                activeProjects.Add(new
+                {
+                    ProjectId = pm.ProjectId,
+                    ProjectName = pm.Project != null ? pm.Project.ProjectName : "Dự án ẩn",
+                    RoleCode = pm.Role != null ? pm.Role.RoleCode : "MEMBER",
+                    ApproverName = (approver != null && approver.User != null) ? approver.User.FullName : "Admin System (Mặc định)"
+                });
+            }
 
             // Fetch history
             var history = await _context.LeaveRequests
