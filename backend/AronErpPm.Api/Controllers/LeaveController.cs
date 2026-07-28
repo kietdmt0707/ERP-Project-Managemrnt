@@ -26,8 +26,9 @@ namespace AronErpPm.Api.Controllers
         [HttpGet("dashboard")]
         public async Task<IActionResult> GetLeaveDashboard()
         {
-            var username = User.Identity?.Name;
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username!.ToLower());
+            var userIdStr = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdStr, out var userId)) return Unauthorized("Không xác định được phiên đăng nhập.");
+            var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound("Không tìm thấy thông tin tài khoản.");
 
             // Carry-over logic: Expiry date is April 1st (Month >= 4)
@@ -53,7 +54,11 @@ namespace AronErpPm.Api.Controllers
                 {
                     pm.ProjectId,
                     ProjectName = pm.Project != null ? pm.Project.ProjectName : "Dự án ẩn",
-                    RoleCode = pm.Role != null ? pm.Role.RoleCode : "MEMBER"
+                    RoleCode = pm.Role != null ? pm.Role.RoleCode : "MEMBER",
+                    ApproverName = _context.ProjectMembers
+                        .Where(pm2 => pm2.ProjectId == pm.ProjectId && pm2.Role != null && pm2.Role.RoleCode == "PM" && pm2.IsActive)
+                        .Select(pm2 => pm2.User != null ? pm2.User.FullName : "System Admin")
+                        .FirstOrDefault() ?? "Admin System (Mặc định)"
                 })
                 .ToListAsync();
 
@@ -79,8 +84,9 @@ namespace AronErpPm.Api.Controllers
         [HttpPost("request")]
         public async Task<IActionResult> SubmitLeaveRequest([FromBody] LeaveRequestSubmissionDto dto)
         {
-            var username = User.Identity?.Name;
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username!.ToLower());
+            var userIdStr = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdStr, out var userId)) return Unauthorized("Không xác định được phiên đăng nhập.");
+            var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound("Không tìm thấy thông tin tài khoản.");
 
             if (dto.ProjectIds == null || !dto.ProjectIds.Any())

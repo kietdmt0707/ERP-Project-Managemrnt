@@ -22,6 +22,7 @@ interface ActiveProject {
   projectId: number;
   projectName: string;
   roleCode: string;
+  approverName: string;
 }
 
 export const LeaveManagement: React.FC = () => {
@@ -36,6 +37,7 @@ export const LeaveManagement: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // Form State
+  const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [reason, setReason] = useState('');
@@ -99,7 +101,7 @@ export const LeaveManagement: React.FC = () => {
         startDate,
         endDate,
         totalDays: calculateDays(),
-        reason,
+        reason: `[${title.toUpperCase()}] ${reason}`,
         projectIds: selectedProjects
       };
 
@@ -114,6 +116,7 @@ export const LeaveManagement: React.FC = () => {
 
       if (response.ok) {
         alert("Đã gửi đơn xin nghỉ phép thành công! Luồng phê duyệt song song của các PM đã được kích hoạt.");
+        setTitle('');
         setStartDate('');
         setEndDate('');
         setReason('');
@@ -218,26 +221,50 @@ export const LeaveManagement: React.FC = () => {
           </h3>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="text-xs text-[#595250] font-bold block mb-1">Ngày bắt đầu nghỉ</label>
-              <input 
-                type="date" 
-                required 
-                value={startDate}
-                onChange={e => setStartDate(e.target.value)}
-                className="w-full bg-[#F9F6F0] border border-[#E6E1D6] text-[#231F20] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#A45A52]"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-[#595250] font-bold block mb-1">Ngày gửi (hôm nay)</label>
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={new Date().toLocaleDateString('vi-VN')}
+                  className="w-full bg-[#E6E1D6]/50 border border-[#E6E1D6] text-[#595250] rounded-xl px-3 py-2 text-sm cursor-not-allowed font-semibold"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[#595250] font-bold block mb-1">Tiêu đề xin nghỉ</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  placeholder="VD: Nghỉ ốm, Việc gia đình..."
+                  className="w-full bg-[#F9F6F0] border border-[#E6E1D6] text-[#231F20] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#A45A52] font-semibold"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="text-xs text-[#595250] font-bold block mb-1">Ngày kết thúc nghỉ</label>
-              <input 
-                type="date" 
-                required 
-                value={endDate}
-                onChange={e => setEndDate(e.target.value)}
-                className="w-full bg-[#F9F6F0] border border-[#E6E1D6] text-[#231F20] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#A45A52]"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-[#595250] font-bold block mb-1">Từ ngày</label>
+                <input 
+                  type="date" 
+                  required 
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  className="w-full bg-[#F9F6F0] border border-[#E6E1D6] text-[#231F20] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#A45A52]"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-[#595250] font-bold block mb-1">Đến ngày</label>
+                <input 
+                  type="date" 
+                  required 
+                  value={endDate}
+                  onChange={e => setEndDate(e.target.value)}
+                  className="w-full bg-[#F9F6F0] border border-[#E6E1D6] text-[#231F20] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#A45A52]"
+                />
+              </div>
             </div>
 
             {startDate && endDate && (
@@ -248,11 +275,11 @@ export const LeaveManagement: React.FC = () => {
             )}
 
             <div>
-              <label className="text-xs text-[#595250] font-bold block mb-1">Lý do xin nghỉ</label>
+              <label className="text-xs text-[#595250] font-bold block mb-1">Nội dung trình duyệt</label>
               <textarea 
                 required 
-                rows={3}
-                placeholder="Lý do bàn giao công việc..."
+                rows={4}
+                placeholder="Nội dung, lý do chi tiết và người bàn giao công việc..."
                 value={reason}
                 onChange={e => setReason(e.target.value)}
                 className="w-full bg-[#F9F6F0] border border-[#E6E1D6] text-[#231F20] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#A45A52]"
@@ -274,7 +301,10 @@ export const LeaveManagement: React.FC = () => {
                         onChange={() => handleCheckboxChange(proj.projectId)}
                         className="rounded text-[#A45A52] focus:ring-[#A45A52]"
                       />
-                      <span>{proj.projectName} <span className="text-[10px] text-[#A45A52] font-mono">({proj.roleCode})</span></span>
+                      <div className="flex flex-col">
+                        <span>{proj.projectName} <span className="text-[10px] text-[#A45A52] font-mono">({proj.roleCode})</span></span>
+                        <span className="text-[10px] text-[#595250]">Người duyệt: <strong className="text-[#231F20]">{proj.approverName}</strong></span>
+                      </div>
                     </label>
                   ))}
                 </div>
