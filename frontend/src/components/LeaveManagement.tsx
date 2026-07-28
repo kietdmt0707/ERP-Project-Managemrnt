@@ -163,6 +163,37 @@ export const LeaveManagement: React.FC = () => {
       console.error(err);
     }
   };
+
+  const handleCancelRequest = async (leaveId: number) => {
+    try {
+      const token = localStorage.getItem('aron_pm_token');
+      const comments = prompt("Nhập lý do huỷ phép (Bắt buộc):");
+      if (!comments) {
+        alert("Bạn phải nhập lý do huỷ phép.");
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/leave/${leaveId}/cancel-request`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ comments })
+      });
+
+      if (response.ok) {
+        alert("Đã gửi yêu cầu huỷ phép thành công!");
+        loadLeaveData();
+      } else {
+        const err = await response.json();
+        alert(err.message || "Lỗi khi gửi yêu cầu huỷ phép.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi kết nối máy chủ.");
+    }
+  };
   if (loading) {
     return (
       <div className="text-center py-10 bg-[#F9F6F0] p-8 rounded-2xl border border-[#E6E1D6]">
@@ -339,13 +370,33 @@ export const LeaveManagement: React.FC = () => {
                       <p className="text-xs text-[#231F20] font-bold">Nghỉ từ {new Date(item.startDate).toLocaleDateString('vi-VN')} đến {new Date(item.endDate).toLocaleDateString('vi-VN')}</p>
                       <p className="text-[10px] text-[#595250] font-semibold mt-0.5">Số ngày: {item.totalDays} | Lý do: {item.reason}</p>
                     </div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                      item.status === 'APPROVED' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
-                      item.status === 'REJECTED' ? 'bg-rose-500/10 text-rose-600 border-rose-500/20' :
-                      'bg-amber-500/10 text-amber-600 border-amber-500/20'
-                    }`}>
-                      {item.status === 'APPROVED' ? 'Đã duyệt' : item.status === 'REJECTED' ? 'Từ chối' : 'Chờ duyệt'}
-                    </span>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        item.status === 'APPROVED' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
+                        item.status === 'REJECTED' ? 'bg-rose-500/10 text-rose-600 border-rose-500/20' :
+                        'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                      }`}>
+                        {item.status === 'APPROVED' ? 'Đã duyệt' : item.status === 'REJECTED' ? 'Từ chối' : 'Chờ duyệt'}
+                      </span>
+                      {item.cancelStatus === 'REQUESTED' && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-600 border-amber-500/20">
+                          Đang xin Huỷ
+                        </span>
+                      )}
+                      {item.cancelStatus === 'APPROVED' && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-rose-500/10 text-rose-600 border-rose-500/20">
+                          Đã Huỷ
+                        </span>
+                      )}
+                      {item.status === 'APPROVED' && (!item.cancelStatus || item.cancelStatus === 'REJECTED') && (
+                        <button 
+                          onClick={() => handleCancelRequest(item.leaveId)}
+                          className="text-[10px] bg-rose-50 text-rose-600 hover:bg-rose-100 px-2 py-1 rounded font-bold border border-rose-200"
+                        >
+                          Huỷ Phép
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Parallel Approver status */}

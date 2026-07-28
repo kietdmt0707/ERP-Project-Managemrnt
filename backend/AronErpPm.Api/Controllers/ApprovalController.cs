@@ -360,19 +360,28 @@ namespace AronErpPm.Api.Controllers
 
                     if (allApprovals.All(a => a.Status == "APPROVED"))
                     {
-                        leave.Status = "APPROVED";
-                        _context.LeaveRequests.Update(leave);
+                        if (leave.CancelStatus == "REQUESTED")
+                        {
+                            leave.CancelStatus = "APPROVED";
+                            _context.LeaveRequests.Update(leave);
+                        }
+                        else
+                        {
+                            leave.Status = "APPROVED";
+                            _context.LeaveRequests.Update(leave);
+                        }
 
                         var requester = leave.User;
                         if (requester != null && !string.IsNullOrEmpty(requester.Email))
                         {
                             var requesterName = requester.FullName ?? requester.Username;
                             var projectName = leaveStep.Project?.ProjectName ?? $"Project #{leaveStep.ProjectId}";
+                            var subject = leave.CancelStatus == "APPROVED" ? "Yêu cầu Huỷ Phép đã được duyệt" : "Nghỉ phép";
                             await _emailService.SendFinalResultEmailAsync(
                                 requester.Email,
                                 requesterName,
                                 projectName,
-                                "Nghỉ phép",
+                                subject,
                                 $"Xin nghỉ phép từ {leave.StartDate:dd/MM/yyyy} đến {leave.EndDate:dd/MM/yyyy}",
                                 0,
                                 true,
@@ -381,7 +390,7 @@ namespace AronErpPm.Api.Controllers
                         }
                     }
                     await _context.SaveChangesAsync();
-                    return RenderHtmlResponse(true, $"Phê duyệt Nghỉ Phép thành công!");
+                    return RenderHtmlResponse(true, leave.CancelStatus == "APPROVED" ? "Phê duyệt Huỷ Phép thành công!" : "Phê duyệt Nghỉ Phép thành công!");
                 }
                 else if (action.ToUpper() == "REJECT")
                 {
@@ -390,7 +399,15 @@ namespace AronErpPm.Api.Controllers
                     leaveStep.Comments = "Từ chối nhanh qua Email";
                     _context.LeaveProjectApprovals.Update(leaveStep);
 
-                    leave.Status = "REJECTED";
+                    if (leave.CancelStatus == "REQUESTED")
+                    {
+                        leave.CancelStatus = "REJECTED";
+                    }
+                    else
+                    {
+                        leave.Status = "REJECTED";
+                    }
+                    
                     _context.LeaveRequests.Update(leave);
 
                     var requester = leave.User;
@@ -398,20 +415,20 @@ namespace AronErpPm.Api.Controllers
                     {
                         var requesterName = requester.FullName ?? requester.Username;
                         var projectName = leaveStep.Project?.ProjectName ?? $"Project #{leaveStep.ProjectId}";
+                        var subject = leave.CancelStatus == "REJECTED" ? "Yêu cầu Huỷ Phép bị từ chối" : "Nghỉ phép";
                         await _emailService.SendFinalResultEmailAsync(
                             requester.Email,
                             requesterName,
                             projectName,
-                            "Nghỉ phép",
+                            subject,
                             $"Xin nghỉ phép từ {leave.StartDate:dd/MM/yyyy} đến {leave.EndDate:dd/MM/yyyy}",
                             0,
                             false,
                             leaveStep.Comments
                         );
                     }
-
                     await _context.SaveChangesAsync();
-                    return RenderHtmlResponse(true, $"Đã TỪ CHỐI đơn Nghỉ Phép thành công.");
+                    return RenderHtmlResponse(true, leave.CancelStatus == "REJECTED" ? "Đã TỪ CHỐI yêu cầu Huỷ Phép." : "Đã TỪ CHỐI đơn nghỉ phép thành công.");
                 }
             }
 
@@ -497,7 +514,14 @@ namespace AronErpPm.Api.Controllers
                 var leave = leaveStep.LeaveRequest;
                 if (leave != null)
                 {
-                    leave.Status = "REJECTED";
+                    if (leave.CancelStatus == "REQUESTED")
+                    {
+                        leave.CancelStatus = "REJECTED";
+                    }
+                    else
+                    {
+                        leave.Status = "REJECTED";
+                    }
                     _context.LeaveRequests.Update(leave);
 
                     var requester = leave.User;
@@ -505,11 +529,12 @@ namespace AronErpPm.Api.Controllers
                     {
                         var requesterName = requester.FullName ?? requester.Username;
                         var projectName = leaveStep.Project?.ProjectName ?? $"Project #{leaveStep.ProjectId}";
+                        var subject = leave.CancelStatus == "REJECTED" ? "Yêu cầu Huỷ Phép bị từ chối" : "Nghỉ phép";
                         await _emailService.SendFinalResultEmailAsync(
                             requester.Email,
                             requesterName,
                             projectName,
-                            "Nghỉ phép",
+                            subject,
                             $"Xin nghỉ phép từ {leave.StartDate:dd/MM/yyyy} đến {leave.EndDate:dd/MM/yyyy}",
                             0,
                             false,
@@ -519,7 +544,7 @@ namespace AronErpPm.Api.Controllers
                 }
 
                 await _context.SaveChangesAsync();
-                return RenderHtmlResponse(true, "Đã TỪ CHỐI đơn Nghỉ Phép thành công.");
+                return RenderHtmlResponse(true, leave?.CancelStatus == "REJECTED" ? "Đã TỪ CHỐI yêu cầu Huỷ Phép." : "Đã TỪ CHỐI đơn Nghỉ Phép thành công.");
             }
 
             return RenderHtmlResponse(false, "Token không hợp lệ.");

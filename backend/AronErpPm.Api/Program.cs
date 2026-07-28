@@ -224,6 +224,7 @@ try
         ("ALTER TABLE business_trip_members ADD COLUMN IF NOT EXISTS isgroupleader BOOLEAN DEFAULT FALSE;", "Add isgroupleader to business_trip_members"),
         ("ALTER TABLE users ADD COLUMN IF NOT EXISTS annualleavedays INT DEFAULT 12;", "Add annualleavedays to users"),
         ("ALTER TABLE users ADD COLUMN IF NOT EXISTS carryoverdays INT DEFAULT 0;", "Add carryoverdays to users"),
+        ("ALTER TABLE users ADD COLUMN IF NOT EXISTS seniorityyears INT DEFAULT 0;", "Add seniorityyears to users"),
         ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS isoverlimit BOOLEAN DEFAULT FALSE;", "Add isoverlimit to expenses"),
         ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS justification TEXT;", "Add justification to expenses"),
         ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS overlimitamount DECIMAL(18,2) DEFAULT 0.00;", "Add overlimitamount to expenses"),
@@ -325,7 +326,8 @@ try
                 secure_token VARCHAR(255),
                 token_expiry TIMESTAMP WITH TIME ZONE
             );
-        ", "Create leave_project_approvals table")
+        ", "Create leave_project_approvals table"),
+        ("ALTER TABLE leave_requests ADD COLUMN IF NOT EXISTS cancel_status VARCHAR(30);", "Add cancel_status to leave_requests")
     };
 
     foreach (var migration in migrations)

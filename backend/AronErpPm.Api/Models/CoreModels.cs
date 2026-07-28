@@ -197,6 +197,7 @@ namespace AronErpPm.Api.Models
 
         public int AnnualLeaveDays { get; set; } = 12;
         public int CarryOverDays { get; set; } = 0;
+        public int SeniorityYears { get; set; } = 0;
 
         public bool IsActive { get; set; } = true;
 

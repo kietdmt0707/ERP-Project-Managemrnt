@@ -42,6 +42,10 @@ namespace AronErpPm.Api.Models
         [Column("created_date")]
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
+        [MaxLength(30)]
+        [Column("cancel_status")]
+        public string? CancelStatus { get; set; } // null, REQUESTED, APPROVED, REJECTED
+
         // Navigation property for parallel approvals per project
         public ICollection<LeaveProjectApproval> ProjectApprovals { get; set; } = new List<LeaveProjectApproval>();
     }

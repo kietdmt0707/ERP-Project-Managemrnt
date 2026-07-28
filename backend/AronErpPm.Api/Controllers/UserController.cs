@@ -69,6 +69,7 @@ namespace AronErpPm.Api.Controllers
                 AvatarPath = u.AvatarPath,
                 AnnualLeaveDays = u.AnnualLeaveDays,
                 CarryOverDays = u.CarryOverDays,
+                SeniorityYears = u.SeniorityYears,
                 IsActive = u.IsActive,
                 ExpiryDate = u.ExpiryDate,
                 GlobalRoleId = u.GlobalRoleId,
@@ -221,6 +222,7 @@ namespace AronErpPm.Api.Controllers
             user.AvatarPath = request.AvatarPath;
             user.AnnualLeaveDays = request.AnnualLeaveDays;
             user.CarryOverDays = request.CarryOverDays;
+            user.SeniorityYears = request.SeniorityYears;
             user.IsActive = request.IsActive;
             user.ExpiryDate = request.ExpiryDate.HasValue ? DateTime.SpecifyKind(request.ExpiryDate.Value, DateTimeKind.Utc) : null;
             user.GlobalRoleId = request.GlobalRoleId;
@@ -384,6 +386,7 @@ namespace AronErpPm.Api.Controllers
         public string? AvatarPath { get; set; }
         public int AnnualLeaveDays { get; set; } = 12;
         public int CarryOverDays { get; set; } = 0;
+        public int SeniorityYears { get; set; } = 0;
         public bool IsActive { get; set; } = true;
         public int? GlobalRoleId { get; set; }
         public DateTime? ExpiryDate { get; set; }
@@ -399,6 +402,7 @@ namespace AronErpPm.Api.Controllers
         public string? AvatarPath { get; set; }
         public int AnnualLeaveDays { get; set; }
         public int CarryOverDays { get; set; }
+        public int SeniorityYears { get; set; }
         public bool IsActive { get; set; }
         public DateTime? ExpiryDate { get; set; }
         public int? GlobalRoleId { get; set; }

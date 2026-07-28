@@ -34,21 +34,49 @@ namespace AronErpPm.Api.Controllers
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound("Không tìm thấy thông tin tài khoản.");
 
-            // Carry-over logic: Expiry date is April 1st (Month >= 4)
-            int carryOverDays = user.CarryOverDays;
-            if (DateTime.Today.Month >= 4)
-            {
-                carryOverDays = 0;
-            }
-
             int annualLeaveDays = user.AnnualLeaveDays;
+            int carryOverDays = user.CarryOverDays;
+            int seniorityYears = user.SeniorityYears;
+            int seniorityLeaveDays = (int)Math.Floor(seniorityYears / 3.0);
 
-            // Sum up used leaves (APPROVED status)
-            var usedLeaveDays = await _context.LeaveRequests
-                .Where(r => r.UserId == user.UserId && r.Status == "APPROVED")
-                .SumAsync(r => r.TotalDays);
+            var currentYear = DateTime.Today.Year;
+            var cutOffDate = new DateTime(currentYear, 4, 1, 0, 0, 0, DateTimeKind.Utc);
 
-            decimal totalAvailable = (annualLeaveDays + carryOverDays) - usedLeaveDays;
+            var leaveRequests = await _context.LeaveRequests
+                .Where(r => r.UserId == user.UserId)
+                .OrderByDescending(r => r.CreatedDate)
+                .Include(r => r.ProjectApprovals)
+                    .ThenInclude(pa => pa.Project)
+                .ToListAsync();
+
+            decimal usedBeforeApril1 = leaveRequests
+                .Where(r => r.Status == "APPROVED" && r.CancelStatus != "APPROVED" && r.StartDate.ToUniversalTime() < cutOffDate)
+                .Sum(r => r.TotalDays);
+
+            decimal usedAfterApril1 = leaveRequests
+                .Where(r => r.Status == "APPROVED" && r.CancelStatus != "APPROVED" && r.StartDate.ToUniversalTime() >= cutOffDate)
+                .Sum(r => r.TotalDays);
+
+            decimal usedLeaveDays = usedBeforeApril1 + usedAfterApril1;
+            decimal totalAvailable = 0;
+
+            if (DateTime.UtcNow < cutOffDate)
+            {
+                // Still in Q1, carryover is active
+                totalAvailable = annualLeaveDays + carryOverDays + seniorityLeaveDays - usedBeforeApril1;
+            }
+            else
+            {
+                // Q2 or later, carryover expired
+                // Leaves taken in Q1 deduct from CarryOver FIRST
+                decimal carryOverUsed = Math.Min(usedBeforeApril1, carryOverDays);
+                decimal annualSeniorityUsedInQ1 = usedBeforeApril1 - carryOverUsed;
+                
+                // CarryOver remaining is expired
+                carryOverDays = 0;
+                
+                totalAvailable = annualLeaveDays + seniorityLeaveDays - annualSeniorityUsedInQ1 - usedAfterApril1;
+            }
 
             // Get user's active projects to populate check boxes on frontend
             var projectMemberships = await _context.ProjectMembers
@@ -75,13 +103,7 @@ namespace AronErpPm.Api.Controllers
                 });
             }
 
-            // Fetch history
-            var leaveRequests = await _context.LeaveRequests
-                .Where(r => r.UserId == user.UserId)
-                .OrderByDescending(r => r.CreatedDate)
-                .Include(r => r.ProjectApprovals)
-                    .ThenInclude(pa => pa.Project)
-                .ToListAsync();
+            // Fetch history mapping
 
             var history = leaveRequests.Select(r => new
             {
@@ -91,6 +113,7 @@ namespace AronErpPm.Api.Controllers
                 r.TotalDays,
                 r.Reason,
                 r.Status,
+                r.CancelStatus,
                 r.CreatedDate,
                 ProjectApprovals = r.ProjectApprovals.Select(a => new
                 {
@@ -106,6 +129,8 @@ namespace AronErpPm.Api.Controllers
             {
                 annualLeaveDays,
                 carryOverDays,
+                seniorityYears,
+                seniorityLeaveDays,
                 usedLeaveDays,
                 totalAvailable,
                 activeProjects,
@@ -342,6 +367,66 @@ namespace AronErpPm.Api.Controllers
 
             await _context.SaveChangesAsync();
             return Ok(new { message = "Từ chối phê duyệt thành công!", overallStatus = leave?.Status });
+        }
+
+        // 5. Cancel an approved leave request
+        [HttpPost("{leaveId}/cancel-request")]
+        public async Task<IActionResult> CancelLeaveRequest(int leaveId, [FromBody] ApprovalCommentDto dto)
+        {
+            var userIdStr = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdStr, out var userId)) return Unauthorized("Không xác định được phiên đăng nhập.");
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound("Không tìm thấy thông tin tài khoản.");
+
+            var leave = await _context.LeaveRequests
+                .Include(r => r.ProjectApprovals)
+                .FirstOrDefaultAsync(r => r.LeaveId == leaveId && r.UserId == userId);
+
+            if (leave == null) return NotFound("Không tìm thấy đơn nghỉ phép.");
+            if (leave.Status != "APPROVED") return BadRequest("Chỉ có thể xin huỷ các đơn đã được duyệt.");
+            if (leave.CancelStatus == "REQUESTED") return BadRequest("Bạn đã gửi yêu cầu huỷ rồi, đang chờ duyệt.");
+            if (leave.CancelStatus == "APPROVED") return BadRequest("Đơn này đã được huỷ.");
+
+            leave.CancelStatus = "REQUESTED";
+            _context.LeaveRequests.Update(leave);
+
+            // Re-trigger approval flow for cancellation
+            foreach (var approval in leave.ProjectApprovals)
+            {
+                approval.Status = "PENDING"; // Reset status to PENDING for the cancellation review
+                approval.SecureToken = EmailService.GenerateSecureToken();
+                approval.TokenExpiry = DateTime.UtcNow.AddDays(1);
+                _context.LeaveProjectApprovals.Update(approval);
+
+                // Find approver info
+                var approverMember = await _context.ProjectMembers
+                    .Include(pm => pm.User)
+                    .FirstOrDefaultAsync(pm => pm.ProjectMemberId == approval.ApproverMemberId);
+
+                if (approverMember != null && approverMember.User != null && !string.IsNullOrEmpty(approverMember.User.Email))
+                {
+                    var approverName = approverMember.User.FullName ?? approverMember.User.Username;
+                    var requesterName = user.FullName ?? user.Username;
+                    var project = await _context.Projects.FindAsync(approval.ProjectId);
+                    var projectName = project?.ProjectName ?? $"Project #{approval.ProjectId}";
+
+                    await _emailService.SendApprovalEmailAsync(
+                        approverMember.User.Email,
+                        approverName,
+                        requesterName,
+                        projectName,
+                        "YÊU CẦU HUỶ NGHỈ PHÉP",
+                        $"Xin HUỶ đơn nghỉ phép từ {leave.StartDate:dd/MM/yyyy} đến {leave.EndDate:dd/MM/yyyy}. Lý do huỷ: {dto.Comments}",
+                        0,
+                        approval.LeaveId, // context
+                        approval.SecureToken
+                    );
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Đã gửi yêu cầu huỷ phép đến các Quản lý dự án." });
         }
     }
 

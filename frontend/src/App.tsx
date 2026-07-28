@@ -76,6 +76,7 @@ function App() {
   const [profileAvatarPath, setProfileAvatarPath] = useState('');
   const [profileAnnualLeaveDays, setProfileAnnualLeaveDays] = useState(12);
   const [profileCarryOverDays, setProfileCarryOverDays] = useState(0);
+  const [profileSeniorityYears, setProfileSeniorityYears] = useState(0);
   const [profilePassword, setProfilePassword] = useState('');
   const [profileConfirmPassword, setProfileConfirmPassword] = useState('');
   const [profileSaving, setProfileSaving] = useState(false);
@@ -112,6 +113,7 @@ function App() {
       setProfileAvatarPath(currentUser.avatarPath || '');
       setProfileAnnualLeaveDays(currentUser.annualLeaveDays || 12);
       setProfileCarryOverDays(currentUser.carryOverDays || 0);
+      setProfileSeniorityYears(currentUser.seniorityYears || 0);
       setProfilePassword('');
       setProfileConfirmPassword('');
       setProfileError(null);
@@ -143,7 +145,8 @@ function App() {
         phone: profilePhone,
         avatarPath: profileAvatarPath,
         annualLeaveDays: Number(profileAnnualLeaveDays),
-        carryOverDays: Number(profileCarryOverDays)
+        carryOverDays: Number(profileCarryOverDays),
+        seniorityYears: Number(profileSeniorityYears)
       };
 
       if (profilePassword) {
@@ -160,7 +163,8 @@ function App() {
         phone: updatedUser.phone,
         avatarPath: updatedUser.avatarPath,
         annualLeaveDays: updatedUser.annualLeaveDays,
-        carryOverDays: updatedUser.carryOverDays
+        carryOverDays: updatedUser.carryOverDays,
+        seniorityYears: updatedUser.seniorityYears
       };
 
       localStorage.setItem('aron_pm_user', JSON.stringify(updatedCurrentUser));
@@ -1324,7 +1328,7 @@ function App() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-1">
                     <label className="text-xs text-dark-300 font-semibold">Tồn ngày phép năm:</label>
                     <input 
@@ -1345,6 +1349,18 @@ function App() {
                       max="5"
                       value={profileCarryOverDays} 
                       onChange={e => setProfileCarryOverDays(Number(e.target.value) || 0)} 
+                      className="w-full bg-dark-950 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-dark-300 font-semibold">Số năm thâm niên (Years):</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      max="50"
+                      value={profileSeniorityYears} 
+                      onChange={e => setProfileSeniorityYears(Number(e.target.value) || 0)} 
                       className="w-full bg-dark-950 border border-dark-800 text-xs p-3 rounded-xl text-white focus:outline-none focus:border-brand-500"
                     />
                   </div>
