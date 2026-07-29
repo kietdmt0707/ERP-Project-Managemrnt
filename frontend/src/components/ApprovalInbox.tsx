@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Check, XCircle, Search, Clock, FileText, User, LayoutList, ChevronRight } from 'lucide-react';
-import { approvalService, projectService } from '../services/api';
+import { approvalService, projectService, API_BASE_URL } from '../services/api';
 
 interface ApprovalInboxProps {
   isOpen: boolean;
@@ -88,7 +88,7 @@ export function ApprovalInbox({ isOpen, onClose, onApprovalProcessed }: Approval
       setActionLoading(true);
       if (selectedItem.isLeaveRequest) {
         const endpoint = action === 'APPROVE' ? 'approve' : 'reject';
-        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/leave/${endpoint}/${selectedItem.stepId}`, {
+        const res = await fetch(`${API_BASE_URL}/leave/${endpoint}/${selectedItem.stepId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
