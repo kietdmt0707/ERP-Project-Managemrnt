@@ -86,7 +86,23 @@ export function ApprovalInbox({ isOpen, onClose, onApprovalProcessed }: Approval
 
     try {
       setActionLoading(true);
-      await approvalService.submitAction(selectedItem.stepId, action, actionReason);
+      if (selectedItem.isLeaveRequest) {
+        const endpoint = action === 'APPROVE' ? 'approve' : 'reject';
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/leave/${endpoint}/${selectedItem.stepId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('aron_pm_token')}`
+            },
+            body: JSON.stringify({ comments: actionReason })
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.message || 'Lỗi phê duyệt phép');
+        }
+      } else {
+        await approvalService.submitAction(selectedItem.stepId, action, actionReason);
+      }
       alert('Xử lý phê duyệt thành công!');
       setSelectedItem(null);
       setActionReason('');

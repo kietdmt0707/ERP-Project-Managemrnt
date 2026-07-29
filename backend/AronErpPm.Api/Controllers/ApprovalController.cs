@@ -786,7 +786,47 @@ namespace AronErpPm.Api.Controllers
                 });
             }
 
-            return Ok(result);
+            var leavePendingSteps = await _context.LeaveProjectApprovals
+                .Include(a => a.Project)
+                .Include(a => a.LeaveRequest).ThenInclude(l => l!.User)
+                .Include(a => a.ApproverMember).ThenInclude(m => m!.User)
+                .Include(a => a.ApproverMember).ThenInclude(m => m!.Role)
+                .Where(a => a.ApproverMember!.User!.Username == username && a.Status == "PENDING")
+                .OrderByDescending(a => a.LeaveRequest!.CreatedDate)
+                .ToListAsync();
+
+            foreach(var step in leavePendingSteps)
+            {
+                var allLeaveSteps = await _context.LeaveProjectApprovals
+                    .Include(x => x.ApproverMember).ThenInclude(x => x!.Role)
+                    .Include(x => x.ApproverMember).ThenInclude(x => x!.User)
+                    .Where(x => x.LeaveId == step.LeaveId)
+                    .Select(x => new {
+                        StepNumber = 1,
+                        Role = x.ApproverMember!.Role!.RoleCode,
+                        ApproverName = x.ApproverMember!.User!.FullName,
+                        StepStatus = x.Status,
+                        ActionDate = x.ActionDate,
+                        Comments = x.Comments
+                    })
+                    .ToListAsync();
+
+                result.Add(new {
+                    StepId = step.ApprovalId,
+                    WorkflowId = step.LeaveId,
+                    ProjectName = step.Project?.ProjectName ?? "Dự án ẩn",
+                    SubmitterName = step.LeaveRequest?.User?.FullName,
+                    TargetType = "Nghỉ phép",
+                    TargetId = step.LeaveId,
+                    Description = $"Xin nghỉ phép từ {step.LeaveRequest?.StartDate:dd/MM/yyyy} đến {step.LeaveRequest?.EndDate:dd/MM/yyyy}. Lý do: {step.LeaveRequest?.Reason}",
+                    Amount = 0m,
+                    CreatedDate = step.LeaveRequest?.CreatedDate ?? DateTime.UtcNow,
+                    AllSteps = allLeaveSteps,
+                    IsLeaveRequest = true
+                });
+            }
+
+            return Ok(result.OrderByDescending(r => ((dynamic)r).CreatedDate));
         }
 
         [Authorize]
@@ -837,7 +877,47 @@ namespace AronErpPm.Api.Controllers
                 });
             }
 
-            return Ok(result);
+            var leaveHistoryQuery = _context.LeaveProjectApprovals
+                .Include(a => a.Project)
+                .Include(a => a.LeaveRequest).ThenInclude(l => l!.User)
+                .Include(a => a.ApproverMember).ThenInclude(m => m!.User)
+                .Where(a => a.ApproverMember!.User!.Username == username && a.Status != "PENDING");
+
+            if (fromDate.HasValue)
+                leaveHistoryQuery = leaveHistoryQuery.Where(s => s.ActionDate >= fromDate.Value.ToUniversalTime());
+            if (toDate.HasValue)
+                leaveHistoryQuery = leaveHistoryQuery.Where(s => s.ActionDate <= toDate.Value.ToUniversalTime().AddDays(1).AddTicks(-1));
+            if (projectId.HasValue)
+                leaveHistoryQuery = leaveHistoryQuery.Where(s => s.ProjectId == projectId.Value);
+            if (!string.IsNullOrEmpty(search))
+            {
+                var lowerSearch = search.ToLower();
+                leaveHistoryQuery = leaveHistoryQuery.Where(s => 
+                    s.LeaveRequest!.User!.FullName.ToLower().Contains(lowerSearch) || 
+                    s.LeaveRequest!.User!.Email.ToLower().Contains(lowerSearch));
+            }
+
+            var leaveHistorySteps = await leaveHistoryQuery.OrderByDescending(s => s.ActionDate).Take(50).ToListAsync();
+
+            foreach(var step in leaveHistorySteps)
+            {
+                result.Add(new {
+                    StepId = step.ApprovalId,
+                    WorkflowId = step.LeaveId,
+                    ProjectName = step.Project?.ProjectName ?? "Dự án ẩn",
+                    SubmitterName = step.LeaveRequest?.User?.FullName,
+                    TargetType = "Nghỉ phép",
+                    TargetId = step.LeaveId,
+                    Description = $"Xin nghỉ phép từ {step.LeaveRequest?.StartDate:dd/MM/yyyy} đến {step.LeaveRequest?.EndDate:dd/MM/yyyy}. Lý do: {step.LeaveRequest?.Reason}",
+                    Amount = 0m,
+                    StepStatus = step.Status,
+                    ActionDate = step.ActionDate,
+                    Comments = step.Comments,
+                    IsLeaveRequest = true
+                });
+            }
+
+            return Ok(result.OrderByDescending(r => ((dynamic)r).ActionDate));
         }
 
         [Authorize]
