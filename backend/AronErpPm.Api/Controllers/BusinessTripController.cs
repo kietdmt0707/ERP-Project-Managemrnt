@@ -38,8 +38,8 @@ namespace AronErpPm.Api.Controllers
 
             var trips = await _context.BusinessTrips
                 .Where(t => t.ProjectId == projectId)
-                .Include(t => t.CreatedByMember!.User)
-                .Include(t => t.ApprovedByMember!.User)
+                .Include(t => t.CreatedByMember).ThenInclude(m => m!.User)
+                .Include(t => t.ApprovedByMember).ThenInclude(m => m!.User)
                 .OrderByDescending(t => t.CreatedDate)
                 .ToListAsync();
 
@@ -47,12 +47,12 @@ namespace AronErpPm.Api.Controllers
 
             var tripMembers = await _context.BusinessTripMembers
                 .Where(m => tripIds.Contains(m.TripId))
-                .Include(m => m.ProjectMember!.User)
+                .Include(m => m.ProjectMember).ThenInclude(pm => pm!.User)
                 .ToListAsync();
 
             var expenses = await _context.Expenses
                 .Where(e => tripIds.Contains(e.TripId))
-                .Include(e => e.ClaimantMember!.User)
+                .Include(e => e.ClaimantMember).ThenInclude(pm => pm!.User)
                 .ToListAsync();
 
             var result = trips.Select(t => new
@@ -149,7 +149,7 @@ namespace AronErpPm.Api.Controllers
             _context.BusinessTrips.Add(trip);
             await _context.SaveChangesAsync();
 
-            return Ok(trip);
+            return Ok(new { trip.TripId, trip.TripCode, trip.Status });
         }
 
         // POST: api/businesstrip/{id}/member
@@ -169,7 +169,7 @@ namespace AronErpPm.Api.Controllers
                 exists.IsGroupLeader = request.IsGroupLeader;
                 _context.BusinessTripMembers.Update(exists);
                 await _context.SaveChangesAsync();
-                return Ok(exists);
+                return Ok(new { exists.TripMemberId });
             }
 
             var tripMember = new BusinessTripMember
@@ -182,7 +182,7 @@ namespace AronErpPm.Api.Controllers
             _context.BusinessTripMembers.Add(tripMember);
             await _context.SaveChangesAsync();
 
-            return Ok(tripMember);
+            return Ok(new { tripMember.TripMemberId });
         }
 
         // POST: api/businesstrip/{id}/expense
@@ -303,7 +303,7 @@ namespace AronErpPm.Api.Controllers
             _context.Expenses.Add(expense);
             await _context.SaveChangesAsync();
 
-            return Ok(expense);
+            return Ok(new { expense.ExpenseId });
         }
     }
 
