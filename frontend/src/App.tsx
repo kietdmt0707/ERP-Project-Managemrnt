@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { authService, AuthResponse, UserRole, settingService, SystemSetting, userService, hasPermission } from './services/api';
+import { authService, AuthResponse, UserRole, settingService, SystemSetting, userService, hasPermission, dashboardService, DashboardOverviewResponse } from './services/api';
 import { GanttChart } from './components/GanttChart';
 import { RicefwTracker } from './components/RicefwTracker';
 import { ApprovalList } from './components/ApprovalList';
@@ -104,6 +104,26 @@ function App() {
       return () => clearInterval(interval);
     }
   }, [currentUser]);
+
+  const [dashboardData, setDashboardData] = useState<DashboardOverviewResponse | null>(null);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+
+  useEffect(() => {
+    if (currentUser && activeTab === 'dashboard') {
+      const loadDashboard = async () => {
+        try {
+          setDashboardLoading(true);
+          const data = await dashboardService.getOverview();
+          setDashboardData(data);
+        } catch (e) {
+          console.error('Failed to load dashboard data', e);
+        } finally {
+          setDashboardLoading(false);
+        }
+      };
+      loadDashboard();
+    }
+  }, [currentUser, activeTab]);
 
   const handleOpenProfile = () => {
     if (currentUser) {
@@ -570,7 +590,7 @@ function App() {
             <span className="text-2xl">📊</span>
           )}
           <div>
-            <h1 className="text-sm font-bold text-white tracking-wide">{systemSettings.appName} - Built for Oracle Ecosystem</h1>
+            <h1 className="text-sm font-bold text-white tracking-wide">{systemSettings.appName}</h1>
             <p className="text-[10px] text-dark-400">Oracle Unified Implementation Tracker</p>
           </div>
         </div>
@@ -863,23 +883,23 @@ function App() {
                     <h2 className="text-lg font-extrabold text-white uppercase tracking-wider">Project Portfolio Overview</h2>
                     <p className="text-xs text-dark-400">Hệ thống quản lý tích hợp RICEFW, Tiến độ Gantt & Tài chính dự án Oracle ERP</p>
                   </div>
-                  <div className="bg-dark-900 border border-dark-800 px-4 py-2 rounded-xl text-xs flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span className="font-semibold text-white">Oracle Ecosystem Connected</span>
-                  </div>
                 </div>
 
                 {/* 4 ORACLE REDWOOD INFOLETS */}
+                {dashboardLoading ? (
+                  <div className="text-center py-10 text-dark-400">Đang tải dữ liệu Dashboard...</div>
+                ) : (
+                <>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                   {/* Infolet 1: Project Health */}
                   <div className="bg-dark-900 p-5 rounded-2xl border border-dark-850 shadow-md space-y-3">
                     <p className="text-dark-400 font-semibold text-[11px] uppercase tracking-wider">Project Health</p>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-extrabold text-white">85%</span>
-                      <span className="text-emerald-500 font-bold text-sm flex items-center">↑</span>
+                      <span className="text-3xl font-extrabold text-white">{dashboardData?.projectHealth ?? 0}%</span>
+                      <span className="text-emerald-500 font-bold text-sm flex items-center">{ (dashboardData?.projectHealth ?? 0) >= 80 ? '↑' : '↓' }</span>
                     </div>
                     <div className="w-full bg-dark-950 h-1.5 rounded-full overflow-hidden border border-dark-800">
-                      <div className="bg-emerald-600 h-full rounded-full" style={{ width: '85%' }}></div>
+                      <div className="bg-emerald-600 h-full rounded-full" style={{ width: `${dashboardData?.projectHealth ?? 0}%` }}></div>
                     </div>
                     <p className="text-[10px] text-dark-500">of projects on track</p>
                   </div>
@@ -888,7 +908,7 @@ function App() {
                   <div className="bg-dark-900 p-5 rounded-2xl border border-dark-850 shadow-md space-y-3">
                     <p className="text-dark-400 font-semibold text-[11px] uppercase tracking-wider">Active Projects</p>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-extrabold text-white">12</span>
+                      <span className="text-3xl font-extrabold text-white">{dashboardData?.activeProjects ?? 0}</span>
                     </div>
                     <div className="w-full bg-dark-950 h-1.5 rounded-full overflow-hidden border border-dark-800">
                       <div className="bg-brand-500 h-full rounded-full" style={{ width: '100%' }}></div>
@@ -900,7 +920,7 @@ function App() {
                   <div className="bg-dark-900 p-5 rounded-2xl border border-dark-850 shadow-md space-y-3">
                     <p className="text-dark-400 font-semibold text-[11px] uppercase tracking-wider">Task At-Risk</p>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-extrabold text-brand-500">15</span>
+                      <span className="text-3xl font-extrabold text-brand-500">{dashboardData?.tasksAtRisk ?? 0}</span>
                     </div>
                     <div className="w-full bg-dark-950 h-1.5 rounded-full overflow-hidden border border-dark-800">
                       <div className="bg-brand-500 h-full rounded-full" style={{ width: '45%' }}></div>
@@ -912,10 +932,10 @@ function App() {
                   <div className="bg-dark-900 p-5 rounded-2xl border border-dark-850 shadow-md space-y-3">
                     <p className="text-dark-400 font-semibold text-[11px] uppercase tracking-wider">Budget Burn</p>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-3xl font-extrabold text-amber-500">72%</span>
+                      <span className="text-3xl font-extrabold text-amber-500">{dashboardData?.budgetBurn ?? 0}%</span>
                     </div>
                     <div className="w-full bg-dark-950 h-1.5 rounded-full overflow-hidden border border-dark-800">
-                      <div className="bg-amber-500 h-full rounded-full" style={{ width: '72%' }}></div>
+                      <div className="bg-amber-500 h-full rounded-full" style={{ width: `${dashboardData?.budgetBurn ?? 0}%` }}></div>
                     </div>
                     <p className="text-[10px] text-dark-500">average project budget utilized</p>
                   </div>
@@ -932,13 +952,8 @@ function App() {
                       </h3>
                       
                       <div className="divide-y divide-dark-850">
-                        {[
-                          { name: 'Design User Login Module', project: 'Oracle HCM Implementation', date: 'Nov 12', completed: true },
-                          { name: 'Setup General Ledger Structure', project: 'Oracle ERP Upgrade', date: 'Nov 15', completed: false },
-                          { name: 'Configure Accounts Payable Flow', project: 'Oracle ERP Upgrade', date: 'Nov 18', completed: false },
-                          { name: 'Data Migration & Verification', project: 'Cloud Migration Project', date: 'Nov 20', completed: false }
-                        ].map((task, idx) => (
-                          <div key={idx} className="py-3 flex items-start gap-2.5">
+                        {dashboardData?.myTaskList?.length ? dashboardData.myTaskList.map((task, idx) => (
+                          <div key={task.id || idx} className="py-3 flex items-start gap-2.5">
                             <input 
                               type="checkbox" 
                               checked={task.completed} 
@@ -954,12 +969,19 @@ function App() {
                             <div className="text-[10px] text-dark-400 font-mono text-right flex flex-col items-end gap-1">
                               <span>{task.date}</span>
                               <div className="flex gap-1">
-                                <span className={`w-1.5 h-1.5 rounded-full ${idx === 0 ? 'bg-emerald-500' : 'bg-brand-500'}`} />
-                                <span className="w-1.5 h-1.5 rounded-full bg-dark-700" />
+                                {task.isAtRisk ? (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-brand-500" title="At Risk" />
+                                ) : task.completed ? (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" title="Completed" />
+                                ) : (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" title="In Progress" />
+                                )}
                               </div>
                             </div>
                           </div>
-                        ))}
+                        )) : (
+                          <div className="py-8 text-center text-xs text-dark-500">Không có công việc nào</div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -991,39 +1013,32 @@ function App() {
                           <div>0</div>
                         </div>
 
-                        {[
-                          { name: 'In Progress', h1: '30%', h2: '50%', h3: '20%' },
-                          { name: 'Completed', h1: '20%', h2: '60%', h3: '20%' },
-                          { name: 'At Risk', h1: '15%', h2: '35%', h3: '50%' },
-                          { name: 'At Risk', h1: '40%', h2: '10%', h3: '50%' }
-                        ].map((col, idx) => (
-                          <div key={idx} className="flex flex-col items-center gap-1.5 w-10 z-10">
+                        {dashboardData?.projectProgress?.map((proj, idx) => (
+                          <div key={proj.projectId || idx} className="flex flex-col items-center gap-1.5 w-10 z-10" title={proj.projectName}>
                             <div className="w-full bg-dark-950 rounded overflow-hidden flex flex-col h-24">
-                              <div className="bg-brand-500 w-full" style={{ height: col.h3 }} />
-                              <div className="bg-amber-500 w-full" style={{ height: col.h2 }} />
-                              <div className="bg-dark-600 w-full flex-1" style={{ height: col.h1 }} />
+                              <div className="bg-brand-500 w-full" style={{ height: `${proj.atRisk}%` }} title={`At Risk: ${proj.atRisk}%`} />
+                              <div className="bg-amber-500 w-full" style={{ height: `${proj.completed}%` }} title={`Completed: ${proj.completed}%`} />
+                              <div className="bg-dark-600 w-full flex-1" style={{ height: `${proj.inProgress}%` }} title={`In Progress: ${proj.inProgress}%`} />
                             </div>
-                            <span className="text-[8px] text-dark-400 font-semibold">{col.name}</span>
+                            <span className="text-[8px] text-dark-400 font-semibold truncate w-full text-center">{proj.projectCode}</span>
                           </div>
                         ))}
                       </div>
 
                       {/* Project status table */}
-                      <div className="space-y-2 pt-1">
-                        <div className="flex justify-between items-center text-xs">
-                          <div>
-                            <p className="font-semibold text-white">Oracle ERP Upgrade</p>
-                            <p className="text-[9px] text-dark-500">Project: ERP Upgrade</p>
+                      <div className="space-y-2 pt-1 max-h-32 overflow-y-auto pr-1 custom-scrollbar">
+                        {dashboardData?.projectProgress?.map((proj, idx) => (
+                          <div key={proj.projectId || idx} className="flex justify-between items-center text-xs">
+                            <div className="truncate pr-2">
+                              <p className="font-semibold text-white truncate" title={proj.projectName}>{proj.projectName}</p>
+                              <p className="text-[9px] text-dark-500">{proj.projectCode}</p>
+                            </div>
+                            <span className="font-mono font-bold text-white shrink-0">{proj.totalTasks}</span>
                           </div>
-                          <span className="font-mono font-bold text-white">90</span>
-                        </div>
-                        <div className="flex justify-between items-center text-xs">
-                          <div>
-                            <p className="font-semibold text-white">Cloud Migration Project</p>
-                            <p className="text-[9px] text-dark-500">Project: ERP Upgrade</p>
-                          </div>
-                          <span className="font-mono font-bold text-white">99</span>
-                        </div>
+                        ))}
+                        {!dashboardData?.projectProgress?.length && (
+                          <div className="text-center text-xs text-dark-500">Chưa có dự án</div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1043,7 +1058,7 @@ function App() {
                           <circle cx="48" cy="48" r="38" strokeWidth="8" stroke="var(--color-brand-500)" fill="transparent" strokeDasharray="238" strokeDashoffset="52" strokeLinecap="round" />
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center pt-2">
-                          <span className="text-lg font-extrabold text-white">78%</span>
+                          <span className="text-lg font-extrabold text-white">{dashboardData?.resourceUtilization?.allocatedPercentage ?? 0}%</span>
                           <span className="text-[8px] text-dark-400 font-semibold uppercase tracking-wide">Allocated</span>
                         </div>
                         <p className="text-[10px] text-dark-300 font-semibold mt-2">Resource Allocation</p>
@@ -1051,33 +1066,30 @@ function App() {
 
                       {/* Availability by Role */}
                       <div className="space-y-2 pt-1">
-                        <p className="text-[10px] text-dark-400 font-bold uppercase tracking-wider">Availability by Role</p>
+                        <p className="text-[10px] text-dark-400 font-bold uppercase tracking-wider">Members by Role</p>
                         
                         <div className="space-y-1.5">
-                          <div className="space-y-0.5">
-                            <div className="flex justify-between text-[9px] font-semibold text-dark-300">
-                              <span>Developers</span>
-                              <span>65%</span>
+                          {dashboardData?.resourceUtilization?.byRole?.map((roleInfo, idx) => (
+                            <div key={idx} className="space-y-0.5">
+                              <div className="flex justify-between text-[9px] font-semibold text-dark-300">
+                                <span>{roleInfo.role}</span>
+                                <span>{roleInfo.percentage}%</span>
+                              </div>
+                              <div className="w-full bg-dark-950 h-1.5 rounded-full overflow-hidden border border-dark-850">
+                                <div className={`h-full rounded-full ${idx === 0 ? 'bg-brand-500' : idx === 1 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${roleInfo.percentage}%` }} />
+                              </div>
                             </div>
-                            <div className="w-full bg-dark-950 h-1.5 rounded-full overflow-hidden border border-dark-850">
-                              <div className="bg-brand-500 h-full rounded-full" style={{ width: '65%' }} />
-                            </div>
-                          </div>
-
-                          <div className="space-y-0.5">
-                            <div className="flex justify-between text-[9px] font-semibold text-dark-300">
-                              <span>Analysts</span>
-                              <span>85%</span>
-                            </div>
-                            <div className="w-full bg-dark-950 h-1.5 rounded-full overflow-hidden border border-dark-850">
-                              <div className="bg-amber-500 h-full rounded-full" style={{ width: '85%' }} />
-                            </div>
-                          </div>
+                          ))}
+                          {!dashboardData?.resourceUtilization?.byRole?.length && (
+                            <div className="text-center text-[10px] text-dark-500">Chưa có thông tin Role</div>
+                          )}
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
+                </>
+                )}
 
                 {/* MY PROJECT ROLES & QUICK ACCESS LIST */}
                 <div className="space-y-4 pt-2">

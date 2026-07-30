@@ -1077,3 +1077,44 @@ export const hasPermission = (user: any, feature: string, action: string = 'View
   }
   return false;
 };
+
+export interface DashboardOverviewResponse {
+  projectHealth: number;
+  activeProjects: number;
+  tasksAtRisk: number;
+  budgetBurn: number;
+  myTaskList: {
+    id: number;
+    name: string;
+    project: string;
+    date: string;
+    completed: boolean;
+    isAtRisk: boolean;
+  }[];
+  projectProgress: {
+    projectId: number;
+    projectName: string;
+    projectCode: string;
+    totalTasks: number;
+    inProgress: number;
+    completed: number;
+    atRisk: number;
+  }[];
+  resourceUtilization: {
+    allocatedPercentage: number;
+    byRole: {
+      role: string;
+      percentage: number;
+    }[];
+  };
+}
+
+export const dashboardService = {
+  async getOverview(): Promise<DashboardOverviewResponse> {
+    const response = await fetch(`${API_BASE_URL}/dashboard/overview`, {
+      headers: getHeaders()
+    });
+    if (!response.ok) throw new Error('Không thể tải dữ liệu dashboard.');
+    return response.json();
+  }
+};
