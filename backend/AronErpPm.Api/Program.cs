@@ -211,20 +211,55 @@ try
         ("ALTER TABLE teams ADD COLUMN IF NOT EXISTS teamtype VARCHAR(50) DEFAULT 'ARON';", "Add teamtype to teams"),
         ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS aimcode VARCHAR(50);", "Add aimcode to tasks"),
         ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS visibilityscope VARCHAR(30) DEFAULT 'PUBLIC';", "Add visibilityscope to tasks"),
-        ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS taskid INT;", "Add taskid to expenses"),
-        ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS siteid INT;", "Add siteid to expenses"),
         (@"
-            CREATE TABLE IF NOT EXISTS business_trip_members (
-                business_trip_member_id SERIAL PRIMARY KEY,
-                business_trip_id INT NOT NULL,
-                member_id INT NOT NULL,
-                is_group_leader BOOLEAN DEFAULT FALSE
+            CREATE TABLE IF NOT EXISTS businesstrips (
+                tripid SERIAL PRIMARY KEY,
+                projectid INT NOT NULL,
+                tripcode VARCHAR(50),
+                title VARCHAR(250) NOT NULL,
+                destination VARCHAR(250) NOT NULL,
+                startdate TIMESTAMP NOT NULL,
+                enddate TIMESTAMP NOT NULL,
+                advanceamount DECIMAL(18,2) DEFAULT 0.00,
+                status VARCHAR(20) DEFAULT 'DRAFT',
+                approvedbymemberid INT,
+                createdbymemberid INT NOT NULL,
+                createddate TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
-        ", "Create business_trip_members table if not exists"),
-        ("ALTER TABLE business_trip_members ADD COLUMN IF NOT EXISTS isgroupleader BOOLEAN DEFAULT FALSE;", "Add isgroupleader to business_trip_members"),
+        ", "Create businesstrips table if not exists"),
+        (@"
+            CREATE TABLE IF NOT EXISTS businesstripmembers (
+                tripmemberid SERIAL PRIMARY KEY,
+                tripid INT NOT NULL,
+                projectmemberid INT NOT NULL,
+                isgroupleader BOOLEAN DEFAULT FALSE
+            );
+        ", "Create businesstripmembers table if not exists"),
+        (@"
+            CREATE TABLE IF NOT EXISTS expenses (
+                expenseid SERIAL PRIMARY KEY,
+                tripid INT NOT NULL,
+                taskid INT,
+                siteid INT,
+                claimantmemberid INT NOT NULL,
+                expensetype VARCHAR(50) NOT NULL,
+                amountplanned DECIMAL(18,2) DEFAULT 0.00,
+                amountactual DECIMAL(18,2) DEFAULT 0.00,
+                receiptpath TEXT,
+                status VARCHAR(20) DEFAULT 'DRAFT',
+                approvedbymemberid INT,
+                notes VARCHAR(500),
+                isoverlimit BOOLEAN DEFAULT FALSE,
+                justification TEXT,
+                overlimitamount DECIMAL(18,2) DEFAULT 0.00,
+                createddate TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        ", "Create expenses table if not exists"),
         ("ALTER TABLE users ADD COLUMN IF NOT EXISTS annualleavedays INT DEFAULT 12;", "Add annualleavedays to users"),
         ("ALTER TABLE users ADD COLUMN IF NOT EXISTS carryoverdays INT DEFAULT 0;", "Add carryoverdays to users"),
         ("ALTER TABLE users ADD COLUMN IF NOT EXISTS seniorityyears INT DEFAULT 0;", "Add seniorityyears to users"),
+        ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS taskid INT;", "Add taskid to expenses"),
+        ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS siteid INT;", "Add siteid to expenses"),
         ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS isoverlimit BOOLEAN DEFAULT FALSE;", "Add isoverlimit to expenses"),
         ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS justification TEXT;", "Add justification to expenses"),
         ("ALTER TABLE expenses ADD COLUMN IF NOT EXISTS overlimitamount DECIMAL(18,2) DEFAULT 0.00;", "Add overlimitamount to expenses"),
