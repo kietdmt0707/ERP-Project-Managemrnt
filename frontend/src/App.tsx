@@ -105,25 +105,7 @@ function App() {
     }
   }, [currentUser]);
 
-  const [dashboardData, setDashboardData] = useState<DashboardOverviewResponse | null>(null);
-  const [dashboardLoading, setDashboardLoading] = useState(false);
 
-  useEffect(() => {
-    if (currentUser && activeTab === 'dashboard') {
-      const loadDashboard = async () => {
-        try {
-          setDashboardLoading(true);
-          const data = await dashboardService.getOverview();
-          setDashboardData(data);
-        } catch (e) {
-          console.error('Failed to load dashboard data', e);
-        } finally {
-          setDashboardLoading(false);
-        }
-      };
-      loadDashboard();
-    }
-  }, [currentUser, activeTab]);
 
   const handleOpenProfile = () => {
     if (currentUser) {
@@ -261,6 +243,26 @@ function App() {
 
   // Tab selections
   const [activeTab, setActiveTab] = useState<'dashboard' | 'gantt' | 'subtasks' | 'ricefw' | 'approvals' | 'costs' | 'environments' | 'team' | 'trips' | 'projects' | 'settings' | 'users' | 'documents' | 'masterdata' | 'leaves' | 'travelpolicy'>('dashboard');
+
+  const [dashboardData, setDashboardData] = useState<DashboardOverviewResponse | null>(null);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+
+  useEffect(() => {
+    if (currentUser && activeTab === 'dashboard') {
+      const loadDashboard = async () => {
+        try {
+          setDashboardLoading(true);
+          const data = await dashboardService.getOverview();
+          setDashboardData(data);
+        } catch (e) {
+          console.error('Failed to load dashboard data', e);
+        } finally {
+          setDashboardLoading(false);
+        }
+      };
+      loadDashboard();
+    }
+  }, [currentUser, activeTab]);
 
   useEffect(() => {
     loadSystemSettings();
