@@ -38,22 +38,28 @@ namespace AronErpPm.Api.Controllers
 
             var trips = await _context.BusinessTrips
                 .Where(t => t.ProjectId == projectId)
-                .Include(t => t.CreatedByMember).ThenInclude(m => m!.User)
-                .Include(t => t.ApprovedByMember).ThenInclude(m => m!.User)
+                .Include(t => t.CreatedByMember).ThenInclude(m => m.User)
+                .Include(t => t.ApprovedByMember).ThenInclude(m => m.User)
                 .OrderByDescending(t => t.CreatedDate)
                 .ToListAsync();
 
             var tripIds = trips.Select(t => t.TripId).ToList();
 
-            var tripMembers = await _context.BusinessTripMembers
-                .Where(m => tripIds.Contains(m.TripId))
-                .Include(m => m.ProjectMember).ThenInclude(pm => pm!.User)
-                .ToListAsync();
+            var tripMembers = new List<BusinessTripMember>();
+            var expenses = new List<Expense>();
 
-            var expenses = await _context.Expenses
-                .Where(e => tripIds.Contains(e.TripId))
-                .Include(e => e.ClaimantMember).ThenInclude(pm => pm!.User)
-                .ToListAsync();
+            if (tripIds.Any())
+            {
+                tripMembers = await _context.BusinessTripMembers
+                    .Where(m => tripIds.Contains(m.TripId))
+                    .Include(m => m.ProjectMember).ThenInclude(pm => pm.User)
+                    .ToListAsync();
+
+                expenses = await _context.Expenses
+                    .Where(e => tripIds.Contains(e.TripId))
+                    .Include(e => e.ClaimantMember).ThenInclude(pm => pm.User)
+                    .ToListAsync();
+            }
 
             var result = trips.Select(t => new
             {
