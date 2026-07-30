@@ -32,7 +32,7 @@ namespace AronErpPm.Api.Controllers
 
             var member = await _context.ProjectMembers
                 .Include(pm => pm.User)
-                .FirstOrDefaultAsync(pm => pm.ProjectId == projectId && username != null && pm.User!.Username.ToLower() == username.ToLower());
+                .FirstOrDefaultAsync(pm => pm.ProjectId == projectId && username != null && pm.User.Username.ToLower() == username.ToLower());
 
             if (!isSysAdmin && member == null) return Forbid("Bạn không phải thành viên dự án này.");
 
@@ -110,7 +110,7 @@ namespace AronErpPm.Api.Controllers
 
             var member = await _context.ProjectMembers
                 .Include(pm => pm.User)
-                .FirstOrDefaultAsync(pm => pm.ProjectId == request.ProjectId && username != null && pm.User!.Username.ToLower() == username.ToLower());
+                .FirstOrDefaultAsync(pm => pm.ProjectId == request.ProjectId && username != null && pm.User.Username.ToLower() == username.ToLower());
 
             if (!isSysAdmin && member == null) return Forbid("Bạn không phải thành viên dự án này.");
 
@@ -204,7 +204,7 @@ namespace AronErpPm.Api.Controllers
 
             var member = await _context.ProjectMembers
                 .Include(pm => pm.User)
-                .FirstOrDefaultAsync(pm => pm.ProjectId == trip.ProjectId && username != null && pm.User!.Username.ToLower() == username.ToLower());
+                .FirstOrDefaultAsync(pm => pm.ProjectId == trip.ProjectId && username != null && pm.User.Username.ToLower() == username.ToLower());
 
             if (!isSysAdmin && member == null) return Forbid("Bạn không phải thành viên dự án này.");
 
